@@ -1,0 +1,341 @@
+/* ==========================================================================
+   Vira-7 — Cartas: números, modificadores, ações e verso
+   Todas as medidas internas derivam de --card-w, então a carta escala inteira.
+   ========================================================================== */
+
+.card {
+  --card-color: var(--n0);
+  --card-color-2: color-mix(in srgb, var(--card-color) 70%, #000);
+  --w: var(--card-w);
+  --h: calc(var(--w) * var(--card-ratio));
+  position: relative;
+  flex: none;
+  width: var(--w);
+  height: var(--h);
+  perspective: 900px;
+  font-family: var(--font-display);
+  user-select: none;
+}
+
+.card--xs { --w: 34px; }
+.card--sm { --w: 46px; }
+.card--md { --w: 64px; }
+.card--lg { --w: 92px; }
+.card--xl { --w: 128px; }
+
+.card__inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 520ms var(--ease-out);
+}
+
+.card.is-face-down .card__inner {
+  transform: rotateY(180deg);
+}
+
+.card__face {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--w) * 0.12);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------------------
+   Frente
+   --------------------------------------------------------------------------- */
+.card__front {
+  display: grid;
+  place-items: center;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--card-color) 9%, transparent) 0 calc(var(--w) * 0.06),
+      transparent calc(var(--w) * 0.06) calc(var(--w) * 0.12)
+    ),
+    linear-gradient(160deg, #ffffff 0%, #f1efff 100%);
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.04) var(--card-color),
+    inset 0 0 0 calc(var(--w) * 0.065) #fff,
+    0 calc(var(--w) * 0.05) calc(var(--w) * 0.12) rgba(5, 4, 20, 0.45);
+  color: var(--card-color-2);
+}
+
+.card__front::after {
+  /* Reflexo de "cartão plastificado" */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 38%);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.card__center {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(var(--w) * 0.7);
+  height: calc(var(--w) * 0.7);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.55), transparent 42%),
+    radial-gradient(circle at 50% 60%, var(--card-color), var(--card-color-2));
+  box-shadow:
+    0 calc(var(--w) * 0.03) 0 color-mix(in srgb, var(--card-color) 50%, #000),
+    inset 0 calc(var(--w) * -0.03) calc(var(--w) * 0.05) rgba(0, 0, 0, 0.2);
+}
+
+.card__value {
+  color: #fff;
+  font-size: calc(var(--w) * 0.46);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-shadow:
+    0 calc(var(--w) * 0.025) 0 rgba(0, 0, 0, 0.28),
+    0 0 calc(var(--w) * 0.08) rgba(0, 0, 0, 0.15);
+}
+
+.card__corner {
+  position: absolute;
+  font-size: calc(var(--w) * 0.19);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--card-color-2);
+}
+
+.card__corner--tl {
+  top: calc(var(--w) * 0.1);
+  left: calc(var(--w) * 0.12);
+}
+
+.card__corner--br {
+  right: calc(var(--w) * 0.12);
+  bottom: calc(var(--w) * 0.1);
+  transform: rotate(180deg);
+}
+
+.card__label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--w) * 0.1);
+  font-family: var(--font-ui);
+  font-size: calc(var(--w) * 0.105);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.card__icon {
+  width: calc(var(--w) * 0.5);
+  height: calc(var(--w) * 0.5);
+  color: #fff;
+  filter: drop-shadow(0 calc(var(--w) * 0.025) 0 rgba(0, 0, 0, 0.25));
+}
+
+/* Cartas pequenas escondem detalhes que ficariam ilegíveis */
+.card--xs .card__corner,
+.card--sm .card__corner,
+.card--xs .card__label,
+.card--sm .card__label {
+  display: none;
+}
+
+.card--xs .card__center,
+.card--sm .card__center {
+  width: calc(var(--w) * 0.82);
+  height: calc(var(--w) * 0.82);
+}
+
+.card--xs .card__value,
+.card--sm .card__value {
+  font-size: calc(var(--w) * 0.52);
+}
+
+/* ---- Cores dos números ---- */
+.card[data-value='0'] { --card-color: var(--n0); }
+.card[data-value='1'] { --card-color: var(--n1); }
+.card[data-value='2'] { --card-color: var(--n2); }
+.card[data-value='3'] { --card-color: var(--n3); }
+.card[data-value='4'] { --card-color: var(--n4); }
+.card[data-value='5'] { --card-color: var(--n5); }
+.card[data-value='6'] { --card-color: var(--n6); }
+.card[data-value='7'] { --card-color: var(--n7); }
+.card[data-value='8'] { --card-color: var(--n8); }
+.card[data-value='9'] { --card-color: var(--n9); }
+.card[data-value='10'] { --card-color: var(--n10); }
+.card[data-value='11'] { --card-color: var(--n11); }
+.card[data-value='12'] { --card-color: var(--n12); }
+
+.card--number[data-value='10'] .card__value,
+.card--number[data-value='11'] .card__value,
+.card--number[data-value='12'] .card__value {
+  font-size: calc(var(--w) * 0.38);
+  letter-spacing: -0.06em;
+}
+
+/* O 7 é a carta-símbolo do jogo: anel arco-íris */
+.card--number[data-value='7'] .card__center::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--w) * -0.045);
+  border-radius: 50%;
+  background: conic-gradient(#ff5e7e, #ffb547, #ffe45e, #5eff9b, #5ee7ff, #8a7bff, #ff5ec8, #ff5e7e);
+  z-index: -1;
+}
+
+/* ---- Modificadores (+2 … +10) ---- */
+.card--modifier .card__front {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.65), transparent 55%),
+    linear-gradient(160deg, var(--mod-1), var(--mod-2));
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.05) rgba(255, 255, 255, 0.7),
+    0 calc(var(--w) * 0.05) calc(var(--w) * 0.12) rgba(5, 4, 20, 0.45);
+  color: #6b3300;
+}
+
+.card--modifier .card__value {
+  color: #6b3300;
+  font-size: calc(var(--w) * 0.4);
+  text-shadow: 0 calc(var(--w) * 0.025) 0 rgba(255, 255, 255, 0.6);
+}
+
+.card--modifier .card__corner {
+  color: #8a4500;
+}
+
+.card--multiply .card__front {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.45), transparent 55%),
+    linear-gradient(160deg, var(--x2-1), var(--x2-2));
+  color: #fff;
+}
+
+.card--multiply .card__value,
+.card--multiply .card__corner {
+  color: #fff;
+  text-shadow: 0 calc(var(--w) * 0.03) 0 rgba(120, 10, 60, 0.45);
+}
+
+.card--multiply .card__value {
+  font-size: calc(var(--w) * 0.46);
+}
+
+/* ---- Ações ---- */
+.card--action .card__front {
+  color: #fff;
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.05) rgba(255, 255, 255, 0.55),
+    0 calc(var(--w) * 0.05) calc(var(--w) * 0.12) rgba(5, 4, 20, 0.45);
+}
+
+.card--action .card__front::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.4), transparent 48%),
+    repeating-conic-gradient(from 0deg at 50% 42%, rgba(255, 255, 255, 0.09) 0 10deg, transparent 10deg 20deg);
+}
+
+.card--action .card__icon {
+  position: relative;
+  margin-bottom: calc(var(--w) * 0.12);
+}
+
+.card--action .card__label {
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.card--freeze .card__front {
+  background: linear-gradient(160deg, var(--freeze-1), var(--freeze-2));
+}
+
+.card--flipThree .card__front {
+  background: linear-gradient(160deg, var(--flip3-1), var(--flip3-2));
+}
+
+.card--secondChance .card__front {
+  background: linear-gradient(160deg, var(--chance-1), var(--chance-2));
+}
+
+.card--xs.card--action .card__icon,
+.card--sm.card--action .card__icon {
+  width: calc(var(--w) * 0.66);
+  height: calc(var(--w) * 0.66);
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Verso
+   --------------------------------------------------------------------------- */
+.card__back {
+  display: grid;
+  place-items: center;
+  transform: rotateY(180deg);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 94, 168, 0.35), transparent 60%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.07) 0 calc(var(--w) * 0.05), transparent calc(var(--w) * 0.05) calc(var(--w) * 0.1)),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.07) 0 calc(var(--w) * 0.05), transparent calc(var(--w) * 0.05) calc(var(--w) * 0.1)),
+    linear-gradient(160deg, #3b2a9e, #1a1452);
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.045) #fff,
+    inset 0 0 0 calc(var(--w) * 0.07) #ff5ea8,
+    0 calc(var(--w) * 0.05) calc(var(--w) * 0.12) rgba(5, 4, 20, 0.45);
+}
+
+.card__back-logo {
+  display: grid;
+  place-items: center;
+  width: calc(var(--w) * 0.56);
+  height: calc(var(--w) * 0.56);
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  color: #2a0d24;
+  font-size: calc(var(--w) * 0.24);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  box-shadow:
+    0 0 0 calc(var(--w) * 0.03) #fff,
+    0 calc(var(--w) * 0.03) calc(var(--w) * 0.1) rgba(0, 0, 0, 0.45);
+}
+
+/* ---------------------------------------------------------------------------
+   Estados
+   --------------------------------------------------------------------------- */
+
+/* Lugar reservado enquanto a carta "voa" até ele */
+.card.is-ghost {
+  visibility: hidden;
+}
+
+.card.is-new {
+  animation: card-land 420ms var(--ease-spring);
+}
+
+.card.is-duplicate .card__front {
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.06) var(--danger),
+    0 0 0 3px rgba(255, 77, 109, 0.55),
+    0 0 24px rgba(255, 77, 109, 0.7);
+}
+
+.card.is-duplicate.is-new {
+  animation: card-shake 480ms var(--ease-in-out);
+}
+
+.card.is-pending .card__front {
+  animation: pulse-glow 1.1s ease-in-out infinite;
+}
+
+.card.is-dim {
+  filter: grayscale(0.85) brightness(0.6);
+}
