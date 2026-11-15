@@ -1,0 +1,140 @@
+/* ==========================================================================
+   Vira-7 — Design tokens
+   Cores, tipografia, espaçamentos, sombras e tempos de animação.
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Mesa e superfícies ---- */
+  --bg-0: #0b0a1f;
+  --bg-1: #141233;
+  --bg-2: #1d1a47;
+  --felt-1: #1b1f5c;
+  --felt-2: #0f1238;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-strong: rgba(255, 255, 255, 0.1);
+  --surface-solid: #221f52;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.24);
+
+  /* ---- Texto ---- */
+  --text: #f5f3ff;
+  --text-muted: #b8b4e0;
+  --text-dim: #8a86b8;
+  --text-on-light: #1a1840;
+
+  /* ---- Marca ---- */
+  --brand-1: #ff5ea8;
+  --brand-2: #ffb547;
+  --brand-3: #5ee7ff;
+  --brand-gradient: linear-gradient(135deg, #ff5ea8 0%, #ff8a5c 45%, #ffcf47 100%);
+  --rainbow: linear-gradient(90deg, #ff5e7e, #ffb547, #ffe45e, #5eff9b, #5ee7ff, #8a7bff, #ff5ec8);
+
+  /* ---- Estados ---- */
+  --success: #3ee08f;
+  --success-strong: #16b86a;
+  --danger: #ff4d6d;
+  --danger-strong: #d61f45;
+  --warning: #ffc53d;
+  --ice: #7fd8ff;
+  --ice-strong: #2fb4f5;
+  --magic: #c77dff;
+  --gold: #ffd166;
+
+  /* ---- Cores das cartas numéricas (0 a 12) ---- */
+  --n0: #8f9bb3;
+  --n1: #ff5e7e;
+  --n2: #ff7a45;
+  --n3: #ffa62b;
+  --n4: #f2c12e;
+  --n5: #9ad334;
+  --n6: #2fc76a;
+  --n7: #12c2a6;
+  --n8: #1fb6e0;
+  --n9: #3d8bff;
+  --n10: #6c6cff;
+  --n11: #9b5cff;
+  --n12: #e05cf0;
+
+  /* ---- Cartas especiais ---- */
+  --mod-1: #ffd166;
+  --mod-2: #ff9f43;
+  --x2-1: #ff7a59;
+  --x2-2: #ff4fa3;
+  --freeze-1: #9be7ff;
+  --freeze-2: #2f9bf5;
+  --flip3-1: #c77dff;
+  --flip3-2: #ff4fa3;
+  --chance-1: #5ef2b0;
+  --chance-2: #12b5a5;
+
+  /* ---- Cores dos jogadores ---- */
+  --p1: #ff5e7e;
+  --p2: #3d8bff;
+  --p3: #2fc76a;
+  --p4: #ffa62b;
+  --p5: #9b5cff;
+  --p6: #12c2a6;
+  --p7: #e05cf0;
+  --p8: #f2c12e;
+
+  /* ---- Tipografia ---- */
+  --font-display: 'Fredoka', 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  --font-ui: 'Nunito', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.75rem;
+  --fs-2xl: 2.5rem;
+  --fs-hero: clamp(3rem, 9vw, 6.5rem);
+
+  /* ---- Espaçamento ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* ---- Formas ---- */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+
+  /* ---- Sombras ---- */
+  --shadow-sm: 0 2px 6px rgba(5, 4, 20, 0.35);
+  --shadow-md: 0 10px 24px rgba(5, 4, 20, 0.45);
+  --shadow-lg: 0 24px 60px rgba(5, 4, 20, 0.6);
+  --glow-brand: 0 0 0 2px rgba(255, 94, 168, 0.5), 0 0 32px rgba(255, 94, 168, 0.45);
+
+  /* ---- Cartas ---- */
+  --card-w: 64px;
+  --card-ratio: 1.4;
+  --card-radius: 12%;
+
+  /* ---- Movimento ---- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 160ms;
+  --dur-med: 320ms;
+  --dur-slow: 600ms;
+
+  /* ---- Camadas ---- */
+  --z-seat-active: 5;
+  --z-dock: 20;
+  --z-topbar: 25;
+  --z-fly: 60;
+  --z-banner: 70;
+  --z-modal: 80;
+  --z-toast: 90;
+  --z-fx: 95;
+
+  --topbar-h: 64px;
+  --dock-h: 148px;
+}
