@@ -1,0 +1,260 @@
+/* ==========================================================================
+   Vira-7 — Responsividade (tablets e celulares)
+   ========================================================================== */
+
+/* ---- Telas largas: mais espaço para as cartas ---- */
+@media (min-width: 1500px) {
+  .seats {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+
+  .seat {
+    --card-w: 52px;
+  }
+}
+
+/* ---- Tablets ---- */
+@media (max-width: 980px) {
+  .dock {
+    gap: var(--space-3);
+    padding-inline: var(--space-4);
+  }
+
+  .dock__center {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .turn {
+    gap: var(--space-4);
+  }
+
+  .actions .btn {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .topbar__info .chip--deck {
+    display: none;
+  }
+}
+
+/* ---- Celulares ---- */
+@media (max-width: 640px) {
+  :root {
+    --topbar-h: 56px;
+  }
+
+  .topbar {
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+  }
+
+  .topbar .logo {
+    font-size: 1.5rem;
+  }
+
+  .topbar .logo__word {
+    display: none;
+  }
+
+  .topbar__info {
+    margin-left: 0;
+  }
+
+  .topbar__actions {
+    gap: 6px;
+  }
+
+  .topbar__info .chip {
+    height: 30px;
+    padding: 0 10px;
+  }
+
+  .topbar__info .chip--target {
+    display: none;
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+  }
+
+  .table {
+    padding: var(--space-3);
+  }
+
+  .seats {
+    gap: var(--space-3);
+  }
+
+  .seat {
+    --card-w: 40px;
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+
+  .seat__total b {
+    font-size: 1.5rem;
+  }
+
+  .seat__row--extras {
+    --card-w: 30px;
+  }
+
+  .pip {
+    width: 10px;
+    height: 10px;
+  }
+
+  .dock {
+    grid-template-columns: auto 1fr auto;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom));
+  }
+
+  .pile {
+    --card-w: 44px;
+  }
+
+  .pile__label {
+    display: none;
+  }
+
+  .turn {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .turn__who .avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .turn__name {
+    font-size: var(--fs-lg);
+  }
+
+  .risk__head strong {
+    font-size: var(--fs-lg);
+  }
+
+  .risk__hint {
+    display: none;
+  }
+
+  .actions .btn {
+    min-height: 52px;
+    padding: 0 var(--space-3);
+    font-size: var(--fs-md);
+  }
+
+  .actions .kbd {
+    display: none;
+  }
+
+  .dock__prompt {
+    font-size: var(--fs-sm);
+  }
+
+  .setup__panel {
+    padding: var(--space-4);
+  }
+
+  .player-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .player-row .segmented {
+    grid-column: 2 / 3;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .player-row .icon-btn {
+    grid-row: 1;
+    grid-column: 3;
+  }
+
+  .setup__actions {
+    flex-direction: column-reverse;
+  }
+
+  .setup__actions .btn {
+    width: 100%;
+  }
+
+  .modal {
+    padding: var(--space-2);
+    align-items: end;
+  }
+
+  .modal__dialog {
+    max-height: calc(100dvh - 16px);
+    border-radius: var(--radius-lg);
+  }
+
+  .modal__head,
+  .modal__body {
+    padding-inline: var(--space-4);
+  }
+
+  .modal__foot {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .modal__foot .btn {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .summary-row {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+  }
+
+  .summary-row .avatar {
+    display: none;
+  }
+
+  .podium__step {
+    width: 90px;
+  }
+
+  .banner {
+    padding: 14px 24px 18px;
+    max-width: calc(100vw - 24px);
+    white-space: normal;
+  }
+}
+
+/* ---- Celulares bem estreitos ---- */
+@media (max-width: 380px) {
+  .seat {
+    --card-w: 36px;
+  }
+
+  .actions {
+    gap: var(--space-2);
+  }
+}
+
+/* ---- Telas baixas (paisagem no celular) ---- */
+@media (max-height: 560px) and (min-width: 641px) {
+  :root {
+    --topbar-h: 52px;
+  }
+
+  .dock {
+    padding-block: var(--space-2);
+  }
+
+  .pile {
+    --card-w: 44px;
+  }
+
+  .actions .btn {
+    min-height: 48px;
+  }
+}
