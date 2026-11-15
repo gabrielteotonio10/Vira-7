@@ -1,0 +1,22 @@
+# Dependências e saídas de build
+node_modules/
+dist/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores e ferramentas locais
+.vscode/
+.idea/
+.claude/
+*.swp
+
+
+ROTEIRO-GIT.md

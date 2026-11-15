@@ -1,0 +1,13 @@
+{
+  "name": "vira-7",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jogo de cartas de risco e estratégia para jogar na mesma tela, baseado nas regras do Flip 7.",
+  "scripts": {
+    "start": "node scripts/serve.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
