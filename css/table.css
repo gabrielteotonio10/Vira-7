@@ -1,0 +1,461 @@
+/* ==========================================================================
+   Vira-7 — Mesa: lugares dos jogadores, fileiras de cartas e estados
+   ========================================================================== */
+
+.seats {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+  width: 100%;
+  max-width: 1400px;
+  /* Margens automáticas centralizam a mesa sem cortar o conteúdo quando ela rola */
+  margin: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Lugar do jogador
+   --------------------------------------------------------------------------- */
+.seat {
+  --player-color: var(--p1);
+  --card-w: 46px;
+  position: relative;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--player-color) 14%, transparent), transparent 55%),
+    rgba(10, 9, 30, 0.55);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  transition:
+    transform var(--dur-med) var(--ease-out),
+    box-shadow var(--dur-med) var(--ease-out),
+    opacity var(--dur-med),
+    filter var(--dur-med);
+  animation: pop-in 420ms var(--ease-spring) both;
+  animation-delay: calc(var(--seat-index, 0) * 60ms);
+}
+
+/* Borda animada do jogador da vez */
+.seat::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  padding: 2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--player-color), #fff, var(--player-color), #fff, var(--player-color));
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0;
+  transition: opacity var(--dur-med);
+  pointer-events: none;
+}
+
+.seat.is-turn {
+  z-index: var(--z-seat-active);
+  transform: translateY(-3px) scale(1.015);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--player-color) 60%, transparent),
+    0 0 40px color-mix(in srgb, var(--player-color) 45%, transparent),
+    var(--shadow-lg);
+}
+
+.seat.is-turn::before {
+  opacity: 1;
+  animation: active-ring 2.2s linear infinite;
+}
+
+/* ---- Cabeçalho ---- */
+.seat__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.seat .avatar {
+  --avatar-color: var(--player-color);
+}
+
+.seat__who {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.seat__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.seat__name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat__status {
+  justify-self: start;
+}
+
+.dealer-chip {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--text-on-light);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--gold), var(--shadow-sm);
+}
+
+.seat__score {
+  display: grid;
+  justify-items: end;
+  line-height: 1;
+}
+
+.seat__total {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-family: var(--font-display);
+}
+
+.seat__total b {
+  font-size: 1.9rem;
+  font-weight: 700;
+}
+
+.seat__total small {
+  color: var(--text-dim);
+  font-weight: 800;
+  font-size: var(--fs-xs);
+}
+
+.seat__round {
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--player-color) 25%, transparent);
+  color: #fff;
+  font-weight: 900;
+  font-size: var(--fs-sm);
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+
+.seat__round.is-bumped {
+  animation: seat-pop 360ms var(--ease-spring);
+}
+
+/* ---- Progresso: 7 números e meta ---- */
+.seat__progress {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pips {
+  display: flex;
+  gap: 4px;
+}
+
+.pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  transition: background var(--dur-med);
+}
+
+.pip.is-on {
+  background: var(--pip-color, var(--player-color));
+  box-shadow:
+    0 0 8px var(--pip-color, var(--player-color)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  animation: pip-fill 380ms var(--ease-spring);
+}
+
+.seat__meter {
+  position: relative;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.seat__meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--player-color) 60%, #fff), var(--player-color));
+  transition: width 900ms var(--ease-out);
+}
+
+.seat__meter-preview {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--player-color) 55%, transparent) 0 4px,
+    transparent 4px 8px
+  );
+  transition: width 500ms var(--ease-out);
+}
+
+/* ---- Cartas ---- */
+.seat__cards {
+  display: grid;
+  gap: var(--space-2);
+  min-height: calc(var(--card-w) * var(--card-ratio) + 8px);
+}
+
+.seat__row {
+  display: flex;
+  align-items: center;
+  min-height: calc(var(--card-w) * var(--card-ratio));
+  padding-left: 2px;
+}
+
+.seat__row .card + .card {
+  margin-left: calc(var(--card-w) * -0.22);
+}
+
+.seat__row .card {
+  /* O tamanho da carta acompanha o lugar (muda no celular) */
+  --w: var(--card-w);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.seat__row .card:hover {
+  transform: translateY(-6px);
+  z-index: 2;
+}
+
+.seat__row--extras {
+  --card-w: 34px;
+  gap: 4px;
+  min-height: calc(34px * var(--card-ratio));
+}
+
+.seat__row--extras .card + .card {
+  margin-left: 0;
+}
+
+.seat__row--extras:empty {
+  display: none;
+}
+
+.seat__empty {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-style: italic;
+}
+
+/* Escudo da Segunda Chance */
+.seat__row .card--secondChance.is-held {
+  animation: shield-pulse 1.8s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* ---------------------------------------------------------------------------
+   Estados
+   --------------------------------------------------------------------------- */
+
+/* Camada sobre o lugar (carimbos, gelo, contador do Vira Três) */
+.seat__overlays {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.seat.is-shaking {
+  animation: seat-shake 560ms var(--ease-in-out);
+}
+
+.seat[data-status='stayed'] {
+  border-color: rgba(62, 224, 143, 0.35);
+}
+
+.seat[data-status='busted'] .seat__row .card {
+  filter: grayscale(0.9) brightness(0.55);
+}
+
+.seat[data-status='busted'] .seat__row .card.is-duplicate {
+  filter: none;
+}
+
+.seat[data-status='busted'] {
+  background:
+    linear-gradient(180deg, rgba(255, 77, 109, 0.16), transparent 60%),
+    rgba(10, 9, 30, 0.55);
+  border-color: rgba(255, 77, 109, 0.35);
+}
+
+.seat__stamp {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  z-index: 3;
+  padding: 6px 18px;
+  border: 4px solid currentColor;
+  border-radius: 12px;
+  color: var(--danger);
+  background: rgba(20, 5, 15, 0.7);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  animation: stamp-in 520ms var(--ease-spring) both;
+}
+
+.seat__stamp--stayed {
+  color: var(--success);
+  font-size: 1.15rem;
+  background: rgba(5, 25, 15, 0.72);
+}
+
+.seat__stamp--flip7 {
+  color: #fff;
+  border-color: transparent;
+  background: var(--rainbow);
+  background-size: 200% 100%;
+  animation:
+    stamp-in 520ms var(--ease-spring) both,
+    rainbow-slide 2s linear infinite;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Gelo do Congelar */
+.seat__frost {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(220, 245, 255, 0.35), rgba(127, 216, 255, 0.12) 40%, rgba(220, 245, 255, 0.3)),
+    repeating-linear-gradient(60deg, rgba(255, 255, 255, 0.12) 0 2px, transparent 2px 22px),
+    repeating-linear-gradient(-60deg, rgba(255, 255, 255, 0.1) 0 2px, transparent 2px 26px);
+  box-shadow:
+    inset 0 0 0 2px rgba(200, 240, 255, 0.7),
+    inset 0 0 40px rgba(127, 216, 255, 0.6);
+  backdrop-filter: blur(1.5px) saturate(0.7);
+  -webkit-backdrop-filter: blur(1.5px) saturate(0.7);
+  pointer-events: none;
+  animation: frost-in 600ms var(--ease-out) both;
+}
+
+.seat__frost::after {
+  content: '❄';
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 1.6rem;
+  color: #fff;
+  text-shadow: 0 0 12px var(--ice-strong);
+}
+
+.seat[data-flip7='true'] {
+  border-color: transparent;
+  box-shadow:
+    0 0 0 3px transparent,
+    0 0 50px rgba(255, 228, 94, 0.45),
+    var(--shadow-lg);
+}
+
+.seat[data-flip7='true']::before {
+  opacity: 1;
+  background: var(--rainbow);
+  background-size: 200% 100%;
+  animation: active-ring 1.6s linear infinite;
+}
+
+/* CPU pensando */
+.seat__thinking {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 4px;
+}
+
+.seat__thinking i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: dots 1.2s infinite;
+}
+
+.seat__thinking i:nth-child(2) { animation-delay: 0.2s; }
+.seat__thinking i:nth-child(3) { animation-delay: 0.4s; }
+
+/* ---- Seleção de alvo ---- */
+.seats.is-targeting .seat {
+  opacity: 0.4;
+  filter: saturate(0.5);
+}
+
+.seats.is-targeting .seat.is-targetable {
+  opacity: 1;
+  filter: none;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 3px var(--target-color, var(--brand-3)),
+    0 0 36px color-mix(in srgb, var(--target-color, var(--brand-3)) 55%, transparent),
+    var(--shadow-lg);
+  animation: seat-pop 1.4s ease-in-out infinite;
+}
+
+.seats.is-targeting .seat.is-targetable:hover,
+.seats.is-targeting .seat.is-targetable:focus-visible {
+  transform: translateY(-6px) scale(1.03);
+  animation: none;
+}
+
+.seat__target-label {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--target-color, var(--brand-3));
+  color: #0b0a1f;
+  font-size: var(--fs-xs);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+}
+
+.seat.is-chosen {
+  animation: seat-pop 420ms var(--ease-spring);
+}
