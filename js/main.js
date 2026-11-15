@@ -12,7 +12,6 @@
   const table = new F7.TableView({
     seatsEl: qs('#seats'),
     deckEl: qs('#deck-pile'),
-    discardEl: qs('#discard-pile'),
   });
   const hud = new F7.Hud(gameScreen);
   const controller = new F7.GameController({ table, hud });

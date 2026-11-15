@@ -1,8 +1,8 @@
 /* ==========================================================================
-   Vira-7 — HUD: montes, jogador da vez, medidor de risco, botões, avisos
+   Vira-7 — HUD: monte, jogador da vez, medidor de risco, botões, avisos
    ========================================================================== */
 
-/* ---- Montes de compra e descarte ---- */
+/* ---- Monte de compra ---- */
 .pile {
   --card-w: 64px;
   position: relative;
@@ -35,15 +35,14 @@
   animation: none;
 }
 
-.pile--discard .pile__stack {
-  border-radius: 10px;
-  outline: 2px dashed rgba(255, 255, 255, 0.15);
-  outline-offset: 2px;
+/* Embaralhando o monte (início de cada rodada) */
+.pile--deck.is-shuffling .pile__stack {
+  animation: none;
 }
 
-.pile--discard .pile__stack .card {
-  transform: rotate(var(--discard-tilt, -6deg));
-}
+.pile--deck.is-shuffling .pile__stack .card:nth-child(1) { animation: deck-riffle-a 1000ms var(--ease-in-out) 2; }
+.pile--deck.is-shuffling .pile__stack .card:nth-child(2) { animation: deck-riffle-b 1000ms var(--ease-in-out) 2; }
+.pile--deck.is-shuffling .pile__stack .card:nth-child(3) { animation: deck-riffle-top 1000ms var(--ease-in-out) 2; }
 
 .pile__count {
   position: absolute;

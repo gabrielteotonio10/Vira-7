@@ -145,17 +145,10 @@
       return this.landCard(card.id);
     }
 
-    /** Leva uma carta (a partir de um retângulo já medido) até o descarte. */
-    flyRectToDiscard(card, fromRect, delay = 0) {
-      const to = this.table.discardTopEl().getBoundingClientRect();
+    /** Carta que sai de jogo: encolhe e some no lugar onde estava (não há pilha de descarte). */
+    vanishCard(card, fromRect, delay = 0) {
       return F7.FX.wait(delay).then(() =>
-        F7.FX.flyCard({
-          cardEl: F7.CardView.create(card, { size: 'md' }),
-          from: fromRect,
-          to,
-          duration: 480,
-          lift: 1.05,
-        }),
+        F7.FX.vanish({ cardEl: F7.CardView.create(card, { size: 'sm' }), rect: fromRect }),
       );
     }
 
@@ -189,20 +182,24 @@
       await F7.FX.banner(`Rodada ${round}`, { sub: `${dealer.name} distribui as cartas`, variant: 'round', hold: 450 });
     }
 
-    async onReshuffle({ count }) {
-      const from = this.table.discardTopEl().getBoundingClientRect();
-      const to = this.table.deckTopEl().getBoundingClientRect();
-      F7.Sound.reshuffle();
-      const flights = Array.from({ length: Math.min(6, count) }, (_, i) =>
-        F7.FX.wait(i * 70).then(() =>
-          F7.FX.flyCard({ cardEl: F7.CardView.create(null, { size: 'md' }), from, to, duration: 420, lift: 1.1 }),
-        ),
-      );
-      await Promise.all(flights);
+    /**
+     * Reembaralhamento. No início de cada rodada (`newRound`) as 94 cartas voltam ao monte;
+     * no meio da rodada só acontece se o monte acabar.
+     */
+    async onReshuffle({ count, newRound }) {
       this.table.renderPiles();
-      this.hud.setDeckCount(this.game.deck.size);
-      this.hud.toast(`Monte vazio! ${count} cartas do descarte foram embaralhadas.`, { iconName: 'restart' });
-      this.hud.log(`Monte reembaralhado com ${count} cartas do descarte.`, 'var(--gold)');
+      this.hud.setDeckCount(count);
+      F7.Sound.reshuffle();
+      F7.FX.retrigger(this.table.deckEl, 'is-shuffling', 1100);
+      F7.FX.burstAt(this.table.deckTopEl(), { colors: ['#ffffff', '#ff5ea8', '#5ee7ff'], shape: 'star', count: 14, speed: 240, size: 4 });
+      await F7.FX.wait(900);
+
+      if (newRound) {
+        this.hud.log(`Todas as ${count} cartas foram reembaralhadas.`, 'var(--gold)');
+      } else {
+        this.hud.toast(`Monte vazio! As cartas já usadas foram reembaralhadas (${count}).`, { iconName: 'restart' });
+        this.hud.log(`Monte vazio: ${count} cartas já usadas foram reembaralhadas.`, 'var(--gold)');
+      }
     }
 
     async onTurnStart({ player }, game) {
@@ -282,11 +279,11 @@
       F7.FX.burstAt(scEl || seat, { colors: ['#5ef2b0', '#ffffff', '#12b5a5'], shape: 'shard', count: 24, speed: 360 });
       this.table.renderSeat(player);
 
-      const flights = [this.flyRectToDiscard(card, dupRect), this.flyRectToDiscard(secondChance, scRect, 120)];
+      const vanishes = [this.vanishCard(card, dupRect), this.vanishCard(secondChance, scRect, 120)];
       this.hud.toast(`A Segunda Chance salvou ${who(player)}!`, { variant: 'chance', iconName: 'shield' });
       this.hud.log(`${who(player)} usou a <b>Segunda Chance</b> e descartou o ${card.value} repetido`, '#5ef2b0');
       await Promise.all([
-        ...flights,
+        ...vanishes,
         F7.FX.banner('Salvo!', { sub: `A Segunda Chance protegeu ${player.name}`, variant: 'chance', hold: 350 }),
       ]);
       this.table.renderPiles();
@@ -311,8 +308,7 @@
       const el = this.table.cardEl(card.id);
       const rect = el ? el.getBoundingClientRect() : this.cardRectAt(this.table.seatEl(player));
       this.table.renderSeat(player);
-      await this.flyRectToDiscard(card, rect);
-      this.table.renderPiles();
+      await this.vanishCard(card, rect);
 
       const messages = {
         secondChance: `Ninguém pôde receber a Segunda Chance extra de ${who(player)}: descartada.`,
@@ -407,10 +403,11 @@
       });
     }
 
+    /** Fim da rodada: todas as cartas da mesa voltam voando para o monte. */
     async onRoundCleanup({ collected }) {
       const flights = [];
       let index = 0;
-      const discard = this.table.discardTopEl().getBoundingClientRect();
+      const deckRect = this.table.deckTopEl().getBoundingClientRect();
       collected.forEach(({ cards }) => {
         cards.forEach((card) => {
           const el = this.table.cardEl(card.id);
@@ -422,7 +419,7 @@
               F7.FX.flyCard({
                 cardEl: F7.CardView.create(card, { size: 'md' }),
                 from: rect,
-                to: discard,
+                to: deckRect,
                 duration: 420,
                 lift: 1.05,
               }),
@@ -434,7 +431,9 @@
       if (flights.length) F7.Sound.reshuffle();
       this.table.renderAll();
       await Promise.all(flights);
-      this.table.renderPiles();
+      // Tudo está de volta no monte; o embaralhamento acontece no início da próxima rodada.
+      this.table.renderPiles({ includeUsed: true });
+      this.hud.setDeckCount(this.game.deck.totalAvailable);
     }
 
     async onTieBreak({ leaders }) {

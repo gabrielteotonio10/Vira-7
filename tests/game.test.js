@@ -168,6 +168,41 @@ test('o carteador gira a cada rodada e o jogador à esquerda começa', async () 
   assert.deepEqual(starts, ['C', 'A']);
 });
 
+test('a cada nova rodada todas as 94 cartas voltam ao monte e são reembaralhadas', async () => {
+  const { game, agent } = setup(['A', 'B', 'C'], [], {});
+  game.deck = new F7.Deck({ rng: F7.utils.createRng(11) });
+
+  const snapshots = [];
+  const record = agent.onEvent;
+  agent.onEvent = async (type, payload) => {
+    if (type === 'reshuffle' && payload.newRound) {
+      snapshots.push({ drawn: game.deck.size, used: game.deck.discardPile.length, onTable: game.players.reduce((n, p) => n + p.cardCount(), 0), count: payload.count });
+    }
+    return record(type, payload);
+  };
+
+  await game.playRound();
+  assert.equal(snapshots.length, 0, 'a primeira rodada usa o baralho recém-embaralhado');
+  await game.playRound();
+  await game.playRound();
+
+  assert.equal(snapshots.length, 2);
+  snapshots.forEach((s) => {
+    assert.deepEqual(s, { drawn: 94, used: 0, onTable: 0, count: 94 });
+  });
+});
+
+test('a ordem das cartas muda no reembaralhamento de cada rodada', async () => {
+  const { game } = setup(['A', 'B'], [], {});
+  game.deck = new F7.Deck({ rng: F7.utils.createRng(5) });
+  await game.playRound();
+  const before = game.deck.discardPile.map((c) => c.id).concat(game.deck.drawPile.map((c) => c.id)).sort().join();
+  game.deck.reshuffle();
+  const ids = game.deck.drawPile.map((c) => c.id);
+  assert.equal(ids.slice().sort().join(), before, 'nenhuma carta se perde ou se repete');
+  assert.equal(game.deck.discardPile.length, 0);
+});
+
 test('a probabilidade de estourar considera as cartas restantes', () => {
   const { game, A } = setup(['A', 'B'], [c.num(5), c.num(5), c.num(1), c.num(2)], {});
   A.numbers.push(c.num(5));

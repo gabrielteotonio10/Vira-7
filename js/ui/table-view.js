@@ -18,10 +18,9 @@
   };
 
   class TableView {
-    constructor({ seatsEl, deckEl, discardEl }) {
+    constructor({ seatsEl, deckEl }) {
       this.seatsEl = seatsEl;
       this.deckEl = deckEl;
-      this.discardEl = discardEl;
       this.game = null;
       this.seats = new Map();
       this.targeting = null;
@@ -119,10 +118,6 @@
 
     deckTopEl() {
       return qs('.pile__stack .card:last-child', this.deckEl) || qs('.pile__stack', this.deckEl);
-    }
-
-    discardTopEl() {
-      return qs('.pile__stack', this.discardEl);
     }
 
     /** Garante que o lugar esteja visível antes de medir posições. */
@@ -294,26 +289,20 @@
       this.renderSeat(player);
     }
 
-    renderPiles() {
+    /**
+     * Redesenha o monte. Com `includeUsed`, conta também as cartas já usadas
+     * (é o que acontece quando a rodada acaba e tudo volta para o monte).
+     */
+    renderPiles({ includeUsed = false } = {}) {
       const deck = this.game.deck;
+      const count = includeUsed ? deck.totalAvailable : deck.size;
 
       const deckStack = qs('.pile__stack', this.deckEl);
       clear(deckStack);
-      const layers = Math.min(3, deck.size);
+      const layers = Math.min(3, count);
       for (let i = 0; i < layers; i++) deckStack.appendChild(F7.CardView.create(null, { size: 'md' }));
-      qs('.pile__count', this.deckEl).textContent = String(deck.size);
-      this.deckEl.classList.toggle('is-empty', deck.size === 0);
-
-      const discardStack = qs('.pile__stack', this.discardEl);
-      clear(discardStack);
-      const top = deck.topDiscard();
-      if (top) {
-        const el = F7.CardView.create(top, { size: 'md' });
-        const tilt = ((top.id.charCodeAt(top.id.length - 1) % 7) - 3) * 3;
-        el.style.setProperty('--discard-tilt', `${tilt}deg`);
-        discardStack.appendChild(el);
-      }
-      qs('.pile__count', this.discardEl).textContent = String(deck.discardPile.length);
+      qs('.pile__count', this.deckEl).textContent = String(count);
+      this.deckEl.classList.toggle('is-empty', count === 0);
     }
 
     /* ------------------------------------------------------------------ */

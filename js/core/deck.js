@@ -1,5 +1,8 @@
 /**
- * Vira-7 — Baralho: criação das 94 cartas, compra, descarte e reembaralhamento.
+ * Vira-7 — Baralho: criação das 94 cartas, compra e reembaralhamento.
+ *
+ * `discardPile` é apenas a lista interna das cartas já usadas na rodada. O jogo não exibe
+ * uma pilha de descarte: ao começar cada rodada, tudo volta ao monte e é reembaralhado.
  */
 ((F7) => {
   'use strict';
@@ -64,19 +67,20 @@
       return this.drawPile.slice(-count).reverse();
     }
 
-    /** Envia uma ou mais cartas (ou listas de cartas) para o descarte. */
+    /** Marca uma ou mais cartas (ou listas) como usadas: saem de jogo até o próximo reembaralhamento. */
     discard(...items) {
       items.flat().filter(Boolean).forEach((card) => this.discardPile.push(card));
     }
 
-    topDiscard() {
-      return this.discardPile[this.discardPile.length - 1] || null;
+    /** Total de cartas no monte mais as já usadas (94 quando ninguém tem cartas na mesa). */
+    get totalAvailable() {
+      return this.drawPile.length + this.discardPile.length;
     }
 
     /**
-     * Devolve o descarte para o monte de compra e embaralha.
-     * Cartas que estão na mesa permanecem com os jogadores (regra oficial).
-     * @returns {number} quantidade de cartas reembaralhadas
+     * Junta as cartas usadas ao monte e embaralha tudo.
+     * Cartas que estão na mesa permanecem com os jogadores.
+     * @returns {number} quantidade de cartas usadas que voltaram ao monte
      */
     reshuffle() {
       const count = this.discardPile.length;

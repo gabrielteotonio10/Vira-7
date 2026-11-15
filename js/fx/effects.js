@@ -93,6 +93,34 @@
       .then(() => el.remove());
   }
 
+  /**
+   * Carta que sai de jogo: sobe um pouco, encolhe girando e some em uma nuvem de partículas.
+   * @param {{ cardEl: HTMLElement, rect: DOMRect, duration?: number }} options
+   */
+  function vanish({ cardEl, rect, duration = 520 }) {
+    const host = layer('fly-layer');
+    cardEl.style.setProperty('--w', `${rect.width}px`);
+    host.appendChild(cardEl);
+
+    const time = dur(duration);
+    const base = `translate(${rect.left}px, ${rect.top}px)`;
+    const spin = Math.random() < 0.5 ? -24 : 24;
+
+    const anim = cardEl.animate(
+      [
+        { transform: `${base} scale(1) rotate(0deg)`, opacity: 1 },
+        { transform: `${base} translateY(-14px) scale(1.12) rotate(${spin / 2}deg)`, opacity: 1, offset: 0.35 },
+        { transform: `${base} translateY(-30px) scale(0.1) rotate(${spin}deg)`, opacity: 0 },
+      ],
+      { duration: time, easing: 'cubic-bezier(0.4, 0, 0.8, 0.4)', fill: 'forwards' },
+    );
+
+    const { x, y } = center(rect);
+    setTimeout(() => burst(x, y, { colors: ['#ffffff', '#c9c4ff'], count: 8, speed: 160, size: 3, life: 0.5, gravity: 200 }), time * 0.6);
+
+    return anim.finished.catch(() => {}).then(() => cardEl.remove());
+  }
+
   /* ------------------------------------------------------------------ */
   /* Partículas                                                          */
   /* ------------------------------------------------------------------ */
@@ -400,6 +428,7 @@
     wait,
     setSpeed,
     flyCard,
+    vanish,
     burst,
     burstAt,
     confetti,

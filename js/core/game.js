@@ -10,8 +10,12 @@
  * O estado é sempre alterado ANTES de cada evento ser emitido, então a interface
  * pode simplesmente redesenhar a mesa a partir do estado e animar a diferença.
  *
+ * Não existe pilha de descarte visível: as cartas usadas ficam fora do monte até a rodada acabar,
+ * quando TODAS voltam e são reembaralhadas ('reshuffle' com `newRound: true`). Se o monte acabar
+ * no meio da rodada, as cartas já usadas são reembaralhadas ('reshuffle' sem `newRound`).
+ *
  * Eventos emitidos (em ordem típica):
- *   gameStart, roundStart, reshuffle, turnStart, cardDrawn, bust, secondChanceUsed,
+ *   gameStart, reshuffle, roundStart, turnStart, cardDrawn, bust, secondChanceUsed,
  *   secondChanceKept, secondChanceGiven, cardDiscarded, actionPlayed, freeze,
  *   flipThreeStart, flipThreeEnd, flip7, stay, turnEnd, roundEnd, roundCleanup,
  *   tieBreak, gameOver
@@ -189,6 +193,12 @@
       this.flip7Player = null;
       this.currentPlayer = null;
       this.players.forEach((p) => p.resetRound());
+
+      // Toda rodada começa com as 94 cartas de volta ao monte, embaralhadas.
+      if (this.round > 1) {
+        this.deck.reshuffle();
+        await this.emit('reshuffle', { count: this.deck.size, newRound: true });
+      }
 
       await this.emit('roundStart', { round: this.round, dealer: this.dealer });
 

@@ -6,7 +6,7 @@ O Vira-7 é uma versão digital fiel às regras originais do jogo de cartas **Fl
 
 ## Destaques
 
-- **Regras completas do Flip 7**: baralho oficial de 94 cartas, cartas de ação (Congelar, Vira Três, Segunda Chance), modificadores (+2 a +10 e ×2), bônus de 15 pontos do Vira 7, rodízio do carteador, reembaralhamento do descarte e desempate.
+- **Regras completas do Flip 7**: baralho oficial de 94 cartas, cartas de ação (Congelar, Vira Três, Segunda Chance), modificadores (+2 a +10 e ×2), bônus de 15 pontos do Vira 7, rodízio do carteador e desempate. Não há pilha de descarte: a cada rodada as 94 cartas voltam ao monte e são reembaralhadas.
 - **De 2 a 8 jogadores** na mesma tela, misturando pessoas e CPUs com personalidades diferentes.
 - **Medidor de risco em tempo real**: mostra a chance exata de estourar na próxima carta.
 - **Animações fluidas**: cartas voando e girando em 3D, partículas, confete, gelo, carimbos e anúncios.
@@ -20,7 +20,8 @@ O Vira-7 é uma versão digital fiel às regras originais do jogo de cartas **Fl
 2. Na sua vez, escolha **Virar** (comprar mais uma carta) ou **Parar** (guardar os pontos e sair da rodada).
 3. Tirou um número que já tem na mesa? Você **estoura** e marca 0 na rodada.
 4. A rodada termina quando todos param ou estouram — ou quando alguém junta **7 números diferentes** (Vira 7, +15 pontos).
-5. Quem passar de **200 pontos** ao fim de uma rodada com a maior pontuação vence. Empate na liderança gera uma rodada extra.
+5. Ao começar cada nova rodada, **todas as cartas voltam ao monte e são reembaralhadas** (não existe pilha de descarte). Se o monte acabar no meio da rodada, as cartas já usadas são reembaralhadas.
+6. Quem passar de **200 pontos** ao fim de uma rodada com a maior pontuação vence. Empate na liderança gera uma rodada extra.
 
 ### Cartas
 
@@ -88,7 +89,7 @@ Os testes cobrem a composição do baralho, a pontuação oficial, todas as cart
 │   ├── core/               # Regras puras (rodam no navegador e no Node)
 │   │   ├── constants.js    # Composição do baralho e regras numéricas
 │   │   ├── utils.js        # Embaralhamento, RNG com semente, utilidades
-│   │   ├── deck.js         # Baralho, compra, descarte e reembaralhamento
+│   │   ├── deck.js         # Baralho, compra e reembaralhamento
 │   │   ├── player.js       # Estado de cada jogador
 │   │   ├── scoring.js      # Pontuação e condição de vitória
 │   │   ├── game.js         # Motor assíncrono: rodadas, turnos e ações

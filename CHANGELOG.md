@@ -3,6 +3,16 @@
 Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.1.0] - 2026-11-15
+
+### Alterado
+
+- Removida a pilha de descarte: a mesa mostra apenas o monte de compra.
+- No início de cada nova rodada, todas as 94 cartas voltam ao monte e são reembaralhadas, com animação de embaralhar e contador voltando a 94.
+- Se o monte acabar no meio da rodada, as cartas já usadas são reembaralhadas no monte.
+- Cartas que saem de jogo (repetida e Segunda Chance usadas) agora encolhem e somem no próprio lugar, e as cartas da mesa voltam voando para o monte no fim da rodada.
+- Doca reorganizada para um único monte, também no celular.
+
 ## [1.0.0] - 2026-11-15
 
 ### Adicionado

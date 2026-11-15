@@ -149,7 +149,7 @@
           h('li', {}, 'Na sua vez, escolha VIRAR (comprar mais uma carta) ou PARAR (guardar seus pontos e sair da rodada).'),
           h('li', {}, 'Se virar um número que você já tem na mesa, você ESTOURA e marca 0 na rodada.'),
           h('li', {}, 'A rodada acaba quando todos param ou estouram — ou na hora em que alguém faz o VIRA 7.'),
-          h('li', {}, 'O carteador passa para o próximo jogador e uma nova rodada começa.'),
+          h('li', {}, 'O carteador passa para o próximo jogador, todas as cartas voltam ao monte para serem reembaralhadas e uma nova rodada começa.'),
         ),
       ),
       h(
