@@ -1,0 +1,203 @@
+/* ==========================================================================
+   Vira-7 — Tela inicial: apresentação, jogadores e opções da partida
+   ========================================================================== */
+
+.setup-screen {
+  display: grid;
+  place-items: center;
+  padding: var(--space-6) var(--space-4) var(--space-7);
+  overflow-x: hidden;
+}
+
+.setup {
+  display: grid;
+  gap: var(--space-6);
+  width: min(620px, 100%);
+}
+
+/* ---- Apresentação ---- */
+.setup__hero {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding-top: 168px;
+  text-align: center;
+}
+
+.logo--hero {
+  font-size: var(--fs-hero);
+  animation: pop-in 700ms var(--ease-spring) both;
+}
+
+.logo--hero .logo__seven {
+  animation: bob 3s ease-in-out infinite;
+}
+
+.setup__tagline {
+  max-width: 34ch;
+  color: var(--text-muted);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  animation: slide-up 600ms 150ms var(--ease-out) both;
+}
+
+/* Leque de cartas flutuando atrás do logo */
+.hero-cards {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 150px;
+  pointer-events: none;
+}
+
+.hero-cards .card {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  --w: 74px;
+  transform-origin: 50% 160%;
+  transform: translateX(-50%) rotate(var(--angle)) translateY(0);
+  animation: hero-card-in 800ms var(--ease-spring) both, hero-card-float 4s ease-in-out infinite;
+  animation-delay: var(--delay), calc(var(--delay) + 800ms);
+}
+
+@keyframes hero-card-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) rotate(0deg) translateY(80px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) rotate(var(--angle)) translateY(0);
+  }
+}
+
+@keyframes hero-card-float {
+  0%, 100% { transform: translateX(-50%) rotate(var(--angle)) translateY(0); }
+  50% { transform: translateX(-50%) rotate(var(--angle)) translateY(-10px); }
+}
+
+/* ---- Painel de configuração ---- */
+.setup__panel {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  animation: slide-up 600ms 250ms var(--ease-out) both;
+}
+
+.setup__section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.setup__section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.setup__section-head h2 {
+  font-size: var(--fs-xl);
+}
+
+.setup__count {
+  color: var(--text-dim);
+  font-weight: 800;
+}
+
+.player-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.player-row {
+  --player-color: var(--p1);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--player-color);
+  animation: slide-up 300ms var(--ease-out) both;
+}
+
+.player-row.is-leaving {
+  animation: toast-out 220ms var(--ease-in-out) forwards;
+}
+
+.player-row .avatar {
+  --avatar-color: var(--player-color);
+  border: 0;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+
+.player-row .avatar:hover {
+  transform: scale(1.1) rotate(-6deg);
+}
+
+.segmented--sm button {
+  min-height: 30px;
+  padding: 0 var(--space-3);
+  font-size: var(--fs-xs);
+}
+
+.setup__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.option {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.option__label {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.option .segmented {
+  width: 100%;
+}
+
+.option .segmented button {
+  flex: 1;
+}
+
+.setup__actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.setup__actions .btn--primary {
+  flex: 1;
+  min-width: 220px;
+}
+
+.setup__hint {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
+.setup__error {
+  color: var(--danger);
+  font-weight: 800;
+  font-size: var(--fs-sm);
+  text-align: center;
+}
