@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Vira-7: jogo de cartas de risco e estratégia para jogar com amigos e família na mesma tela. Baseado nas regras do Flip 7." />
+    <meta name="theme-color" content="#0b0a1f" />
+    <title>Vira-7 · Jogo de cartas</title>
+
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap"
+    />
+
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/cards.css" />
+    <link rel="stylesheet" href="css/animations.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/setup.css" />
+    <link rel="stylesheet" href="css/table.css" />
+    <link rel="stylesheet" href="css/hud.css" />
+    <link rel="stylesheet" href="css/modals.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  </head>
+
+  <body>
+    <div class="app" id="app">
+      <!-- ============================================================
+           Tela inicial
+           ============================================================ -->
+      <section class="screen setup-screen" id="setup-screen" aria-labelledby="setup-title">
+        <div class="setup">
+          <header class="setup__hero">
+            <div class="hero-cards" id="hero-cards" aria-hidden="true"></div>
+            <h1 class="logo logo--hero" id="setup-title">
+              <span class="logo__word">VIRA</span><span class="logo__seven">7</span>
+            </h1>
+            <p class="setup__tagline">Vire cartas, acumule pontos… e pare antes de repetir um número!</p>
+          </header>
+
+          <div class="setup__panel panel">
+            <section class="setup__section" aria-labelledby="players-title">
+              <div class="setup__section-head">
+                <h2 id="players-title">Jogadores</h2>
+                <span class="setup__count" id="player-count">4/8</span>
+              </div>
+              <ul class="player-list" id="player-list"></ul>
+              <button type="button" class="btn btn--ghost btn--block" id="add-player" data-icon="plus">
+                Adicionar jogador
+              </button>
+            </section>
+
+            <div class="setup__options">
+              <div class="option">
+                <span class="option__label" id="target-label">Meta de pontos</span>
+                <div class="segmented" id="target-options" role="radiogroup" aria-labelledby="target-label">
+                  <button type="button" role="radio" data-value="100">100</button>
+                  <button type="button" role="radio" data-value="200">200</button>
+                  <button type="button" role="radio" data-value="300">300</button>
+                </div>
+              </div>
+              <div class="option">
+                <span class="option__label" id="speed-label">Velocidade</span>
+                <div class="segmented" id="speed-options" role="radiogroup" aria-labelledby="speed-label">
+                  <button type="button" role="radio" data-value="1">Normal</button>
+                  <button type="button" role="radio" data-value="1.6">Rápida</button>
+                  <button type="button" role="radio" data-value="2.4">Turbo</button>
+                </div>
+              </div>
+            </div>
+
+            <p class="setup__error" id="setup-error" role="alert" hidden></p>
+
+            <div class="setup__actions">
+              <button type="button" class="btn btn--ghost btn--lg" id="open-rules-setup" data-icon="help">
+                Como jogar
+              </button>
+              <button type="button" class="btn btn--primary btn--lg" id="start-game" data-icon="play">
+                Começar partida
+              </button>
+            </div>
+          </div>
+
+          <p class="setup__hint">De 2 a 8 jogadores · pessoas e CPUs podem jogar juntas na mesma tela</p>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           Tela de jogo
+           ============================================================ -->
+      <section class="screen game-screen" id="game-screen" aria-label="Mesa de jogo" hidden>
+        <header class="topbar">
+          <div class="logo" aria-label="Vira-7">
+            <span class="logo__word">VIRA</span><span class="logo__seven">7</span>
+          </div>
+
+          <div class="topbar__info">
+            <span class="chip" title="Rodada atual">Rodada <strong id="hud-round">1</strong></span>
+            <span class="chip chip--target" title="Pontos para vencer">Meta <strong id="hud-target">200</strong></span>
+            <span class="chip chip--deck" title="Cartas no monte">Monte <strong id="hud-deck">94</strong></span>
+          </div>
+
+          <div class="topbar__spacer"></div>
+
+          <div class="topbar__actions">
+            <button type="button" class="icon-btn" id="btn-log" aria-label="Histórico de jogadas" title="Histórico" data-icon="history"></button>
+            <button type="button" class="icon-btn" id="btn-rules" aria-label="Como jogar" title="Como jogar" data-icon="help"></button>
+            <button type="button" class="icon-btn" id="btn-sound" aria-pressed="true" aria-label="Desligar som" title="Som ligado"></button>
+            <button type="button" class="icon-btn" id="btn-restart" aria-label="Reiniciar partida" title="Reiniciar" data-icon="restart"></button>
+            <button type="button" class="icon-btn" id="btn-menu" aria-label="Voltar ao menu" title="Menu" data-icon="home"></button>
+          </div>
+        </header>
+
+        <main class="table" id="table">
+          <div class="seats" id="seats"></div>
+        </main>
+
+        <footer class="dock" id="dock">
+          <div class="pile pile--deck" id="deck-pile" title="Monte de compra">
+            <div class="pile__stack"></div>
+            <span class="pile__count">94</span>
+            <span class="pile__label">Monte</span>
+          </div>
+
+          <div class="dock__center">
+            <div class="turn">
+              <div class="turn__who">
+                <div class="avatar avatar--lg" id="turn-avatar">·</div>
+                <div>
+                  <div class="turn__label" id="turn-label">Aguarde</div>
+                  <div class="turn__name" id="turn-name" aria-live="polite">—</div>
+                </div>
+              </div>
+
+              <div class="risk is-hidden" id="risk">
+                <div class="risk__head">
+                  <span>Risco de estourar</span>
+                  <strong id="risk-value">0%</strong>
+                </div>
+                <div class="risk__bar" role="presentation"><div class="risk__fill"></div></div>
+                <div class="risk__hint" id="risk-hint"></div>
+              </div>
+            </div>
+
+            <div class="actions is-waiting" id="actions">
+              <button type="button" class="btn btn--success btn--lg action-hit" id="btn-hit" data-icon="flip" disabled>
+                Virar <span class="kbd" aria-hidden="true">V</span>
+              </button>
+              <button type="button" class="btn btn--danger btn--lg action-stay" id="btn-stay" data-icon="hand" disabled>
+                Parar <span class="kbd" aria-hidden="true">P</span>
+              </button>
+            </div>
+
+            <div class="dock__prompt" id="dock-prompt" role="status" hidden></div>
+          </div>
+
+          <div class="pile pile--discard" id="discard-pile" title="Descarte">
+            <div class="pile__stack"></div>
+            <span class="pile__count">0</span>
+            <span class="pile__label">Descarte</span>
+          </div>
+        </footer>
+      </section>
+
+      <!-- Histórico de jogadas -->
+      <aside class="log-drawer" id="log-drawer" aria-label="Histórico de jogadas" aria-hidden="true">
+        <div class="log-drawer__head">
+          <h2>Histórico</h2>
+          <button type="button" class="icon-btn" id="btn-close-log" aria-label="Fechar histórico" data-icon="close"></button>
+        </div>
+        <ol class="log" id="log" aria-live="off"></ol>
+      </aside>
+
+      <!-- Avisos rápidos -->
+      <div class="toasts" id="toasts" aria-live="polite"></div>
+    </div>
+
+    <noscript>
+      <p style="padding: 24px; text-align: center">O Vira-7 precisa de JavaScript para funcionar.</p>
+    </noscript>
+
+    <!-- Núcleo (regras do jogo, sem DOM) -->
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/core/deck.js"></script>
+    <script src="js/core/player.js"></script>
+    <script src="js/core/scoring.js"></script>
+    <script src="js/core/game.js"></script>
+    <script src="js/core/ai.js"></script>
+
+    <!-- Efeitos visuais e sonoros -->
+    <script src="js/fx/effects.js"></script>
+    <script src="js/fx/sound.js"></script>
+
+    <!-- Interface -->
+    <script src="js/ui/dom.js"></script>
+    <script src="js/ui/icons.js"></script>
+    <script src="js/ui/storage.js"></script>
+    <script src="js/ui/card-view.js"></script>
+    <script src="js/ui/setup-screen.js"></script>
+    <script src="js/ui/table-view.js"></script>
+    <script src="js/ui/hud.js"></script>
+    <script src="js/ui/modals.js"></script>
+    <script src="js/ui/game-controller.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
