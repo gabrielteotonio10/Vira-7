@@ -20,3 +20,13 @@ desktop.ini
 
 
 ROTEIRO-GIT.md
+# Backend Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Credenciais: nunca versionar
+.env
+.env.*
+!.env.example
