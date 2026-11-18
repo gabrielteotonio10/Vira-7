@@ -38,6 +38,12 @@
       if (this.enabled) this.unlock();
     }
 
+    /** Volume geral, de 0 a 1. */
+    setVolume(volume) {
+      this.volume = Math.min(1, Math.max(0, Number(volume) || 0));
+      if (this.master) this.master.gain.value = this.volume;
+    }
+
     get ready() {
       return this.enabled && this.ctx && this.ctx.state === 'running';
     }
