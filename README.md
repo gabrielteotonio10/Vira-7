@@ -104,6 +104,10 @@ O `.env` está no `.gitignore`. A chave `service_role` e o segredo do JWT nunca 
 
 Se `SUPABASE_URL` estiver vazio, a API sobe em **modo de desenvolvimento local**: mesma API e mesmas regras, mas com banco em memória e login local (os dados somem ao reiniciar; não há e-mail de recuperação). Cada aba do navegador vira um jogador, o que facilita testar uma partida sozinho. Esse modo é recusado com `APP_ENV=production`.
 
+### Hospedar de graça
+
+O jeito mais simples e que não expira é o **Render** (API e página no mesmo endereço) com o Supabase que você já tem. O arquivo [`render.yaml`](render.yaml) descreve o serviço; o passo a passo está em [`docs/HOSPEDAGEM.md`](docs/HOSPEDAGEM.md).
+
 ### Frontend em outro domínio
 
 Por padrão o frontend é servido pela própria API. Para hospedá-lo separado, publique `index.html`, `css/`, `js/` e `assets/`, aponte `apiUrl` em [`js/config.js`](js/config.js) para o backend e libere a origem em `CORS_ORIGINS`.
@@ -148,6 +152,8 @@ npm run test:api       # motor Python, API, autenticação, limite de requisiç�
 │   ├── migrations/           # SQL: tabelas, índices, funções, triggers, RLS, Realtime
 │   └── tests/                # Testes das migrations
 ├── docs/ARQUITETURA.md       # Como tudo se encaixa
+├── docs/HOSPEDAGEM.md        # Hospedagem gratuita no Render
+├── render.yaml               # Blueprint do Render
 └── tests/                    # Testes do motor JS
 ```
 
