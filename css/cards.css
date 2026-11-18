@@ -1,13 +1,17 @@
 /* ==========================================================================
-   Vira-7 — Cartas: números, modificadores, ações e verso
-   Todas as medidas internas derivam de --card-w, então a carta escala inteira.
+   Vira-7 — Cartas
+   Cor chapada, número grande com contorno de tinta e sombra dura.
+   Todas as medidas derivam de --w, então a carta escala inteira.
    ========================================================================== */
 
 .card {
   --card-color: var(--n0);
-  --card-color-2: color-mix(in srgb, var(--card-color) 70%, #000);
   --w: var(--card-w);
   --h: calc(var(--w) * var(--card-ratio));
+  /* Traço de tinta proporcional ao tamanho da carta */
+  --bw: max(1.5px, calc(var(--w) * 0.038));
+  /* Contorno do número */
+  --o: max(1px, calc(var(--w) * 0.028));
   position: relative;
   flex: none;
   width: var(--w);
@@ -37,7 +41,9 @@
 .card__face {
   position: absolute;
   inset: 0;
-  border-radius: calc(var(--w) * 0.12);
+  border: var(--bw) solid var(--ink);
+  border-radius: calc(var(--w) * 0.15);
+  box-shadow: 0 max(2px, calc(var(--w) * 0.045)) 0 var(--ink);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   overflow: hidden;
@@ -49,27 +55,17 @@
 .card__front {
   display: grid;
   place-items: center;
-  background:
-    repeating-linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--card-color) 9%, transparent) 0 calc(var(--w) * 0.06),
-      transparent calc(var(--w) * 0.06) calc(var(--w) * 0.12)
-    ),
-    linear-gradient(160deg, #ffffff 0%, #f1efff 100%);
-  box-shadow:
-    inset 0 0 0 calc(var(--w) * 0.04) var(--card-color),
-    inset 0 0 0 calc(var(--w) * 0.065) #fff,
-    0 calc(var(--w) * 0.05) calc(var(--w) * 0.12) rgba(5, 4, 20, 0.45);
-  color: var(--card-color-2);
+  background: var(--card-color);
+  color: #fff;
 }
 
+/* Moldura clara por dentro, como em carta impressa */
 .card__front::after {
-  /* Reflexo de "cartão plastificado" */
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(125deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 38%);
-  mix-blend-mode: soft-light;
+  inset: calc(var(--w) * 0.07);
+  border: max(1px, calc(var(--w) * 0.025)) solid rgba(255, 255, 255, 0.5);
+  border-radius: calc(var(--w) * 0.09);
   pointer-events: none;
 }
 
@@ -77,44 +73,38 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: calc(var(--w) * 0.7);
-  height: calc(var(--w) * 0.7);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.55), transparent 42%),
-    radial-gradient(circle at 50% 60%, var(--card-color), var(--card-color-2));
-  box-shadow:
-    0 calc(var(--w) * 0.03) 0 color-mix(in srgb, var(--card-color) 50%, #000),
-    inset 0 calc(var(--w) * -0.03) calc(var(--w) * 0.05) rgba(0, 0, 0, 0.2);
 }
 
 .card__value {
   color: #fff;
-  font-size: calc(var(--w) * 0.46);
-  font-weight: 700;
+  font-size: calc(var(--w) * 0.66);
   line-height: 1;
   letter-spacing: -0.02em;
   text-shadow:
-    0 calc(var(--w) * 0.025) 0 rgba(0, 0, 0, 0.28),
-    0 0 calc(var(--w) * 0.08) rgba(0, 0, 0, 0.15);
+    var(--o) var(--o) 0 var(--ink),
+    calc(var(--o) * -1) var(--o) 0 var(--ink),
+    var(--o) calc(var(--o) * -1) 0 var(--ink),
+    calc(var(--o) * -1) calc(var(--o) * -1) 0 var(--ink),
+    0 calc(var(--o) * 2.2) 0 var(--ink);
 }
 
 .card__corner {
   position: absolute;
+  z-index: 1;
+  color: #fff;
   font-size: calc(var(--w) * 0.19);
-  font-weight: 700;
   line-height: 1;
-  color: var(--card-color-2);
+  text-shadow: 0 max(1px, calc(var(--w) * 0.02)) 0 var(--ink);
 }
 
 .card__corner--tl {
-  top: calc(var(--w) * 0.1);
-  left: calc(var(--w) * 0.12);
+  top: calc(var(--w) * 0.13);
+  left: calc(var(--w) * 0.15);
 }
 
 .card__corner--br {
-  right: calc(var(--w) * 0.12);
-  bottom: calc(var(--w) * 0.1);
+  right: calc(var(--w) * 0.15);
+  bottom: calc(var(--w) * 0.13);
   transform: rotate(180deg);
 }
 
@@ -122,40 +112,41 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(var(--w) * 0.1);
+  bottom: calc(var(--w) * 0.13);
+  z-index: 1;
   font-family: var(--font-ui);
   font-size: calc(var(--w) * 0.105);
   font-weight: 900;
   letter-spacing: 0.06em;
+  line-height: 1;
   text-align: center;
   text-transform: uppercase;
-  line-height: 1;
 }
 
 .card__icon {
-  width: calc(var(--w) * 0.5);
-  height: calc(var(--w) * 0.5);
-  color: #fff;
-  filter: drop-shadow(0 calc(var(--w) * 0.025) 0 rgba(0, 0, 0, 0.25));
+  width: calc(var(--w) * 0.52);
+  height: calc(var(--w) * 0.52);
 }
 
-/* Cartas pequenas escondem detalhes que ficariam ilegíveis */
+.card__icon .icon {
+  width: 100%;
+  height: 100%;
+  stroke-width: 2.4;
+}
+
+/* Cartas pequenas mostram só o essencial */
 .card--xs .card__corner,
 .card--sm .card__corner,
 .card--xs .card__label,
-.card--sm .card__label {
+.card--sm .card__label,
+.card--xs .card__front::after {
   display: none;
 }
 
-.card--xs .card__center,
-.card--sm .card__center {
-  width: calc(var(--w) * 0.82);
-  height: calc(var(--w) * 0.82);
-}
-
-.card--xs .card__value,
-.card--sm .card__value {
-  font-size: calc(var(--w) * 0.52);
+.seat--compact .card__front::after,
+.seat--compact .card__corner,
+.seat--compact .card__label {
+  display: none;
 }
 
 /* ---- Cores dos números ---- */
@@ -176,143 +167,145 @@
 .card--number[data-value='10'] .card__value,
 .card--number[data-value='11'] .card__value,
 .card--number[data-value='12'] .card__value {
-  font-size: calc(var(--w) * 0.38);
-  letter-spacing: -0.06em;
+  font-size: calc(var(--w) * 0.52);
+  letter-spacing: -0.05em;
 }
 
-/* O 7 é a carta-símbolo do jogo: anel arco-íris */
-.card--number[data-value='7'] .card__center::before {
-  content: '';
-  position: absolute;
-  inset: calc(var(--w) * -0.045);
-  border-radius: 50%;
-  background: conic-gradient(#ff5e7e, #ffb547, #ffe45e, #5eff9b, #5ee7ff, #8a7bff, #ff5ec8, #ff5e7e);
-  z-index: -1;
+/* O 7 é a carta-símbolo: amarela, com o número em tinta */
+.card--number[data-value='7'] .card__value,
+.card--number[data-value='7'] .card__corner {
+  color: var(--ink);
+  text-shadow: none;
 }
 
-/* ---- Modificadores (+2 … +10) ---- */
-.card--modifier .card__front {
-  background:
-    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.65), transparent 55%),
-    linear-gradient(160deg, var(--mod-1), var(--mod-2));
-  box-shadow:
-    inset 0 0 0 calc(var(--w) * 0.05) rgba(255, 255, 255, 0.7),
-    0 calc(var(--w) * 0.05) calc(var(--w) * 0.12) rgba(5, 4, 20, 0.45);
-  color: #6b3300;
+.card--number[data-value='7'] .card__front::after {
+  border-color: rgba(27, 35, 51, 0.35);
 }
 
-.card--modifier .card__value {
-  color: #6b3300;
-  font-size: calc(var(--w) * 0.4);
-  text-shadow: 0 calc(var(--w) * 0.025) 0 rgba(255, 255, 255, 0.6);
+/* Bônus e dobro têm rótulo embaixo: só o canto de cima, para não bater nele */
+.card--add .card__corner--br,
+.card--multiply .card__corner--br {
+  display: none;
 }
 
-.card--modifier .card__corner {
-  color: #8a4500;
+/* ---- Bônus (+2 … +10): carta branca com número verde ---- */
+.card--add .card__front {
+  background: var(--surface);
 }
 
-.card--multiply .card__front {
-  background:
-    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.45), transparent 55%),
-    linear-gradient(160deg, var(--x2-1), var(--x2-2));
-  color: #fff;
+.card--add .card__front::after {
+  border: max(1px, calc(var(--w) * 0.025)) dashed var(--green-d);
 }
 
-.card--multiply .card__value,
-.card--multiply .card__corner {
-  color: #fff;
-  text-shadow: 0 calc(var(--w) * 0.03) 0 rgba(120, 10, 60, 0.45);
-}
-
-.card--multiply .card__value {
+.card--add .card__value {
+  color: var(--green);
   font-size: calc(var(--w) * 0.46);
 }
 
+.card--add .card__corner,
+.card--add .card__label {
+  color: var(--green-d);
+  text-shadow: none;
+}
+
+/* ---- Dobro (×2): carta de tinta com número amarelo ---- */
+.card--multiply .card__front {
+  background: var(--ink);
+}
+
+.card--multiply .card__front::after {
+  border-color: rgba(255, 197, 48, 0.55);
+}
+
+.card--multiply .card__value {
+  color: var(--yellow);
+  font-size: calc(var(--w) * 0.5);
+  text-shadow: none;
+}
+
+.card--multiply .card__corner,
+.card--multiply .card__label {
+  color: var(--yellow);
+  text-shadow: none;
+}
+
 /* ---- Ações ---- */
-.card--action .card__front {
-  color: #fff;
-  box-shadow:
-    inset 0 0 0 calc(var(--w) * 0.05) rgba(255, 255, 255, 0.55),
-    0 calc(var(--w) * 0.05) calc(var(--w) * 0.12) rgba(5, 4, 20, 0.45);
-}
-
-.card--action .card__front::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.4), transparent 48%),
-    repeating-conic-gradient(from 0deg at 50% 42%, rgba(255, 255, 255, 0.09) 0 10deg, transparent 10deg 20deg);
-}
-
 .card--action .card__icon {
   position: relative;
-  margin-bottom: calc(var(--w) * 0.12);
-}
-
-.card--action .card__label {
-  color: #fff;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+  z-index: 1;
+  margin-bottom: calc(var(--w) * 0.14);
 }
 
 .card--freeze .card__front {
-  background: linear-gradient(160deg, var(--freeze-1), var(--freeze-2));
+  background: var(--ice);
+  color: var(--ink);
 }
 
 .card--flipThree .card__front {
-  background: linear-gradient(160deg, var(--flip3-1), var(--flip3-2));
+  background: var(--purple);
+  color: #fff;
 }
 
 .card--secondChance .card__front {
-  background: linear-gradient(160deg, var(--chance-1), var(--chance-2));
+  background: var(--pink);
+  color: #fff;
+}
+
+.card--freeze .card__front::after {
+  border-color: rgba(27, 35, 51, 0.3);
 }
 
 .card--xs.card--action .card__icon,
-.card--sm.card--action .card__icon {
-  width: calc(var(--w) * 0.66);
-  height: calc(var(--w) * 0.66);
+.card--sm.card--action .card__icon,
+.seat--compact .card--action .card__icon {
+  width: calc(var(--w) * 0.68);
+  height: calc(var(--w) * 0.68);
   margin: 0;
 }
 
 /* ---------------------------------------------------------------------------
-   Verso
+   Verso: vermelho da marca, listrado, com o selo V7
    --------------------------------------------------------------------------- */
 .card__back {
   display: grid;
   place-items: center;
   transform: rotateY(180deg);
-  background:
-    radial-gradient(circle at 50% 50%, rgba(255, 94, 168, 0.35), transparent 60%),
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.07) 0 calc(var(--w) * 0.05), transparent calc(var(--w) * 0.05) calc(var(--w) * 0.1)),
-    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.07) 0 calc(var(--w) * 0.05), transparent calc(var(--w) * 0.05) calc(var(--w) * 0.1)),
-    linear-gradient(160deg, #3b2a9e, #1a1452);
-  box-shadow:
-    inset 0 0 0 calc(var(--w) * 0.045) #fff,
-    inset 0 0 0 calc(var(--w) * 0.07) #ff5ea8,
-    0 calc(var(--w) * 0.05) calc(var(--w) * 0.12) rgba(5, 4, 20, 0.45);
+  background-color: var(--red);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--red-d) 0 calc(var(--w) * 0.05),
+    transparent calc(var(--w) * 0.05) calc(var(--w) * 0.16)
+  );
+}
+
+.card__back::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--w) * 0.07);
+  border: max(1px, calc(var(--w) * 0.03)) solid #fff;
+  border-radius: calc(var(--w) * 0.09);
 }
 
 .card__back-logo {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
-  width: calc(var(--w) * 0.56);
-  height: calc(var(--w) * 0.56);
+  width: calc(var(--w) * 0.6);
+  height: calc(var(--w) * 0.6);
+  border: var(--bw) solid var(--ink);
   border-radius: 50%;
-  background: var(--brand-gradient);
-  color: #2a0d24;
-  font-size: calc(var(--w) * 0.24);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  box-shadow:
-    0 0 0 calc(var(--w) * 0.03) #fff,
-    0 calc(var(--w) * 0.03) calc(var(--w) * 0.1) rgba(0, 0, 0, 0.45);
+  background: var(--yellow);
+  color: var(--ink);
+  font-size: calc(var(--w) * 0.26);
+  letter-spacing: -0.03em;
 }
 
 /* ---------------------------------------------------------------------------
    Estados
    --------------------------------------------------------------------------- */
 
-/* Lugar reservado enquanto a carta "voa" até ele */
+/* Lugar reservado enquanto a carta voa até ele */
 .card.is-ghost {
   visibility: hidden;
 }
@@ -322,20 +315,18 @@
 }
 
 .card.is-duplicate .card__front {
-  box-shadow:
-    inset 0 0 0 calc(var(--w) * 0.06) var(--danger),
-    0 0 0 3px rgba(255, 77, 109, 0.55),
-    0 0 24px rgba(255, 77, 109, 0.7);
+  outline: max(2px, calc(var(--w) * 0.07)) solid var(--red);
+  outline-offset: 1px;
 }
 
 .card.is-duplicate.is-new {
   animation: card-shake 480ms var(--ease-in-out);
 }
 
-.card.is-pending .card__front {
-  animation: pulse-glow 1.1s ease-in-out infinite;
+.card.is-pending {
+  animation: bob 900ms ease-in-out infinite;
 }
 
 .card.is-dim {
-  filter: grayscale(0.85) brightness(0.6);
+  filter: grayscale(1) brightness(0.8);
 }
