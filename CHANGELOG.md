@@ -3,6 +3,37 @@
 Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [2.0.0] - 2026-11-16
+
+### Adicionado
+
+- **Multiplayer online em tempo real**: partidas entre jogadores em lugares diferentes, com cartas, jogadas, turnos e pontos sincronizados pelo Supabase Realtime.
+- **Backend em Python (FastAPI)** com o motor de regras no servidor: o cliente envia apenas a intenção e o servidor valida e decide o resultado.
+- **Contas com Supabase Auth**: cadastro, login, confirmação de e-mail e recuperação de senha.
+- **Perfis**: nome de usuário, 10 personagens (bichinhos), estatísticas, histórico de partidas e ranking.
+- **Salas**: privadas por código de convite, públicas com lista ao vivo e partida rápida.
+- **Lobby** com participantes, indicação de pronto e de conexão, CPUs, expulsão e regras editáveis pelo anfitrião.
+- **Regras configuráveis**: meta de 50 a 500 pontos, 2 a 8 jogadores e tempo por jogada.
+- **Tempo de turno e desconexões**: árbitro no servidor joga por quem estourou o tempo ou perdeu a conexão; reconexão no meio da partida; abandono e vitória por abandono.
+- **Banco de dados**: 8 migrations com tabelas, índices, funções atômicas, triggers, RLS e publicação do Realtime, em `database/migrations/`.
+- **Segurança**: validação do token em todas as rotas, RLS em todas as tabelas, estado secreto da partida inacessível aos clientes e controle de concorrência por versão.
+- Telas de entrar, criar conta, recuperar senha, início, sala, perfil, histórico, ranking e ajustes (áudio, velocidade, movimento reduzido, medidor de risco).
+- Testes do motor Python, da API, da autenticação e do multiplayer (pytest) e das migrations em um PostgreSQL embutido (PGlite).
+- Script `migrate.py` para aplicar as migrations e `smoke_online.py` para verificar tudo contra o Supabase real.
+- Modo de desenvolvimento local da API (sem Supabase), com banco em memória.
+- Limite de requisições por IP e por usuário (`RATE_LIMIT_ENABLED`, `TRUST_PROXY`) e cabeçalhos de segurança, com Content-Security-Policy na página.
+- Testes do acesso ao Supabase com servidor simulado, do limite de requisições e dos cabeçalhos.
+
+### Alterado
+
+- **Nova mesa**: baralho no centro, adversários em arco e o jogador embaixo, sobre um feltro verde oval que cabe inteiro em notebooks e rola no celular mantendo o seu lugar à vista.
+- **Nova identidade visual**: papel creme, contorno de tinta, cores chapadas e sombras duras (sem degradês nem vidro), fontes Lilita One e Figtree, cartas e anúncios redesenhados, tela de entrada em duas colunas e personagens no lugar das iniciais em toda a interface.
+- Doca compacta no celular e relógio de turno limitado ao tempo da sala.
+- Texto escuro sobre verde nos botões e selos, para contraste de leitura.
+- As animações não travam mais quando a aba fica em segundo plano.
+- A partida na mesma tela continua disponível em `#/local`, agora com escolha de personagem.
+- O frontend passa a ser servido pela API; `scripts/serve.js` foi removido.
+
 ## [1.1.0] - 2026-11-15
 
 ### Alterado
