@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="description" content="Vira-7: jogo de cartas de risco e estratégia para jogar com amigos e família na mesma tela. Baseado nas regras do Flip 7." />
-    <meta name="theme-color" content="#0b0a1f" />
-    <title>Vira-7 · Jogo de cartas</title>
+    <meta name="description" content="Vira-7: jogo de cartas online de risco e estratégia para jogar com amigos. Baseado nas regras do Flip 7." />
+    <meta name="theme-color" content="#fff6e5" />
+    <title>Vira-7 · Jogo de cartas online</title>
 
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
 
@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700;800;900&family=Lilita+One&display=swap"
     />
 
     <link rel="stylesheet" href="css/tokens.css" />
@@ -26,22 +26,29 @@
     <link rel="stylesheet" href="css/table.css" />
     <link rel="stylesheet" href="css/hud.css" />
     <link rel="stylesheet" href="css/modals.css" />
+    <link rel="stylesheet" href="css/arena.css" />
+    <link rel="stylesheet" href="css/app.css" />
     <link rel="stylesheet" href="css/responsive.css" />
   </head>
 
   <body>
     <div class="app" id="app">
       <!-- ============================================================
-           Tela inicial
+           Telas da aplicação (entrar, início, sala, perfil…): desenhadas por JS
            ============================================================ -->
-      <section class="screen setup-screen" id="setup-screen" aria-labelledby="setup-title">
+      <main class="screen view" id="view"></main>
+
+      <!-- ============================================================
+           Partida na mesma tela: configuração
+           ============================================================ -->
+      <section class="screen setup-screen" id="setup-screen" aria-labelledby="setup-title" hidden>
         <div class="setup">
           <header class="setup__hero">
             <div class="hero-cards" id="hero-cards" aria-hidden="true"></div>
             <h1 class="logo logo--hero" id="setup-title">
               <span class="logo__word">VIRA</span><span class="logo__seven">7</span>
             </h1>
-            <p class="setup__tagline">Vire cartas, acumule pontos… e pare antes de repetir um número!</p>
+            <p class="setup__tagline">Todo mundo no mesmo aparelho. Chame os amigos ou complete a mesa com CPUs.</p>
           </header>
 
           <div class="setup__panel panel">
@@ -87,12 +94,14 @@
             </div>
           </div>
 
-          <p class="setup__hint">De 2 a 8 jogadores · pessoas e CPUs podem jogar juntas na mesma tela</p>
+          <p class="setup__hint">
+            Toque no bichinho para trocar de personagem · <a href="#/">voltar para o jogo online</a>
+          </p>
         </div>
       </section>
 
       <!-- ============================================================
-           Tela de jogo
+           Mesa de jogo (local e online)
            ============================================================ -->
       <section class="screen game-screen" id="game-screen" aria-label="Mesa de jogo" hidden>
         <header class="topbar">
@@ -103,7 +112,7 @@
           <div class="topbar__info">
             <span class="chip" title="Rodada atual">Rodada <strong id="hud-round">1</strong></span>
             <span class="chip chip--target" title="Pontos para vencer">Meta <strong id="hud-target">200</strong></span>
-            <span class="chip chip--deck" title="Cartas no monte">Monte <strong id="hud-deck">94</strong></span>
+            <span class="conn" id="conn-chip" hidden></span>
           </div>
 
           <div class="topbar__spacer"></div>
@@ -113,38 +122,55 @@
             <button type="button" class="icon-btn" id="btn-rules" aria-label="Como jogar" title="Como jogar" data-icon="help"></button>
             <button type="button" class="icon-btn" id="btn-sound" aria-pressed="true" aria-label="Desligar som" title="Som ligado"></button>
             <button type="button" class="icon-btn" id="btn-restart" aria-label="Reiniciar partida" title="Reiniciar" data-icon="restart"></button>
-            <button type="button" class="icon-btn" id="btn-menu" aria-label="Voltar ao menu" title="Menu" data-icon="home"></button>
+            <button type="button" class="icon-btn" id="btn-menu" aria-label="Sair da partida" title="Sair" data-icon="home"></button>
           </div>
         </header>
 
         <main class="table" id="table">
-          <div class="seats" id="seats"></div>
+          <!-- A mesa: adversários em arco, baralho no centro e você embaixo -->
+          <div class="arena seats" id="seats">
+            <div class="arena__felt" aria-hidden="true"></div>
+            <div class="arena__opponents"></div>
+
+            <div class="arena__center">
+              <div class="pile pile--deck" id="deck-pile" title="Monte de compra">
+                <div class="pile__stack"></div>
+                <span class="pile__count">94</span>
+                <span class="pile__label">Monte</span>
+              </div>
+              <div class="arena__status" id="arena-status" aria-live="polite"></div>
+            </div>
+
+            <div class="arena__me"></div>
+          </div>
         </main>
 
-        <footer class="dock" id="dock">
-          <div class="pile pile--deck" id="deck-pile" title="Monte de compra">
-            <div class="pile__stack"></div>
-            <span class="pile__count">94</span>
-            <span class="pile__label">Monte</span>
-          </div>
-
+        <footer class="dock dock--center-deck" id="dock">
           <div class="dock__center">
             <div class="turn">
               <div class="turn__who">
-                <div class="avatar avatar--lg" id="turn-avatar">·</div>
+                <div class="avatar avatar--lg is-idle" id="turn-avatar">·</div>
                 <div>
                   <div class="turn__label" id="turn-label">Aguarde</div>
                   <div class="turn__name" id="turn-name" aria-live="polite">—</div>
                 </div>
               </div>
 
-              <div class="risk is-hidden" id="risk">
-                <div class="risk__head">
-                  <span>Risco de estourar</span>
-                  <strong id="risk-value">0%</strong>
+              <div class="turn__meters">
+                <div class="risk is-hidden" id="risk">
+                  <div class="risk__head">
+                    <span>Risco de estourar</span>
+                    <strong id="risk-value">0%</strong>
+                  </div>
+                  <div class="risk__bar" role="presentation"><div class="risk__fill"></div></div>
+                  <div class="risk__hint" id="risk-hint"></div>
                 </div>
-                <div class="risk__bar" role="presentation"><div class="risk__fill"></div></div>
-                <div class="risk__hint" id="risk-hint"></div>
+
+                <div class="turn-timer" id="turn-timer" role="timer" aria-label="Tempo da jogada" hidden>
+                  <span>Tempo</span>
+                  <div class="turn-timer__bar"><div class="turn-timer__fill"></div></div>
+                  <strong>0s</strong>
+                </div>
               </div>
             </div>
 
@@ -179,6 +205,8 @@
       <p style="padding: 24px; text-align: center">O Vira-7 precisa de JavaScript para funcionar.</p>
     </noscript>
 
+    <script src="js/config.js"></script>
+
     <!-- Núcleo (regras do jogo, sem DOM) -->
     <script src="js/core/constants.js"></script>
     <script src="js/core/utils.js"></script>
@@ -192,16 +220,30 @@
     <script src="js/fx/effects.js"></script>
     <script src="js/fx/sound.js"></script>
 
-    <!-- Interface -->
+    <!-- Interface da mesa -->
     <script src="js/ui/dom.js"></script>
     <script src="js/ui/icons.js"></script>
     <script src="js/ui/storage.js"></script>
+    <script src="js/ui/avatars.js"></script>
     <script src="js/ui/card-view.js"></script>
     <script src="js/ui/setup-screen.js"></script>
     <script src="js/ui/table-view.js"></script>
     <script src="js/ui/hud.js"></script>
     <script src="js/ui/modals.js"></script>
     <script src="js/ui/game-controller.js"></script>
+
+    <!-- Aplicação online -->
+    <script src="js/app/api.js"></script>
+    <script src="js/app/auth.js"></script>
+    <script src="js/app/realtime.js"></script>
+    <script src="js/app/app.js"></script>
+    <script src="js/online/online-match.js"></script>
+    <script src="js/screens/auth-screen.js"></script>
+    <script src="js/screens/home-screen.js"></script>
+    <script src="js/screens/lobby-screen.js"></script>
+    <script src="js/screens/profile-screen.js"></script>
+    <script src="js/screens/settings-screen.js"></script>
+    <script src="js/screens/local-game.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

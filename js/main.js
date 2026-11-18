@@ -1,147 +1,145 @@
 /**
- * Vira-7 — Ponto de entrada: conecta telas, controles da barra superior e partidas.
+ * Vira-7 — Ponto de entrada.
+ * Monta a mesa, liga os botões da barra superior, registra as rotas e inicia
+ * a conexão com a API e a autenticação.
  */
-(() => {
+(async () => {
   'use strict';
 
   const F7 = globalThis.F7;
   const { qs } = F7.dom;
   const { icon } = F7.icons;
+  const { App, Api, Auth, Screens } = F7;
+
+  /* ------------------------------------------------------------------ */
+  /* Mesa de jogo (compartilhada pelos modos local e online)             */
+  /* ------------------------------------------------------------------ */
 
   const gameScreen = qs('#game-screen');
-  const table = new F7.TableView({
-    seatsEl: qs('#seats'),
-    deckEl: qs('#deck-pile'),
-  });
-  const hud = new F7.Hud(gameScreen);
-  const controller = new F7.GameController({ table, hud });
-
-  /** Partida em andamento: { game, run, config }. */
-  let current = null;
-
-  hud.isBlocked = () => F7.Modals.isOpen();
-
-  /* ------------------------------------------------------------------ */
-  /* Partidas                                                            */
-  /* ------------------------------------------------------------------ */
-
-  async function startGame(config) {
-    await stopGame();
-    F7.Sound.unlock();
-    F7.FX.setSpeed(config.speed || 1);
-
-    setup.hide();
-    gameScreen.hidden = false;
-    document.title = 'Vira-7 · Partida';
-
-    const game = new F7.Game(config, controller);
-    controller.attach(game);
-    const run = game.run();
-    current = { game, run, config };
-
-    try {
-      await run;
-    } catch (error) {
-      console.error(error);
-      hud.toast('Ops! Algo deu errado. Voltando ao menu…', { variant: 'bust', iconName: 'bolt' });
-      await F7.FX.wait(1500);
-      showMenu();
-      return;
-    }
-
-    // A partida foi interrompida e substituída por outra.
-    if (!current || current.game !== game) return;
-
-    if (controller.lastChoice === 'again') startGame(config);
-    else showMenu();
-  }
-
-  /** Interrompe a partida atual e espera o motor encerrar com segurança. */
-  async function stopGame() {
-    if (!current) return;
-    const { game, run } = current;
-    current = null;
-    game.abort();
-    controller.cancelPending();
-    try {
-      await run;
-    } catch (error) {
-      /* partida já encerrada */
-    }
-  }
-
-  async function showMenu() {
-    await stopGame();
-    hud.toggleLog(false);
-    gameScreen.hidden = true;
-    document.title = 'Vira-7 · Jogo de cartas';
-    setup.show();
-  }
-
-  const setup = new F7.SetupScreen({
-    root: qs('#setup-screen'),
-    onStart: startGame,
-    onRules: () => F7.Modals.rules(),
-  });
-
-  /* ------------------------------------------------------------------ */
-  /* Barra superior                                                      */
-  /* ------------------------------------------------------------------ */
+  App.table = new F7.TableView({ seatsEl: qs('#seats'), deckEl: qs('#deck-pile') });
+  App.hud = new F7.Hud(gameScreen);
+  App.controller = new F7.GameController({ table: App.table, hud: App.hud });
+  App.hud.isBlocked = () => F7.Modals.isOpen();
+  /** Ações dos botões "menu" e "reiniciar", definidas pelo modo de jogo ativo. */
+  App.gameHandlers = null;
 
   const soundButton = qs('#btn-sound');
-
-  function applySound(enabled) {
-    F7.Sound.setEnabled(enabled);
+  function paintSound() {
+    const enabled = F7.Sound.enabled;
     soundButton.setAttribute('aria-pressed', String(enabled));
     soundButton.setAttribute('aria-label', enabled ? 'Desligar som' : 'Ligar som');
     soundButton.title = enabled ? 'Som ligado' : 'Som desligado';
     soundButton.innerHTML = icon(enabled ? 'soundOn' : 'soundOff');
-    F7.storage.save('sound', enabled);
   }
 
   soundButton.addEventListener('click', () => {
-    applySound(!F7.Sound.enabled);
+    const enabled = !F7.Sound.enabled;
+    App.applySettings({ ...App.state.settings, sound: enabled });
+    F7.storage.save('sound', enabled);
     F7.Sound.click();
+    paintSound();
+    // Com conta, a preferência acompanha o jogador em outros dispositivos.
+    if (App.state.me) Api.put('/me/settings', { settings: App.state.settings }).catch(() => {});
   });
 
   qs('#btn-rules').addEventListener('click', () => F7.Modals.rules());
+  qs('#btn-log').addEventListener('click', () => App.hud.toggleLog());
+  qs('#btn-close-log').addEventListener('click', () => App.hud.toggleLog(false));
+  qs('#btn-restart').addEventListener('click', () => App.gameHandlers && App.gameHandlers.restart && App.gameHandlers.restart());
+  qs('#btn-menu').addEventListener('click', () => App.gameHandlers && App.gameHandlers.menu && App.gameHandlers.menu());
 
-  qs('#btn-log').addEventListener('click', () => hud.toggleLog());
-  qs('#btn-close-log').addEventListener('click', () => hud.toggleLog(false));
-
-  qs('#btn-restart').addEventListener('click', async () => {
-    if (!current) return;
-    const config = current.config;
-    const ok = await F7.Modals.confirm({
-      title: 'Reiniciar partida?',
-      text: 'A partida atual será perdida e uma nova começará com os mesmos jogadores.',
-      confirmLabel: 'Reiniciar',
-    });
-    if (ok) startGame(config);
-  });
-
-  qs('#btn-menu').addEventListener('click', async () => {
-    const ok = await F7.Modals.confirm({
-      title: 'Voltar ao menu?',
-      text: 'A partida atual será encerrada.',
-      confirmLabel: 'Sair da partida',
-    });
-    if (ok) showMenu();
-  });
-
-  /* ------------------------------------------------------------------ */
-  /* Inicialização                                                       */
-  /* ------------------------------------------------------------------ */
-
-  applySound(F7.storage.load('sound', true));
+  // Ícones dos botões estáticos do HTML
+  document.querySelectorAll('[data-icon]').forEach((el) => el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon)));
 
   // O áudio só pode começar depois da primeira interação.
   const unlockAudio = () => F7.Sound.unlock();
   window.addEventListener('pointerdown', unlockAudio, { once: true });
   window.addEventListener('keydown', unlockAudio, { once: true });
 
-  // Ícones dos botões estáticos
-  document.querySelectorAll('[data-icon]').forEach((el) => {
-    el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon));
+  App.applySettings({ ...App.DEFAULT_SETTINGS, sound: F7.storage.load('sound', true) });
+  paintSound();
+
+  /* ------------------------------------------------------------------ */
+  /* Rotas                                                               */
+  /* ------------------------------------------------------------------ */
+
+  /** Telas de quem ainda não entrou: quem já está logado vai direto para o início. */
+  const guest = (screen) => () => {
+    if (!App.state.apiOnline) return App.navigate('/offline', { replace: true });
+    if (Auth.user && !Auth.isRecovery) return App.navigate('/', { replace: true });
+    return screen();
+  };
+
+  App.route('/', Screens.home);
+  App.route('/sala/:code', Screens.room);
+  App.route('/perfil', Screens.profile);
+  App.route('/perfil/:username', Screens.profile);
+  App.route('/historico', Screens.history);
+  App.route('/ranking', Screens.ranking);
+  App.route('/config', async () => {
+    const cleanup = await Screens.settings();
+    return () => {
+      cleanup();
+      paintSound();
+    };
   });
+  App.route('/entrar', guest(Screens.login), { auth: false });
+  App.route('/cadastro', guest(Screens.signup), { auth: false });
+  App.route('/recuperar', guest(Screens.forgot), { auth: false });
+  App.route('/nova-senha', () => (Auth.user ? Screens.reset() : App.navigate('/entrar', { replace: true })), { auth: false });
+  App.route('/local', Screens.local, { auth: false });
+  App.route('/offline', () => (App.state.apiOnline ? App.navigate('/', { replace: true }) : Screens.offline()), { auth: false });
+
+  /* ------------------------------------------------------------------ */
+  /* Inicialização                                                       */
+  /* ------------------------------------------------------------------ */
+
+  App.render(App.loading('Conectando…'), { nav: false });
+
+  // Links de confirmação e de recuperação do Supabase chegam com dados no hash.
+  const arrivedFromEmail = /access_token=|error_description=|type=recovery/.test(window.location.hash);
+  const emailError = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('error_description');
+
+  App.state.apiOnline = await Api.init();
+  if (App.state.apiOnline) {
+    try {
+      await Auth.init(Api.config);
+    } catch (error) {
+      console.error(error);
+      App.state.apiOnline = false;
+      App.toast(error.message, { variant: 'bust' });
+    }
+  }
+
+  Auth.onChange((event) => {
+    App.state.me = null;
+    if (event === 'recovery') return App.navigate('/nova-senha');
+    if (event === 'signedOut') return App.navigate('/entrar');
+    // signedIn: sai das telas de conta; nas demais, só recarrega a tela atual.
+    if (['/entrar', '/cadastro', '/recuperar'].includes(App.path)) return App.navigate('/');
+    return App.resolve();
+  });
+
+  // Sessão expirada ou inválida: volta para a tela de entrada.
+  let signingOut = false;
+  Api.onUnauthorized = async () => {
+    if (signingOut || !Auth.user) return;
+    signingOut = true;
+    App.toast('Sua sessão expirou. Entre novamente.', { variant: 'bust' });
+    await Auth.signOut().catch(() => {});
+    App.state.me = null;
+    App.navigate('/entrar');
+    signingOut = false;
+  };
+
+  if (arrivedFromEmail) {
+    if (emailError) App.toast(emailError.replace(/\+/g, ' '), { variant: 'bust' });
+    window.history.replaceState(null, '', window.location.pathname + (Auth.isRecovery ? '#/nova-senha' : '#/'));
+  }
+
+  // Aviso de volta da conexão com a internet.
+  window.addEventListener('offline', () => App.toast('Você está sem internet.', { variant: 'bust' }));
+  window.addEventListener('online', () => App.toast('Conexão restabelecida.', { variant: 'stay' }));
+
+  App.start();
 })();
