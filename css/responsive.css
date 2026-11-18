@@ -1,32 +1,12 @@
 /* ==========================================================================
-   Vira-7 — Responsividade (tablets e celulares)
+   Vira-7 — Telas menores (os ajustes da mesa ficam em arena.css)
    ========================================================================== */
-
-/* ---- Telas largas: mais espaço para as cartas ---- */
-@media (min-width: 1500px) {
-  .seats {
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  }
-
-  .seat {
-    --card-w: 52px;
-  }
-}
 
 /* ---- Tablets ---- */
 @media (max-width: 980px) {
-  .dock {
-    gap: var(--space-3);
-    padding-inline: var(--space-4);
-  }
-
   .dock__center {
     grid-template-columns: 1fr;
     gap: var(--space-3);
-  }
-
-  .turn {
-    gap: var(--space-4);
   }
 
   .actions .btn {
@@ -34,8 +14,41 @@
     min-width: 0;
   }
 
-  .topbar__info .chip--deck {
+  .auth {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .auth__brand {
+    justify-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-4);
+    border-right: 0;
+    border-bottom: 3px solid var(--ink);
+    text-align: center;
+  }
+
+  .auth__brand .logo {
+    font-size: 3rem;
+  }
+
+  .auth__headline {
+    max-width: none;
+    font-size: 1.6rem;
+    -webkit-text-stroke-width: 5px;
+  }
+
+  .auth__points {
     display: none;
+  }
+
+  .auth__parade .avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .lobby__grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -47,14 +60,11 @@
 
   .topbar {
     gap: var(--space-2);
-    padding: 0 var(--space-3);
+    padding: 0 var(--space-2);
   }
 
-  .topbar .logo {
-    font-size: 1.5rem;
-  }
-
-  .topbar .logo__word {
+  .topbar .logo__word,
+  .nav__logo .logo__word {
     display: none;
   }
 
@@ -62,93 +72,99 @@
     margin-left: 0;
   }
 
-  .topbar__actions {
-    gap: 6px;
-  }
-
   .topbar__info .chip {
     height: 30px;
-    padding: 0 10px;
+    padding: 0 9px;
+    font-size: var(--fs-xs);
   }
 
-  .topbar__info .chip--target {
+  .topbar__info .chip--target,
+  .topbar .conn span {
     display: none;
+  }
+
+  .topbar__actions {
+    gap: 5px;
   }
 
   .icon-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-sm);
+    width: 38px;
+    height: 38px;
   }
 
   .table {
-    padding: var(--space-3);
-  }
-
-  .seats {
-    gap: var(--space-3);
-  }
-
-  .seat {
-    --card-w: 40px;
-    gap: var(--space-2);
-    padding: var(--space-3);
-  }
-
-  .seat__total b {
-    font-size: 1.5rem;
-  }
-
-  .seat__row--extras {
-    --card-w: 30px;
-  }
-
-  .pip {
-    width: 10px;
-    height: 10px;
+    padding: var(--space-2);
   }
 
   .dock {
-    grid-template-columns: auto minmax(0, 1fr);
+    padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom));
+  }
+
+  /* Doca compacta: quem joga e o risco na primeira linha, depois as duas barras */
+  .turn {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'who value'
+      'bar bar'
+      'timer timer';
+    align-items: center;
+    gap: 5px var(--space-3);
+  }
+
+  .turn__who {
+    grid-area: who;
     gap: var(--space-2);
-    padding: var(--space-3) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom));
   }
 
-  .pile {
-    --card-w: 44px;
+  .turn__meters,
+  .risk {
+    display: contents;
   }
 
-  .pile__label {
+  .risk__head {
+    grid-area: value;
+    justify-content: flex-end;
+  }
+
+  .risk__head span,
+  .turn-timer > span {
     display: none;
   }
 
-  .turn {
-    grid-template-columns: 1fr;
-    gap: var(--space-2);
-  }
-
-  .turn__who .avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 1rem;
-  }
-
-  .turn__name {
-    font-size: var(--fs-lg);
-  }
-
-  .risk__head strong {
-    font-size: var(--fs-lg);
+  .risk__bar {
+    grid-area: bar;
+    height: 12px;
   }
 
   .risk__hint {
     display: none;
   }
 
+  .turn-timer {
+    grid-area: timer;
+  }
+
+  .turn-timer__bar {
+    height: 8px;
+  }
+
+  .turn__who .avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .turn__name {
+    font-size: 1.3rem;
+  }
+
+  .actions {
+    padding-bottom: 5px;
+  }
+
   .actions .btn {
-    min-height: 52px;
+    min-height: 54px;
     padding: 0 var(--space-3);
-    font-size: var(--fs-md);
+    font-size: 1.3rem;
   }
 
   .actions .kbd {
@@ -156,11 +172,127 @@
   }
 
   .dock__prompt {
-    font-size: var(--fs-sm);
+    min-height: 54px;
+    font-size: 1rem;
   }
 
-  .setup__panel {
+  .page {
+    padding-top: var(--space-4);
+  }
+
+  .panel {
     padding: var(--space-4);
+    border-radius: var(--radius-lg);
+  }
+
+  .nav {
+    gap: var(--space-2);
+  }
+
+  .nav__link span:last-child,
+  .nav__user span {
+    display: none;
+  }
+
+  .nav__link {
+    padding: 0 10px;
+  }
+
+  .nav__user {
+    padding: 3px;
+  }
+
+  .home__hello,
+  .profile__head {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .home__hello .stat-pills,
+  .profile__actions {
+    justify-content: center;
+  }
+
+  .home__resume {
+    flex-wrap: wrap;
+  }
+
+  .home__resume .btn {
+    width: 100%;
+  }
+
+  .action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .action-card {
+    min-height: 136px;
+    padding: var(--space-3);
+  }
+
+  .action-card strong {
+    font-size: 1.15rem;
+  }
+
+  .room-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .room-row .chip {
+    display: none;
+  }
+
+  .lobby__code {
+    justify-items: start;
+    width: 100%;
+  }
+
+  .lobby-player {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .lobby-player > .icon-btn {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .lobby-player > .badge {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+
+  .lobby__actions {
+    flex-wrap: wrap;
+  }
+
+  .lobby__hint {
+    order: -1;
+    flex-basis: 100%;
+  }
+
+  .lobby__actions .btn {
+    flex: 1;
+  }
+
+  .match {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .match__result {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .match__extras {
+    display: flex;
+    justify-items: start;
+  }
+
+  .setting {
+    flex-wrap: wrap;
   }
 
   .player-row {
@@ -192,7 +324,7 @@
   }
 
   .modal__dialog {
-    max-height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 20px);
     border-radius: var(--radius-lg);
   }
 
@@ -202,7 +334,7 @@
   }
 
   .modal__foot {
-    padding: var(--space-3) var(--space-4);
+    padding-inline: var(--space-4);
   }
 
   .modal__foot .btn {
@@ -211,36 +343,43 @@
   }
 
   .summary-row {
-    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
   }
 
   .summary-row .avatar {
     display: none;
   }
 
+  .rule-card {
+    grid-template-columns: 72px 1fr;
+    gap: var(--space-3);
+  }
+
   .podium__step {
-    width: 90px;
+    width: 88px;
+  }
+
+  .avatar--hero {
+    width: 84px;
+    height: 84px;
+  }
+
+  .avatar-picker__name {
+    display: none;
   }
 
   .banner {
-    padding: 14px 24px 18px;
-    max-width: calc(100vw - 24px);
+    max-width: calc(100vw - 28px);
+    padding: 10px 20px 12px;
     white-space: normal;
   }
-}
 
-/* ---- Celulares bem estreitos ---- */
-@media (max-width: 380px) {
-  .seat {
-    --card-w: 36px;
-  }
-
-  .actions {
-    gap: var(--space-2);
+  .banner__title {
+    -webkit-text-stroke-width: 6px;
   }
 }
 
-/* ---- Telas baixas (paisagem no celular) ---- */
+/* ---- Telas baixas (celular deitado) ---- */
 @media (max-height: 560px) and (min-width: 641px) {
   :root {
     --topbar-h: 52px;
@@ -250,11 +389,7 @@
     padding-block: var(--space-2);
   }
 
-  .pile {
-    --card-w: 44px;
-  }
-
   .actions .btn {
-    min-height: 48px;
+    min-height: 50px;
   }
 }
