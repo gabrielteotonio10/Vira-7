@@ -8,12 +8,14 @@
 
   class Player {
     /**
-     * @param {{ id: number, name: string, color?: string, isBot?: boolean, riskTolerance?: number }} data
+     * @param {{ id: number, name: string, color?: string, avatar?: string, isBot?: boolean, riskTolerance?: number }} data
      */
-    constructor({ id, name, color = '#6366f1', isBot = false, riskTolerance = 0.3 }) {
+    constructor({ id, name, color = '#6366f1', avatar = null, isBot = false, riskTolerance = 0.3 }) {
       this.id = id;
       this.name = name;
       this.color = color;
+      /** Personagem escolhido (chave de F7.Avatars) ou null. */
+      this.avatar = avatar;
       this.isBot = isBot;
       /** Personalidade do robô: quanto maior, mais arrisca (0 a 1). */
       this.riskTolerance = riskTolerance;
