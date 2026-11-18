@@ -30,3 +30,9 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Gerados localmente por ferramentas
+todas-as-migrations.sql
+.mcp.json
+.agents/
+skills-lock.json
