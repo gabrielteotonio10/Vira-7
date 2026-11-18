@@ -6,9 +6,17 @@
 
   const { h, qsa, initial } = F7.dom;
   const { icon } = F7.icons;
+  /** Avatar do jogador: o bichinho escolhido ou a inicial do nome. */
+  const avatarOf = (player, className = '') =>
+    F7.Avatars
+      ? F7.Avatars.create({ avatar: player.avatar, name: player.name, color: player.color }, className)
+      : h('div', { class: `avatar ${className}`, style: { '--avatar-color': player.color } }, initial(player.name));
+
   const card = (data, size = 'md') => F7.CardView.create({ id: `m-${Math.random()}`, ...data }, { size });
 
   let openCount = 0;
+  /** Funções que fecham as janelas abertas (para fechar tudo ao trocar de tela). */
+  const closers = new Set();
 
   /**
    * Abre uma janela genérica.
@@ -83,6 +91,7 @@
     function close(value) {
       if (closed) return;
       closed = true;
+      closers.delete(close);
       openCount = Math.max(0, openCount - 1);
       document.removeEventListener('keydown', onKey, true);
       el.classList.add('is-closing');
@@ -92,6 +101,7 @@
     }
 
     openCount += 1;
+    closers.add(close);
     document.body.appendChild(el);
     document.addEventListener('keydown', onKey, true);
     requestAnimationFrame(() => (buttons[buttons.length - 1] || closeButton)?.focus({ preventScroll: true }));
@@ -114,6 +124,9 @@
   }
 
   const isOpen = () => openCount > 0;
+
+  /** Fecha todas as janelas abertas (cada uma resolve com `undefined`). */
+  const closeAll = () => Array.from(closers).forEach((close) => close(undefined));
 
   /* ------------------------------------------------------------------ */
   /* Regras                                                              */
@@ -280,7 +293,7 @@
           style: { '--player-color': player.color, '--row-index': index },
         },
         h('div', { class: 'summary-row__rank' }, String(index + 1)),
-        h('div', { class: 'avatar' }, initial(player.name)),
+        avatarOf(player),
         h(
           'div',
           { class: 'summary-row__main' },
@@ -350,7 +363,12 @@
   /* Fim de jogo                                                         */
   /* ------------------------------------------------------------------ */
 
-  function gameOver({ winner, standings }, game) {
+  /**
+   * @param {{ winner: object|null, standings: object[], reason?: string }} payload
+   * @param {object} game
+   * @param {{ actions?: object[] }} [options] botões (padrão: menu / jogar de novo)
+   */
+  function gameOver({ winner, standings, reason }, game, { actions } = {}) {
     const podiumOrder = [standings[1], standings[0], standings[2]].filter(Boolean);
     const podium = h(
       'div',
@@ -360,14 +378,22 @@
         return h(
           'div',
           { class: `podium__step podium__step--${place}`, style: { '--player-color': player.color } },
-          h('div', { class: 'avatar' }, initial(player.name)),
+          avatarOf(player),
           h('div', { class: 'podium__name' }, player.name),
           h('div', { class: 'podium__block' }, `${place}º`),
         );
       }),
     );
 
-    const rounds = game.round;
+    const rounds = Math.max(0, ...standings.map((player) => player.history.length));
+    const headline = !winner
+      ? 'Partida encerrada'
+      : `${winner.name} venceu!`;
+    const detail = !winner
+      ? 'Todos os jogadores saíram.'
+      : reason === 'forfeit'
+        ? 'Os adversários abandonaram a partida'
+        : `${winner.total} pontos em ${rounds} rodadas`;
     const headers = ['Jogador', ...Array.from({ length: rounds }, (_, i) => `R${i + 1}`), 'Total'];
     const table = h(
       'div',
@@ -401,10 +427,10 @@
       h(
         'div',
         { class: 'winner' },
-        h('span', { class: 'winner__crown', html: icon('crown') }),
-        h('div', { class: 'avatar', style: { '--avatar-color': winner.color } }, initial(winner.name)),
-        h('div', { class: 'winner__name' }, `${winner.name} venceu!`),
-        h('div', { class: 'winner__score' }, `${winner.total} pontos em ${rounds} rodadas`),
+        winner ? h('span', { class: 'winner__crown', html: icon('crown') }) : null,
+        winner ? avatarOf(winner) : null,
+        h('div', { class: 'winner__name' }, headline),
+        h('div', { class: 'winner__score' }, detail),
       ),
       standings.length > 1 ? podium : null,
       table,
@@ -412,11 +438,11 @@
 
     return open({
       title: 'Fim de jogo',
-      eyebrow: 'Temos um campeão',
+      eyebrow: winner ? 'Temos um campeão' : 'Fim',
       body,
       wide: true,
       dismissible: false,
-      actions: [
+      actions: actions || [
         { label: 'Menu inicial', value: 'menu', variant: 'ghost', iconName: 'home' },
         { label: 'Jogar de novo', value: 'again', variant: 'primary', iconName: 'restart' },
       ],
@@ -439,5 +465,5 @@
     return value === true;
   }
 
-  F7.Modals = { open, isOpen, rules, roundSummary, gameOver, confirm };
+  F7.Modals = { open, isOpen, closeAll, rules, roundSummary, gameOver, confirm };
 })(globalThis.F7 = globalThis.F7 || {});
