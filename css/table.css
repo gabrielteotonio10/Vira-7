@@ -1,73 +1,42 @@
 /* ==========================================================================
-   Vira-7 — Mesa: lugares dos jogadores, fileiras de cartas e estados
+   Vira-7 — Lugar do jogador: uma plaqueta branca sobre o feltro,
+   com as cartas, os pontos e o estado na rodada
    ========================================================================== */
 
-.seats {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  gap: var(--space-4);
-  align-items: start;
-  width: 100%;
-  max-width: 1400px;
-  /* Margens automáticas centralizam a mesa sem cortar o conteúdo quando ela rola */
-  margin: auto;
-}
-
-/* ---------------------------------------------------------------------------
-   Lugar do jogador
-   --------------------------------------------------------------------------- */
 .seat {
   --player-color: var(--p1);
   --card-w: 46px;
   position: relative;
   display: grid;
   gap: var(--space-3);
-  padding: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: var(--stroke) solid var(--ink);
   border-radius: var(--radius-lg);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--player-color) 14%, transparent), transparent 55%),
-    rgba(10, 9, 30, 0.55);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-md);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 5px 0 rgba(8, 12, 20, 0.45);
   transition:
-    transform var(--dur-med) var(--ease-out),
+    transform var(--dur-med) var(--ease-spring),
     box-shadow var(--dur-med) var(--ease-out),
-    opacity var(--dur-med),
-    filter var(--dur-med);
-  animation: pop-in 420ms var(--ease-spring) both;
-  animation-delay: calc(var(--seat-index, 0) * 60ms);
+    background var(--dur-med),
+    opacity var(--dur-med);
+  animation: pop-in 380ms var(--ease-spring) both;
+  animation-delay: calc(var(--seat-index, 0) * 50ms);
 }
 
-/* Borda animada do jogador da vez */
-.seat::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  padding: 2px;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--player-color), #fff, var(--player-color), #fff, var(--player-color));
-  background-size: 200% 100%;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  opacity: 0;
-  transition: opacity var(--dur-med);
-  pointer-events: none;
-}
-
+/* Jogador da vez: plaqueta amarela, levantada, com anel na cor dele */
 .seat.is-turn {
   z-index: var(--z-seat-active);
-  transform: translateY(-3px) scale(1.015);
+  background: #fff3c2;
+  transform: translateY(-5px);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--player-color) 60%, transparent),
-    0 0 40px color-mix(in srgb, var(--player-color) 45%, transparent),
-    var(--shadow-lg);
+    0 0 0 4px var(--yellow),
+    0 0 0 6.5px var(--ink),
+    0 12px 0 4px rgba(8, 12, 20, 0.45);
 }
 
-.seat.is-turn::before {
-  opacity: 1;
-  animation: active-ring 2.2s linear infinite;
+.seat.is-turn .avatar {
+  animation: wiggle 900ms ease-in-out infinite;
 }
 
 /* ---- Cabeçalho ---- */
@@ -84,7 +53,7 @@
 
 .seat__who {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 
@@ -94,8 +63,7 @@
   gap: 6px;
   min-width: 0;
   font-family: var(--font-display);
-  font-size: var(--fs-lg);
-  font-weight: 600;
+  font-size: 1.25rem;
   line-height: 1.1;
 }
 
@@ -103,6 +71,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.seat__tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
 }
 
 .seat__status {
@@ -115,18 +90,18 @@
   width: 22px;
   height: 22px;
   flex: none;
+  border: 2px solid var(--ink);
   border-radius: 50%;
-  background: #fff;
-  color: var(--text-on-light);
+  background: var(--yellow);
+  color: var(--ink);
   font-family: var(--font-display);
-  font-size: 0.75rem;
-  font-weight: 700;
-  box-shadow: 0 0 0 2px var(--gold), var(--shadow-sm);
+  font-size: 0.72rem;
 }
 
 .seat__score {
   display: grid;
   justify-items: end;
+  gap: 2px;
   line-height: 1;
 }
 
@@ -138,32 +113,33 @@
 }
 
 .seat__total b {
-  font-size: 1.9rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 400;
 }
 
 .seat__total small {
-  color: var(--text-dim);
-  font-weight: 800;
+  color: var(--ink-3);
+  font-family: var(--font-ui);
   font-size: var(--fs-xs);
+  font-weight: 800;
 }
 
+/* Pontos da rodada */
 .seat__round {
-  margin-top: 4px;
   padding: 2px 8px;
+  border: 2px solid var(--ink);
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--player-color) 25%, transparent);
-  color: #fff;
-  font-weight: 900;
-  font-size: var(--fs-sm);
-  transition: transform var(--dur-fast) var(--ease-spring);
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
 }
 
 .seat__round.is-bumped {
-  animation: seat-pop 360ms var(--ease-spring);
+  animation: seat-pop 320ms var(--ease-spring);
 }
 
-/* ---- Progresso: 7 números e meta ---- */
+/* ---- Progresso: os 7 números e o caminho até a meta ---- */
 .seat__progress {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -177,27 +153,24 @@
 }
 
 .pip {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--ink);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
-  transition: background var(--dur-med);
+  background: var(--surface);
 }
 
 .pip.is-on {
   background: var(--pip-color, var(--player-color));
-  box-shadow:
-    0 0 8px var(--pip-color, var(--player-color)),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  animation: pip-fill 380ms var(--ease-spring);
+  animation: pip-fill 360ms var(--ease-spring);
 }
 
 .seat__meter {
   position: relative;
-  height: 8px;
+  height: 10px;
+  border: 2px solid var(--ink);
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--paper-2);
   overflow: hidden;
 }
 
@@ -205,8 +178,7 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--player-color) 60%, #fff), var(--player-color));
+  background: var(--player-color);
   transition: width 900ms var(--ease-out);
 }
 
@@ -214,12 +186,8 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 0;
-  border-radius: inherit;
-  background: repeating-linear-gradient(
-    -45deg,
-    color-mix(in srgb, var(--player-color) 55%, transparent) 0 4px,
-    transparent 4px 8px
-  );
+  background: repeating-linear-gradient(-45deg, var(--player-color) 0 3px, transparent 3px 6px);
+  opacity: 0.55;
   transition: width 500ms var(--ease-out);
 }
 
@@ -227,35 +195,34 @@
 .seat__cards {
   display: grid;
   gap: var(--space-2);
-  min-height: calc(var(--card-w) * var(--card-ratio) + 8px);
+  min-height: calc(var(--card-w) * var(--card-ratio) + 6px);
 }
 
 .seat__row {
   display: flex;
   align-items: center;
-  min-height: calc(var(--card-w) * var(--card-ratio));
-  padding-left: 2px;
-}
-
-.seat__row .card + .card {
-  margin-left: calc(var(--card-w) * -0.22);
+  min-height: calc(var(--card-w) * var(--card-ratio) + 4px);
+  padding: 0 2px 4px;
 }
 
 .seat__row .card {
-  /* O tamanho da carta acompanha o lugar (muda no celular) */
   --w: var(--card-w);
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
+.seat__row .card + .card {
+  margin-left: calc(var(--card-w) * -0.2);
+}
+
 .seat__row .card:hover {
-  transform: translateY(-6px);
   z-index: 2;
+  transform: translateY(-6px) rotate(-2deg);
 }
 
 .seat__row--extras {
   --card-w: 34px;
-  gap: 4px;
-  min-height: calc(34px * var(--card-ratio));
+  gap: 5px;
+  min-height: 0;
 }
 
 .seat__row--extras .card + .card {
@@ -267,23 +234,14 @@
 }
 
 .seat__empty {
-  color: var(--text-dim);
+  color: var(--ink-3);
   font-size: var(--fs-sm);
   font-weight: 700;
-  font-style: italic;
-}
-
-/* Escudo da Segunda Chance */
-.seat__row .card--secondChance.is-held {
-  animation: shield-pulse 1.8s ease-in-out infinite;
-  border-radius: 6px;
 }
 
 /* ---------------------------------------------------------------------------
    Estados
    --------------------------------------------------------------------------- */
-
-/* Camada sobre o lugar (carimbos, gelo, contador do Vira Três) */
 .seat__overlays {
   position: absolute;
   inset: 0;
@@ -297,59 +255,58 @@
 }
 
 .seat[data-status='stayed'] {
-  border-color: rgba(62, 224, 143, 0.35);
+  background: #dff6e9;
+}
+
+.seat[data-status='busted'] {
+  background: #ffe1dd;
 }
 
 .seat[data-status='busted'] .seat__row .card {
-  filter: grayscale(0.9) brightness(0.55);
+  filter: grayscale(1) brightness(0.85);
+  opacity: 0.75;
 }
 
 .seat[data-status='busted'] .seat__row .card.is-duplicate {
   filter: none;
+  opacity: 1;
 }
 
-.seat[data-status='busted'] {
-  background:
-    linear-gradient(180deg, rgba(255, 77, 109, 0.16), transparent 60%),
-    rgba(10, 9, 30, 0.55);
-  border-color: rgba(255, 77, 109, 0.35);
+.seat[data-flip7='true'] {
+  background: var(--yellow);
 }
 
+/* Carimbos */
 .seat__stamp {
   position: absolute;
-  top: 58%;
+  top: 60%;
   left: 50%;
   z-index: 3;
-  padding: 6px 18px;
-  border: 4px solid currentColor;
-  border-radius: 12px;
-  color: var(--danger);
-  background: rgba(20, 5, 15, 0.7);
+  padding: 4px 16px 5px;
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--red);
+  color: #fff;
   font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: 1.5rem;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
   text-transform: uppercase;
-  pointer-events: none;
-  transform: translate(-50%, -50%) rotate(-12deg);
-  animation: stamp-in 520ms var(--ease-spring) both;
+  white-space: nowrap;
+  box-shadow: var(--lift-sm);
+  transform: translate(-50%, -50%) rotate(-8deg);
+  animation: stamp-in 460ms var(--ease-spring) both;
 }
 
 .seat__stamp--stayed {
-  color: var(--success);
-  font-size: 1.15rem;
-  background: rgba(5, 25, 15, 0.72);
+  background: var(--green);
+  color: var(--ink);
+  font-size: 1.1rem;
 }
 
 .seat__stamp--flip7 {
-  color: #fff;
-  border-color: transparent;
-  background: var(--rainbow);
-  background-size: 200% 100%;
-  animation:
-    stamp-in 520ms var(--ease-spring) both,
-    rainbow-slide 2s linear infinite;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+  background: var(--ink);
+  color: var(--yellow);
 }
 
 /* Gelo do Congelar */
@@ -359,103 +316,133 @@
   z-index: 2;
   border-radius: inherit;
   background:
-    linear-gradient(135deg, rgba(220, 245, 255, 0.35), rgba(127, 216, 255, 0.12) 40%, rgba(220, 245, 255, 0.3)),
-    repeating-linear-gradient(60deg, rgba(255, 255, 255, 0.12) 0 2px, transparent 2px 22px),
-    repeating-linear-gradient(-60deg, rgba(255, 255, 255, 0.1) 0 2px, transparent 2px 26px);
-  box-shadow:
-    inset 0 0 0 2px rgba(200, 240, 255, 0.7),
-    inset 0 0 40px rgba(127, 216, 255, 0.6);
-  backdrop-filter: blur(1.5px) saturate(0.7);
-  -webkit-backdrop-filter: blur(1.5px) saturate(0.7);
-  pointer-events: none;
-  animation: frost-in 600ms var(--ease-out) both;
+    repeating-linear-gradient(60deg, rgba(255, 255, 255, 0.55) 0 3px, transparent 3px 20px),
+    rgba(143, 220, 255, 0.55);
+  box-shadow: inset 0 0 0 3px var(--ice-d);
+  animation: frost-in 500ms var(--ease-out) both;
 }
 
 .seat__frost::after {
   content: '❄';
   position: absolute;
-  top: 10px;
-  right: 14px;
-  font-size: 1.6rem;
-  color: #fff;
-  text-shadow: 0 0 12px var(--ice-strong);
+  top: 6px;
+  right: 10px;
+  color: var(--ice-d);
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
-.seat[data-flip7='true'] {
-  border-color: transparent;
-  box-shadow:
-    0 0 0 3px transparent,
-    0 0 50px rgba(255, 228, 94, 0.45),
-    var(--shadow-lg);
+.seat[data-status='frozen'] {
+  background: #e4f6ff;
 }
 
-.seat[data-flip7='true']::before {
-  opacity: 1;
-  background: var(--rainbow);
-  background-size: 200% 100%;
-  animation: active-ring 1.6s linear infinite;
-}
-
-/* CPU pensando */
+/* CPU ou jogador remoto pensando */
 .seat__thinking {
   display: inline-flex;
   gap: 3px;
-  margin-left: 4px;
+  margin-left: 2px;
 }
 
 .seat__thinking i {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: currentColor;
+  background: var(--ink);
   animation: dots 1.2s infinite;
 }
 
 .seat__thinking i:nth-child(2) { animation-delay: 0.2s; }
 .seat__thinking i:nth-child(3) { animation-delay: 0.4s; }
 
-/* ---- Seleção de alvo ---- */
+/* Conexão (partidas online) */
+.seat.is-offline .avatar {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.seat.is-offline::after {
+  content: 'sem conexão';
+  position: absolute;
+  top: -11px;
+  right: 10px;
+  z-index: 4;
+  padding: 1px 8px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--warning);
+  color: var(--ink);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.seat.is-absent {
+  opacity: 0.55;
+  filter: grayscale(0.8);
+}
+
+/* ---- Escolha de alvo ---- */
 .seats.is-targeting .seat {
   opacity: 0.4;
-  filter: saturate(0.5);
 }
 
 .seats.is-targeting .seat.is-targetable {
   opacity: 1;
-  filter: none;
   cursor: pointer;
   box-shadow:
-    0 0 0 3px var(--target-color, var(--brand-3)),
-    0 0 36px color-mix(in srgb, var(--target-color, var(--brand-3)) 55%, transparent),
-    var(--shadow-lg);
-  animation: seat-pop 1.4s ease-in-out infinite;
+    0 0 0 4px var(--target-color, var(--blue)),
+    0 0 0 6.5px var(--ink),
+    0 12px 0 4px rgba(8, 12, 20, 0.45);
+  animation: seat-pop 1.2s ease-in-out infinite;
 }
 
 .seats.is-targeting .seat.is-targetable:hover,
 .seats.is-targeting .seat.is-targetable:focus-visible {
-  transform: translateY(-6px) scale(1.03);
+  transform: translateY(-6px);
   animation: none;
 }
 
 .seat__target-label {
   position: absolute;
-  top: -14px;
+  top: -15px;
   left: 50%;
   z-index: 4;
+  display: inline-flex;
+  align-items: center;
   transform: translateX(-50%);
-  padding: 4px 12px;
+  padding: 2px 12px;
+  border: 2px solid var(--ink);
   border-radius: var(--radius-pill);
-  background: var(--target-color, var(--brand-3));
-  color: #0b0a1f;
+  background: var(--target-color, var(--blue));
+  color: var(--ink);
   font-size: var(--fs-xs);
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;
-  box-shadow: var(--shadow-sm);
   pointer-events: none;
 }
 
 .seat.is-chosen {
   animation: seat-pop 420ms var(--ease-spring);
+}
+
+/* Contador do Vira Três */
+.flip-counter {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: var(--space-2);
+}
+
+.flip-counter i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.flip-counter i.is-on {
+  background: var(--ink);
 }
