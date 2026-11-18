@@ -1,54 +1,48 @@
 /* ==========================================================================
-   Vira-7 — Tela inicial: apresentação, jogadores e opções da partida
+   Vira-7 — Partida na mesma tela: escolha de jogadores e opções
    ========================================================================== */
 
 .setup-screen {
   display: grid;
-  place-items: center;
-  padding: var(--space-6) var(--space-4) var(--space-7);
+  place-items: start center;
+  padding: var(--space-5) var(--space-4) var(--space-7);
   overflow-x: hidden;
 }
 
 .setup {
   display: grid;
-  gap: var(--space-6);
-  width: min(620px, 100%);
+  gap: var(--space-5);
+  width: min(600px, 100%);
 }
 
-/* ---- Apresentação ---- */
+/* ---- Apresentação: leque de cartas atrás do logo ---- */
 .setup__hero {
   position: relative;
   display: grid;
   justify-items: center;
-  gap: var(--space-3);
-  padding-top: 168px;
+  gap: var(--space-2);
+  padding-top: 148px;
   text-align: center;
 }
 
 .logo--hero {
   font-size: var(--fs-hero);
-  animation: pop-in 700ms var(--ease-spring) both;
-}
-
-.logo--hero .logo__seven {
-  animation: bob 3s ease-in-out infinite;
+  animation: pop-in 600ms var(--ease-spring) both;
 }
 
 .setup__tagline {
-  max-width: 34ch;
-  color: var(--text-muted);
-  font-size: var(--fs-lg);
+  max-width: 36ch;
+  color: var(--ink-2);
+  font-size: 1.05rem;
   font-weight: 700;
-  animation: slide-up 600ms 150ms var(--ease-out) both;
 }
 
-/* Leque de cartas flutuando atrás do logo */
 .hero-cards {
   position: absolute;
   top: 0;
   left: 50%;
   width: 0;
-  height: 150px;
+  height: 140px;
   pointer-events: none;
 }
 
@@ -56,35 +50,28 @@
   position: absolute;
   bottom: 0;
   left: 0;
-  --w: 74px;
-  transform-origin: 50% 160%;
-  transform: translateX(-50%) rotate(var(--angle)) translateY(0);
-  animation: hero-card-in 800ms var(--ease-spring) both, hero-card-float 4s ease-in-out infinite;
-  animation-delay: var(--delay), calc(var(--delay) + 800ms);
+  --w: 70px;
+  transform-origin: 50% 170%;
+  transform: translateX(-50%) rotate(var(--angle));
+  animation: hero-card-in 700ms var(--ease-spring) both;
+  animation-delay: var(--delay);
 }
 
 @keyframes hero-card-in {
   from {
     opacity: 0;
-    transform: translateX(-50%) rotate(0deg) translateY(80px);
+    transform: translateX(-50%) rotate(0deg) translateY(70px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) rotate(var(--angle)) translateY(0);
+    transform: translateX(-50%) rotate(var(--angle));
   }
 }
 
-@keyframes hero-card-float {
-  0%, 100% { transform: translateX(-50%) rotate(var(--angle)) translateY(0); }
-  50% { transform: translateX(-50%) rotate(var(--angle)) translateY(-10px); }
-}
-
-/* ---- Painel de configuração ---- */
+/* ---- Painel ---- */
 .setup__panel {
   display: grid;
   gap: var(--space-5);
-  padding: var(--space-5);
-  animation: slide-up 600ms 250ms var(--ease-out) both;
 }
 
 .setup__section {
@@ -99,12 +86,13 @@
 }
 
 .setup__section-head h2 {
-  font-size: var(--fs-xl);
+  font-size: 1.5rem;
 }
 
 .setup__count {
-  color: var(--text-dim);
-  font-weight: 800;
+  color: var(--ink-3);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
 }
 
 .player-list {
@@ -121,33 +109,24 @@
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2);
-  border-radius: var(--radius-md);
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--player-color);
-  animation: slide-up 300ms var(--ease-out) both;
+  animation: slide-up 260ms var(--ease-out) both;
 }
 
 .player-row.is-leaving {
-  animation: toast-out 220ms var(--ease-in-out) forwards;
+  animation: toast-out 200ms var(--ease-in-out) forwards;
 }
 
 .player-row .avatar {
   --avatar-color: var(--player-color);
-  border: 0;
+  width: 48px;
+  height: 48px;
+  padding: 0;
   cursor: pointer;
   transition: transform var(--dur-fast) var(--ease-spring);
 }
 
 .player-row .avatar:hover {
   transform: scale(1.1) rotate(-6deg);
-}
-
-.segmented--sm button {
-  min-height: 30px;
-  padding: 0 var(--space-3);
-  font-size: var(--fs-xs);
 }
 
 .setup__options {
@@ -158,15 +137,15 @@
 
 .option {
   display: grid;
-  gap: var(--space-2);
+  gap: 6px;
 }
 
 .option__label {
-  color: var(--text-muted);
-  font-size: var(--fs-sm);
-  font-weight: 800;
+  color: var(--ink-2);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .option .segmented {
@@ -179,9 +158,9 @@
 
 .setup__actions {
   display: flex;
-  gap: var(--space-3);
-  justify-content: space-between;
   flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-bottom: 5px;
 }
 
 .setup__actions .btn--primary {
@@ -190,14 +169,15 @@
 }
 
 .setup__hint {
-  color: var(--text-dim);
+  color: var(--ink-2);
   font-size: var(--fs-sm);
+  font-weight: 700;
   text-align: center;
 }
 
 .setup__error {
-  color: var(--danger);
-  font-weight: 800;
+  color: var(--red-d);
   font-size: var(--fs-sm);
+  font-weight: 800;
   text-align: center;
 }
