@@ -170,3 +170,25 @@ def test_pagina_inicial_tem_politica_de_conteudo():
         assert "default-src 'self'" in response.headers["content-security-policy"]
         # A documentação da API (Swagger) precisa de scripts externos: não leva a política da página.
         assert "content-security-policy" not in client.get("/api/health").headers
+
+
+def test_documentacao_da_api_some_em_producao():
+    prod = Settings(
+        supabase_jwt_secret=JWT_SECRET, referee_enabled=False, serve_frontend=False, environment="production",
+        supabase_url="https://abc123.supabase.co", supabase_anon_key="x", supabase_service_key="y",
+    )
+    dev = Settings(supabase_jwt_secret=JWT_SECRET, referee_enabled=False, serve_frontend=False)
+    with TestClient(create_app(prod, MemoryStore())) as client:
+        assert client.get("/api/docs").status_code == 404
+        assert client.get("/api/openapi.json").status_code == 404
+        assert client.get("/api/health").status_code == 200
+    with TestClient(create_app(dev, MemoryStore())) as client:
+        assert client.get("/api/docs").status_code == 200
+
+
+def test_monitores_de_disponibilidade_podem_usar_head():
+    settings = Settings(supabase_jwt_secret=JWT_SECRET, referee_enabled=False, serve_frontend=True, rate_limit_enabled=False)
+    with TestClient(create_app(settings, MemoryStore())) as client:
+        assert client.head("/api/health").status_code == 200
+        page = client.head("/")
+        assert page.status_code == 200 and "default-src 'self'" in page.headers["content-security-policy"]

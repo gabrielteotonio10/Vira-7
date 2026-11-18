@@ -94,8 +94,9 @@ def create_app(settings: Settings | None = None, store=None) -> FastAPI:
         version=__version__,
         description="API do jogo de cartas Vira-7: contas, salas e partidas online em tempo real.",
         lifespan=lifespan,
-        docs_url="/api/docs",
-        openapi_url="/api/openapi.json",
+        # A documentação interativa só existe fora de produção.
+        docs_url=None if settings.environment == "production" else "/api/docs",
+        openapi_url=None if settings.environment == "production" else "/api/openapi.json",
         redoc_url=None,
     )
     app.state.settings = settings
@@ -150,7 +151,7 @@ def create_app(settings: Settings | None = None, store=None) -> FastAPI:
 
         page_headers = {"Cache-Control": "no-cache", "Content-Security-Policy": content_security_policy(settings)}
 
-        @app.get("/", include_in_schema=False)
+        @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
         async def index() -> FileResponse:
             return FileResponse(PROJECT_DIR / "index.html", headers=page_headers)
 
