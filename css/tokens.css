@@ -1,94 +1,90 @@
 /* ==========================================================================
-   Vira-7 — Design tokens
-   Cores, tipografia, espaçamentos, sombras e tempos de animação.
+   Vira-7 — Identidade visual
+   Um jogo de tabuleiro impresso: papel creme, contorno de tinta, cores chapadas
+   e sombras duras. Sem degradês, sem brilhos, sem vidro.
    ========================================================================== */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* ---- Mesa e superfícies ---- */
-  --bg-0: #0b0a1f;
-  --bg-1: #141233;
-  --bg-2: #1d1a47;
-  --felt-1: #1b1f5c;
-  --felt-2: #0f1238;
-  --surface: rgba(255, 255, 255, 0.06);
-  --surface-strong: rgba(255, 255, 255, 0.1);
-  --surface-solid: #221f52;
-  --border: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.24);
+  /* ---- Papel e tinta ---- */
+  --paper: #fff6e5;
+  --paper-2: #f6e9cf;
+  --surface: #ffffff;
+  --ink: #1b2333;
+  --ink-2: #4b566b;
+  --ink-3: #8a92a3;
+  --line: #e2d4b8;
 
-  /* ---- Texto ---- */
-  --text: #f5f3ff;
-  --text-muted: #b8b4e0;
-  --text-dim: #8a86b8;
-  --text-on-light: #1a1840;
+  /* ---- Cores da marca (cada uma com seu tom escuro, para o relevo) ---- */
+  --red: #dc3a32;
+  --red-d: #b02921;
+  --yellow: #ffc530;
+  --yellow-d: #d29404;
+  --green: #22b573;
+  --green-d: #14854d;
+  --blue: #2f7df6;
+  --blue-d: #1b57c2;
+  --purple: #9457f5;
+  --purple-d: #6c38cf;
+  --pink: #ff7096;
+  --ice: #8fdcff;
+  --ice-d: #2c9fdc;
 
-  /* ---- Marca ---- */
-  --brand-1: #ff5ea8;
-  --brand-2: #ffb547;
-  --brand-3: #5ee7ff;
-  --brand-gradient: linear-gradient(135deg, #ff5ea8 0%, #ff8a5c 45%, #ffcf47 100%);
-  --rainbow: linear-gradient(90deg, #ff5e7e, #ffb547, #ffe45e, #5eff9b, #5ee7ff, #8a7bff, #ff5ec8);
+  /* ---- Mesa de jogo ---- */
+  --night: #141c2a;
+  --night-2: #202b3e;
+  --felt: #20a070;
+  --felt-d: #178058;
 
-  /* ---- Estados ---- */
-  --success: #3ee08f;
-  --success-strong: #16b86a;
-  --danger: #ff4d6d;
-  --danger-strong: #d61f45;
-  --warning: #ffc53d;
-  --ice: #7fd8ff;
-  --ice-strong: #2fb4f5;
-  --magic: #c77dff;
-  --gold: #ffd166;
-
-  /* ---- Cores das cartas numéricas (0 a 12) ---- */
-  --n0: #8f9bb3;
-  --n1: #ff5e7e;
-  --n2: #ff7a45;
-  --n3: #ffa62b;
-  --n4: #f2c12e;
-  --n5: #9ad334;
-  --n6: #2fc76a;
-  --n7: #12c2a6;
-  --n8: #1fb6e0;
-  --n9: #3d8bff;
-  --n10: #6c6cff;
-  --n11: #9b5cff;
-  --n12: #e05cf0;
-
-  /* ---- Cartas especiais ---- */
-  --mod-1: #ffd166;
-  --mod-2: #ff9f43;
-  --x2-1: #ff7a59;
-  --x2-2: #ff4fa3;
-  --freeze-1: #9be7ff;
-  --freeze-2: #2f9bf5;
-  --flip3-1: #c77dff;
-  --flip3-2: #ff4fa3;
-  --chance-1: #5ef2b0;
-  --chance-2: #12b5a5;
+  /* ---- Cartas numéricas (0 a 12). O 7, símbolo do jogo, é a carta amarela. ---- */
+  --n0: #8a93a5;
+  --n1: #f0483e;
+  --n2: #ff7a2f;
+  --n3: #f5a300;
+  --n4: #9acb1e;
+  --n5: #22b573;
+  --n6: #0fa89c;
+  --n7: #ffc530;
+  --n8: #18a8e6;
+  --n9: #2f7df6;
+  --n10: #5b5fef;
+  --n11: #9457f5;
+  --n12: #e04bc4;
 
   /* ---- Cores dos jogadores ---- */
-  --p1: #ff5e7e;
-  --p2: #3d8bff;
-  --p3: #2fc76a;
-  --p4: #ffa62b;
-  --p5: #9b5cff;
-  --p6: #12c2a6;
-  --p7: #e05cf0;
-  --p8: #f2c12e;
+  --p1: #e5484d;
+  --p2: #2f7df6;
+  --p3: #1fa35c;
+  --p4: #f08c00;
+  --p5: #8b5cf6;
+  --p6: #0e9aa7;
+  --p7: #e64980;
+  --p8: #b8890b;
+
+  /* ---- Nomes usados pelo JavaScript (avisos, histórico, medidor de risco) ---- */
+  --text: var(--ink);
+  --text-muted: var(--ink-2);
+  --text-dim: var(--ink-3);
+  --success: var(--green);
+  --danger: var(--red);
+  --warning: #f5a300;
+  --gold: var(--yellow-d);
+  --brand-2: var(--yellow-d);
+  --brand-3: var(--blue);
+  --magic: var(--purple);
+  --chance-1: var(--green-d);
 
   /* ---- Tipografia ---- */
-  --font-display: 'Fredoka', 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
-  --font-ui: 'Nunito', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+  --font-ui: 'Figtree', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --fs-xs: 0.75rem;
   --fs-sm: 0.875rem;
   --fs-md: 1rem;
   --fs-lg: 1.25rem;
   --fs-xl: 1.75rem;
   --fs-2xl: 2.5rem;
-  --fs-hero: clamp(3rem, 9vw, 6.5rem);
+  --fs-hero: clamp(3.2rem, 10vw, 6rem);
 
   /* ---- Espaçamento ---- */
   --space-1: 4px;
@@ -101,28 +97,29 @@
 
   /* ---- Formas ---- */
   --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 22px;
-  --radius-xl: 32px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
   --radius-pill: 999px;
+  /* Espessura do traço de tinta */
+  --stroke: 2.5px;
 
-  /* ---- Sombras ---- */
-  --shadow-sm: 0 2px 6px rgba(5, 4, 20, 0.35);
-  --shadow-md: 0 10px 24px rgba(5, 4, 20, 0.45);
-  --shadow-lg: 0 24px 60px rgba(5, 4, 20, 0.6);
-  --glow-brand: 0 0 0 2px rgba(255, 94, 168, 0.5), 0 0 32px rgba(255, 94, 168, 0.45);
+  /* ---- Relevo: sombra dura, como um adesivo ---- */
+  --lift-sm: 0 3px 0 var(--ink);
+  --lift: 0 5px 0 var(--ink);
+  --lift-lg: 0 8px 0 var(--ink);
+  --rest: 0 5px 0 var(--line);
 
   /* ---- Cartas ---- */
   --card-w: 64px;
   --card-ratio: 1.4;
-  --card-radius: 12%;
 
   /* ---- Movimento ---- */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --dur-fast: 160ms;
-  --dur-med: 320ms;
+  --dur-fast: 140ms;
+  --dur-med: 280ms;
   --dur-slow: 600ms;
 
   /* ---- Camadas ---- */
@@ -135,6 +132,5 @@
   --z-toast: 90;
   --z-fx: 95;
 
-  --topbar-h: 64px;
-  --dock-h: 148px;
+  --topbar-h: 62px;
 }
