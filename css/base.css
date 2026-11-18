@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Vira-7 — Base: reset, tipografia e fundo da aplicação
+   Vira-7 — Base: reset, tipografia e fundo
    ========================================================================== */
 
 *,
@@ -19,15 +19,13 @@ body {
   min-height: 100%;
   font-family: var(--font-ui);
   font-size: var(--fs-md);
-  line-height: 1.5;
-  color: var(--text);
-  background-color: var(--bg-0);
-  background-image:
-    radial-gradient(1200px 700px at 15% -10%, rgba(255, 94, 168, 0.18), transparent 60%),
-    radial-gradient(900px 600px at 110% 10%, rgba(94, 231, 255, 0.14), transparent 60%),
-    radial-gradient(1000px 800px at 50% 120%, rgba(155, 92, 255, 0.22), transparent 60%),
-    linear-gradient(180deg, var(--bg-1), var(--bg-0));
-  background-attachment: fixed;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink);
+  /* Papel creme com uma trama de pontos, como o verso de um tabuleiro. */
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--line) 1.2px, transparent 1.3px);
+  background-size: 22px 22px;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
@@ -39,13 +37,17 @@ h3,
 h4 {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 600;
-  line-height: 1.1;
+  font-weight: 400;
+  line-height: 1.05;
   letter-spacing: 0.01em;
 }
 
 p {
   margin: 0;
+}
+
+a {
+  color: var(--blue-d);
 }
 
 button,
@@ -65,12 +67,13 @@ svg {
 }
 
 :focus-visible {
-  outline: 3px solid var(--brand-3);
+  outline: 3px solid var(--blue);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: rgba(255, 94, 168, 0.4);
+  background: var(--yellow);
+  color: var(--ink);
 }
 
 .sr-only {
@@ -95,10 +98,9 @@ svg {
   flex: none;
 }
 
-/* Barra de rolagem discreta */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-color: var(--ink-3) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -107,8 +109,17 @@ svg {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--ink-3);
   border-radius: 10px;
   border: 2px solid transparent;
   background-clip: padding-box;
+}
+
+/* Preferência "Reduzir movimento" dos ajustes (além da do sistema, em animations.css). */
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
 }

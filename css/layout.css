@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Vira-7 — Layout geral: telas, barra superior, mesa e doca de ações
+   Vira-7 — Estrutura das telas: barra superior, mesa e doca de ações
    ========================================================================== */
 
 .app {
@@ -14,7 +14,18 @@
   animation: fade-in var(--dur-med) var(--ease-out);
 }
 
-/* ---- Tela de jogo ---- */
+.page {
+  width: min(1040px, 100% - 32px);
+  margin: 0 auto;
+  padding: var(--space-5) 0 var(--space-7);
+  animation: slide-up 280ms var(--ease-out);
+}
+
+.page--narrow {
+  width: min(540px, 100% - 32px);
+}
+
+/* ---- Tela de jogo: barra clara, mesa escura, doca clara ---- */
 .game-screen {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -22,9 +33,9 @@
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  background: var(--night);
 }
 
-/* ---- Barra superior ---- */
 .topbar {
   position: relative;
   z-index: var(--z-topbar);
@@ -32,22 +43,21 @@
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
-  padding: 0 var(--space-5);
-  background: linear-gradient(180deg, rgba(11, 10, 31, 0.92), rgba(11, 10, 31, 0.6));
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  padding: 0 var(--space-4);
+  background: var(--paper);
+  border-bottom: 3px solid var(--ink);
 }
 
 .topbar .logo {
-  font-size: 1.6rem;
+  font-size: 1.7rem;
 }
 
 .topbar__info {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-left: var(--space-3);
+  min-width: 0;
+  margin-left: var(--space-2);
 }
 
 .topbar__spacer {
@@ -60,53 +70,37 @@
   gap: var(--space-2);
 }
 
-/* ---- Mesa (feltro) ---- */
+/* ---- Área da mesa ---- */
 .table {
   position: relative;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--space-5);
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.06), transparent 60%),
-    radial-gradient(ellipse at 50% 100%, var(--felt-1), var(--felt-2) 75%);
-  box-shadow: inset 0 20px 60px rgba(0, 0, 0, 0.35), inset 0 -20px 60px rgba(0, 0, 0, 0.35);
-}
-
-.table::before {
-  /* Textura sutil de pontos sobre o feltro */
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px);
-  background-size: 18px 18px;
-  pointer-events: none;
+  overflow-y: auto;
+  padding: var(--space-4);
+  background-color: var(--night);
+  background-image: radial-gradient(var(--night-2) 1.5px, transparent 1.6px);
+  background-size: 24px 24px;
 }
 
 /* ---- Doca inferior ---- */
 .dock {
   position: relative;
   z-index: var(--z-dock);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-5);
-  padding: var(--space-4) var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom));
-  background: linear-gradient(0deg, rgba(11, 10, 31, 0.98), rgba(20, 18, 51, 0.92));
-  border-top: 1px solid var(--border);
-  box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.35);
+  padding: var(--space-3) var(--space-5) calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--paper);
+  border-top: 3px solid var(--ink);
 }
 
+/* Faixa com a cor do jogador da vez */
 .dock::before {
-  /* Linha colorida na borda da doca com a cor do jogador da vez */
   content: '';
   position: absolute;
-  top: -2px;
+  top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--turn-color, var(--brand-1)), transparent);
+  height: 6px;
+  background: var(--turn-color, transparent);
   transition: background var(--dur-med);
 }
 
@@ -115,11 +109,8 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-5);
+  max-width: 1280px;
   min-width: 0;
-}
-
-/* ---- Utilitário de página genérica centralizada ---- */
-.page {
-  width: min(1100px, 100% - 32px);
   margin: 0 auto;
+  padding-top: 4px;
 }

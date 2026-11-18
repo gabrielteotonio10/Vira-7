@@ -8,15 +8,16 @@
   const { icon } = F7.icons;
   const { RULES } = F7;
 
-  const PLAYER_COLORS = ['#ff5e7e', '#3d8bff', '#2fc76a', '#ffa62b', '#9b5cff', '#12c2a6', '#e05cf0', '#f2c12e'];
+  const PLAYER_COLORS = ['#e5484d', '#2f7df6', '#1fa35c', '#f08c00', '#8b5cf6', '#0e9aa7', '#e64980', '#b8890b'];
+  const AVATARS = F7.Avatars ? F7.Avatars.KEYS : [];
   const BOT_NAMES = ['Rita', 'Beto', 'Lia', 'Caio', 'Nina', 'Davi', 'Bia', 'Téo', 'Malu', 'Gui'];
 
   const DEFAULT_SETUP = {
     players: [
-      { name: 'Você', isBot: false, color: PLAYER_COLORS[0] },
-      { name: 'Rita', isBot: true, color: PLAYER_COLORS[1] },
-      { name: 'Beto', isBot: true, color: PLAYER_COLORS[2] },
-      { name: 'Lia', isBot: true, color: PLAYER_COLORS[3] },
+      { name: 'Você', isBot: false, color: PLAYER_COLORS[0], avatar: 'raposa' },
+      { name: 'Rita', isBot: true, color: PLAYER_COLORS[1], avatar: 'coruja' },
+      { name: 'Beto', isBot: true, color: PLAYER_COLORS[2], avatar: 'urso' },
+      { name: 'Lia', isBot: true, color: PLAYER_COLORS[3], avatar: 'gato' },
     ],
     targetScore: RULES.DEFAULT_TARGET_SCORE,
     speed: 1,
@@ -52,6 +53,7 @@
           name: String(p.name || '').slice(0, 14),
           isBot: !!p.isBot,
           color: PLAYER_COLORS.includes(p.color) ? p.color : PLAYER_COLORS[i % PLAYER_COLORS.length],
+          avatar: AVATARS.includes(p.avatar) ? p.avatar : AVATARS[i % (AVATARS.length || 1)],
         })),
         targetScore: [100, 200, 300].includes(saved.targetScore) ? saved.targetScore : RULES.DEFAULT_TARGET_SCORE,
         speed: [1, 1.6, 2.4].includes(saved.speed) ? saved.speed : 1,
@@ -138,6 +140,7 @@
         name: BOT_NAMES.find((n) => !usedNames.has(n)) || `CPU ${players.length + 1}`,
         isBot: true,
         color: PLAYER_COLORS.find((c) => !usedColors.has(c)) || PLAYER_COLORS[0],
+        avatar: AVATARS.find((a) => !players.some((p) => p.avatar === a)) || AVATARS[0],
       });
       F7.Sound.click();
       this.persist();
@@ -155,6 +158,25 @@
         this.render();
       }, 200);
       F7.Sound.click();
+    }
+
+    /** Abre a escolha de personagem do jogador. */
+    async chooseAvatar(index) {
+      const player = this.state.players[index];
+      if (!F7.Avatars) return this.cycleColor(index);
+      const picker = F7.Avatars.picker({ value: player.avatar });
+      const ok = await F7.Modals.open({
+        title: `Personagem de ${player.name || `Jogador ${index + 1}`}`,
+        eyebrow: 'Escolha o bichinho',
+        body: picker.el,
+        actions: [{ label: 'Confirmar', value: true, variant: 'primary' }],
+      }).result;
+      if (ok) {
+        player.avatar = picker.value;
+        this.persist();
+        this.render();
+      }
+      return undefined;
     }
 
     cycleColor(index) {
@@ -192,12 +214,13 @@
         {
           type: 'button',
           class: 'avatar',
-          title: 'Trocar cor',
-          'aria-label': `Trocar a cor de ${player.name || 'jogador'}`,
-          onClick: () => this.cycleColor(index),
+          title: 'Trocar personagem',
+          'aria-label': `Trocar o personagem de ${player.name || 'jogador'}`,
+          onClick: () => this.chooseAvatar(index),
         },
         initial(player.name),
       );
+      if (F7.Avatars) F7.Avatars.fill(avatar, player);
 
       const input = h('input', {
         class: 'field',
@@ -210,7 +233,7 @@
         spellcheck: 'false',
         onInput: (event) => {
           player.name = event.target.value;
-          avatar.textContent = initial(player.name || `J`);
+          if (!player.avatar) avatar.textContent = initial(player.name || 'J');
           this.persist();
         },
         onKeydown: (event) => {
@@ -275,6 +298,7 @@
           name: p.name.trim() || `Jogador ${i + 1}`,
           isBot: p.isBot,
           color: p.color,
+          avatar: p.avatar,
           riskTolerance: F7.AI.randomRiskTolerance(),
         })),
         targetScore: this.state.targetScore,

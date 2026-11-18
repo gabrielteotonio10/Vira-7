@@ -21,6 +21,13 @@
   const dur = (ms) => (state.reduced ? Math.min(ms, 60) : ms / state.speed);
   const wait = (ms) => F7.utils.wait(dur(ms));
 
+  /**
+   * Espera uma animação terminar, mas nunca para sempre: com a aba em segundo plano o
+   * navegador pausa as animações, e a partida online não pode ficar presa nisso.
+   */
+  const settle = (animation, ms) =>
+    Promise.race([animation.finished.catch(() => {}), F7.utils.wait(ms + 250)]);
+
   function setSpeed(speed) {
     state.speed = speed > 0 ? speed : 1;
   }
@@ -88,9 +95,7 @@
       );
     }
 
-    return move.finished
-      .catch(() => {})
-      .then(() => el.remove());
+    return settle(move, time).then(() => el.remove());
   }
 
   /**
@@ -118,7 +123,7 @@
     const { x, y } = center(rect);
     setTimeout(() => burst(x, y, { colors: ['#ffffff', '#c9c4ff'], count: 8, speed: 160, size: 3, life: 0.5, gravity: 200 }), time * 0.6);
 
-    return anim.finished.catch(() => {}).then(() => cardEl.remove());
+    return settle(anim, time).then(() => cardEl.remove());
   }
 
   /* ------------------------------------------------------------------ */
@@ -411,14 +416,24 @@
     }
     return new Promise((resolve) => {
       const start = performance.now();
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        el.textContent = String(to);
+        resolve();
+      };
       const step = (now) => {
+        if (done) return;
         const t = Math.min(1, (now - start) / time);
         const eased = 1 - Math.pow(1 - t, 3);
         el.textContent = String(Math.round(from + (to - from) * eased));
         if (t < 1) requestAnimationFrame(step);
-        else resolve();
+        else finish();
       };
       requestAnimationFrame(step);
+      // Garante o fim mesmo se a aba não estiver sendo desenhada.
+      setTimeout(finish, time + 250);
     });
   }
 
