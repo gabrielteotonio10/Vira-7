@@ -13,7 +13,8 @@ from . import get_store
 router = APIRouter(tags=["meta"])
 
 
-@router.get("/health")
+# HEAD também: monitores gratuitos de disponibilidade costumam usá-lo.
+@router.api_route("/health", methods=["GET", "HEAD"])
 async def health(request: Request) -> dict:
     settings = request.app.state.settings
     return {

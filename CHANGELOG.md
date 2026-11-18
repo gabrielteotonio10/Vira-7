@@ -3,6 +3,17 @@
 Todas as mudanças relevantes deste projeto são documentadas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+
+- Hospedagem gratuita no Render: blueprint `render.yaml` (API e página no mesmo endereço) e guia passo a passo em `docs/HOSPEDAGEM.md`.
+
+### Alterado
+
+- Em produção (`APP_ENV=production`) a documentação interativa da API fica desligada.
+- `/api/health` e a página inicial também respondem a HEAD, para monitores de disponibilidade gratuitos.
+
 ## [2.0.0] - 2026-11-16
 
 ### Adicionado

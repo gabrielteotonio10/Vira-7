@@ -1,0 +1,41 @@
+# Blueprint do Render: hospedagem gratuita do Vira-7 (API + página no mesmo endereço).
+# Guia passo a passo em docs/HOSPEDAGEM.md.
+#
+# As chaves marcadas com `sync: false` NÃO ficam neste arquivo: o Render pede os valores
+# no painel na primeira vez. Nunca coloque chaves secretas aqui.
+
+services:
+  - type: web
+    name: vira7
+    runtime: python
+    plan: free
+    # Oregon fica perto do banco (Supabase em us-west-2), o que reduz a latência.
+    region: oregon
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: APP_ENV
+        value: production
+      # A própria API serve a página; assim tudo fica no mesmo endereço (sem CORS).
+      - key: SERVE_FRONTEND
+        value: "true"
+      - key: REFEREE_ENABLED
+        value: "true"
+      - key: DISCONNECT_GRACE_SECONDS
+        value: "40"
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      # O Render fica na frente da API: o limite de requisições usa o IP do visitante.
+      - key: TRUST_PROXY
+        value: "true"
+      # Valores do seu projeto Supabase (Project Settings > API). Preencha no painel do Render.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
