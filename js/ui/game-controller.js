@@ -30,12 +30,33 @@
       this.game = null;
       this.turnPlayer = null;
       this.lastChoice = null;
+      this.options = {};
     }
 
-    attach(game) {
+    /**
+     * @param {object} game motor local (F7.Game) ou espelho de uma partida online
+     * @param {{
+     *   perspective?: number|string,        id do jogador que fica embaixo na mesa
+     *   isMe?: (player: object) => boolean, quem é "você" (partidas online)
+     *   autoNextMs?: number,                fecha o placar da rodada sozinho
+     *   gameOverActions?: object[],         botões da tela de fim de jogo
+     * }} [options]
+     */
+    attach(game, options = {}) {
       this.game = game;
+      this.options = options;
       this.turnPlayer = null;
       this.lastChoice = null;
+    }
+
+    isMe(player) {
+      return this.options.isMe ? this.options.isMe(player) : !player.isBot;
+    }
+
+    perspective(game) {
+      if (this.options.perspective !== undefined && this.options.perspective !== null) return this.options.perspective;
+      const human = game.players.find((p) => !p.isBot);
+      return (human || game.players[0]).id;
     }
 
     /** Libera qualquer espera de entrada (usado ao interromper a partida). */
@@ -61,17 +82,27 @@
         this.table.setThinking(player, false);
         return F7.AI.decideMove(player, game);
       }
+      return this.promptMove(player, game);
+    }
+
+    async chooseTarget(player, kind, candidates, game) {
+      if (player.isBot) {
+        const target = F7.AI.chooseTarget(player, kind, candidates, game);
+        await this.table.previewTargets(candidates, target, TARGET_INFO[kind]);
+        return target;
+      }
+      return this.promptTarget(player, kind, candidates);
+    }
+
+    /** Espera a pessoa escolher Virar ou Parar. */
+    promptMove(player, game) {
       this.hud.updateRisk(player, game);
       return this.hud.waitForMove();
     }
 
-    async chooseTarget(player, kind, candidates, game) {
+    /** Espera a pessoa clicar no alvo de uma carta de ação. */
+    async promptTarget(player, kind, candidates) {
       const info = TARGET_INFO[kind];
-      if (player.isBot) {
-        const target = F7.AI.chooseTarget(player, kind, candidates, game);
-        await this.table.previewTargets(candidates, target, info);
-        return target;
-      }
       this.hud.showPrompt(`${player.name}, escolha quem vai ${info.verb}`, {
         iconName: info.iconName,
         color: info.color,
@@ -161,7 +192,7 @@
     /* ================================================================== */
 
     async onGameStart(payload, game) {
-      this.table.setup(game);
+      this.table.setup(game, { perspective: this.perspective(game) });
       this.hud.setTarget(game.targetScore);
       this.hud.setDeckCount(game.deck.size);
       this.hud.clearLog();
@@ -205,8 +236,27 @@
     async onTurnStart({ player }, game) {
       this.turnPlayer = player;
       this.table.setTurn(player);
-      this.hud.setTurn(player, game);
-      if (!player.isBot) F7.Sound.turn();
+      const mine = this.isMe(player);
+      const label = mine ? 'Sua vez,' : player.isBot ? 'CPU jogando' : 'Vez de';
+      this.hud.setTurn(player, game, { label });
+      this.hud.setStatus(mine && this.options.isMe ? 'Sua vez!' : `Vez de ${player.name}`);
+      // A doca muda de altura ao mostrar risco e relógio: confere de novo se o lugar cabe.
+      this.table.reveal(player);
+      if (mine) F7.Sound.turn();
+    }
+
+    /** O servidor jogou por alguém (tempo esgotado ou sem conexão). */
+    async onAutoPlay({ player, reason }) {
+      const why = reason === 'disconnected' ? 'está sem conexão' : 'demorou demais';
+      this.hud.toast(`${who(player)} ${why}: jogada automática.`, { iconName: 'history' });
+      this.hud.log(`${who(player)} ${why}; o servidor jogou por ele.`, 'var(--warning)');
+    }
+
+    /** Alguém saiu da partida online. */
+    async onPlayerLeft({ player }) {
+      this.table.renderSeat(player);
+      this.hud.toast(`${who(player)} saiu da partida.`, { variant: 'bust', iconName: 'user' });
+      this.hud.log(`${who(player)} saiu da partida.`, 'var(--danger)');
     }
 
     async onTurnEnd() {
@@ -397,7 +447,7 @@
       const victory = F7.Scoring.checkVictory(game.players, game.targetScore);
       const allBots = game.players.every((p) => p.isBot);
       await F7.Modals.roundSummary(payload, game, {
-        autoNextMs: allBots ? 6000 : 0,
+        autoNextMs: this.options.autoNextMs ?? (allBots ? 6000 : 0),
         finalRound: victory.over,
         tie: victory.tie,
       });
@@ -442,12 +492,21 @@
     }
 
     async onGameOver(payload, game) {
-      const { winner } = payload;
-      F7.Sound.win();
-      F7.FX.confetti({ count: 220 });
-      setTimeout(() => F7.FX.confetti({ count: 120 }), F7.FX.dur(1200));
-      this.hud.log(`🏆 ${who(winner)} venceu com <b>${winner.total}</b> pontos!`, 'var(--gold)');
-      this.lastChoice = await F7.Modals.gameOver(payload, game);
+      const { winner, reason } = payload;
+      this.turnPlayer = null;
+      this.hud.setTurn(null);
+      this.hud.setDeadline(null);
+      this.table.setTurn(null);
+      if (winner) {
+        F7.Sound.win();
+        F7.FX.confetti({ count: 220 });
+        setTimeout(() => F7.FX.confetti({ count: 120 }), F7.FX.dur(1200));
+        const how = reason === 'forfeit' ? 'por abandono dos adversários' : `com <b>${winner.total}</b> pontos`;
+        this.hud.log(`🏆 ${who(winner)} venceu ${how}!`, 'var(--gold)');
+      } else {
+        this.hud.log('A partida foi encerrada.', 'var(--text-dim)');
+      }
+      this.lastChoice = await F7.Modals.gameOver(payload, game, { actions: this.options.gameOverActions });
     }
   }
 

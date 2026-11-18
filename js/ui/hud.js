@@ -36,7 +36,12 @@
         toasts: qs('#toasts'),
         log: qs('#log'),
         logDrawer: qs('#log-drawer'),
+        timer: qs('#turn-timer', root),
+        arenaStatus: qs('#arena-status', root),
       };
+      this.timerHandle = null;
+      /** Preferência do jogador: mostrar ou não o medidor de risco. */
+      this.showRisk = true;
       this.pendingMove = null;
       this.isBlocked = () => false;
       this.bindKeyboard();
@@ -63,23 +68,33 @@
     /* Jogador da vez                                                      */
     /* ------------------------------------------------------------------ */
 
-    setTurn(player, game) {
+    /**
+     * @param {object|null} player jogador da vez
+     * @param {object} [game]
+     * @param {{ label?: string }} [options] texto acima do nome ("Sua vez,", "Vez de"…)
+     */
+    setTurn(player, game, { label } = {}) {
       const { turnAvatar, turnLabel, turnName, dock } = this.el;
       if (!player) {
         turnLabel.textContent = 'Aguarde';
         turnName.textContent = '—';
         turnAvatar.textContent = '·';
+        turnAvatar.classList.remove('avatar--animal');
+        turnAvatar.classList.add('is-idle');
         turnAvatar.style.removeProperty('--avatar-color');
         dock.style.removeProperty('--turn-color');
         this.el.risk.classList.add('is-hidden');
         this.setActionsEnabled(false);
+        this.setStatus('');
         return;
       }
 
-      turnAvatar.textContent = initial(player.name);
+      turnAvatar.classList.remove('is-idle');
+      if (F7.Avatars) F7.Avatars.fill(turnAvatar, player);
+      else turnAvatar.textContent = initial(player.name);
       turnAvatar.style.setProperty('--avatar-color', player.color);
       dock.style.setProperty('--turn-color', player.color);
-      turnLabel.textContent = player.isBot ? 'CPU jogando' : 'Sua vez,';
+      turnLabel.textContent = label || (player.isBot ? 'CPU jogando' : 'Sua vez,');
       if (turnName.textContent !== player.name) {
         turnName.textContent = player.name;
         F7.FX.retrigger(turnName, 'is-changing', 360);
@@ -88,10 +103,42 @@
       this.setActionsEnabled(false);
     }
 
+    /** Frase curta no centro da mesa ("Vez de Ana", "Escolhendo alvo…"). */
+    setStatus(text) {
+      if (this.el.arenaStatus) this.el.arenaStatus.textContent = text || '';
+    }
+
+    /**
+     * Relógio do turno. `deadline` é o instante (ms, no relógio local) em que o tempo
+     * acaba; `total` é a duração cheia, para a barra. `null` esconde o relógio.
+     */
+    setDeadline(deadline, total = 30000) {
+      const { timer } = this.el;
+      clearInterval(this.timerHandle);
+      this.timerHandle = null;
+      if (!timer) return;
+      if (!deadline) {
+        timer.hidden = true;
+        return;
+      }
+      const value = qs('strong', timer);
+      const tick = () => {
+        // O servidor soma ao prazo o tempo das animações; o relógio só mostra o tempo da
+        // sala (ex.: 30 s), que começa a descer quando o restante fica abaixo disso.
+        const left = Math.min(total, Math.max(0, deadline - Date.now()));
+        timer.style.setProperty('--left', Math.min(1, left / total).toFixed(3));
+        timer.classList.toggle('is-urgent', left <= 5000);
+        value.textContent = `${Math.ceil(left / 1000)}s`;
+      };
+      timer.hidden = false;
+      tick();
+      this.timerHandle = setInterval(tick, 250);
+    }
+
     updateRisk(player, game) {
       const { risk, riskValue, riskHint } = this.el;
       if (!player || !game) return;
-      risk.classList.remove('is-hidden');
+      risk.classList.toggle('is-hidden', !this.showRisk);
 
       const odds = game.bustOdds(player);
       const chance = player.numbers.length ? odds.chance : 0;

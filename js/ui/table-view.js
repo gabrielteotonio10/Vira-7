@@ -30,22 +30,57 @@
     /* Montagem                                                            */
     /* ------------------------------------------------------------------ */
 
-    setup(game) {
+    /**
+     * Monta a mesa: o jogador de `perspective` fica embaixo e os outros se distribuem
+     * em volta do baralho, no sentido do jogo.
+     * @param {object} game
+     * @param {{ perspective?: number|string }} [options] id do jogador que fica embaixo
+     */
+    setup(game, { perspective } = {}) {
       this.game = game;
       this.seats.clear();
-      clear(this.seatsEl);
-      game.players.forEach((player, index) => {
+
+      const meArea = qs('.arena__me', this.seatsEl);
+      const opponentsArea = qs('.arena__opponents', this.seatsEl);
+      if (meArea && opponentsArea) {
+        clear(meArea);
+        clear(opponentsArea);
+      } else {
+        clear(this.seatsEl);
+      }
+
+      const players = game.players;
+      const meIndex = Math.max(0, players.findIndex((p) => p.id === perspective));
+      const ordered = players.map((_, i) => players[(meIndex + i) % players.length]);
+      const others = ordered.length - 1;
+      this.seatsEl.dataset.players = String(players.length);
+
+      ordered.forEach((player, index) => {
+        const isMe = index === 0;
         const seat = this.buildSeat(player, index);
+        seat.el.classList.add(isMe ? 'seat--me' : 'seat--compact');
         this.seats.set(player.id, seat);
-        this.seatsEl.appendChild(seat.el);
+
+        if (!meArea || !opponentsArea) {
+          this.seatsEl.appendChild(seat.el);
+          return;
+        }
+        // --arc vai de -1 (esquerda) a 1 (direita): quem está nas pontas fica mais baixo,
+        // desenhando a curva da mesa em volta do baralho.
+        const arc = isMe || others <= 2 ? 0 : ((index - 1) / (others - 1)) * 2 - 1;
+        const slot = h('div', { class: 'seat-slot', style: { '--arc': arc.toFixed(3), '--arc-abs': Math.abs(arc).toFixed(3) } }, seat.el);
+        (isMe ? meArea : opponentsArea).appendChild(slot);
       });
+
       this.renderAll();
       this.renderPiles();
     }
 
     buildSeat(player, index) {
+      const avatar = h('div', { class: 'avatar' }, initial(player.name));
+      if (F7.Avatars) F7.Avatars.fill(avatar, player);
       const parts = {
-        avatar: h('div', { class: 'avatar' }, initial(player.name)),
+        avatar,
         name: h('span', { class: 'seat__name-text' }, player.name),
         tags: h('span', { class: 'seat__tags' }),
         status: h('span', { class: 'badge seat__status' }),
@@ -124,11 +159,20 @@
     reveal(player) {
       const el = this.seatEl(player);
       if (!el) return;
+      // A área da mesa rola quando não cabe (celular): mantém o lugar inteiro à vista,
+      // com uma folga, sem pular a tela inteira.
+      const area = this.seatsEl.parentElement;
+      const box = area.getBoundingClientRect();
       const rect = el.getBoundingClientRect();
-      const container = this.seatsEl.parentElement.getBoundingClientRect();
-      if (rect.top < container.top || rect.bottom > container.bottom) {
-        el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
-      }
+      const margin = 10;
+      if (rect.bottom > box.bottom - margin) area.scrollTop += rect.bottom - box.bottom + margin;
+      else if (rect.top < box.top + margin) area.scrollTop -= box.top + margin - rect.top;
+    }
+
+    /** Marca um jogador como conectado ou não (partidas online). */
+    setOnline(player, online) {
+      const el = this.seatEl(player);
+      if (el) el.classList.toggle('is-offline', !online);
     }
 
     /* ------------------------------------------------------------------ */
@@ -153,9 +197,11 @@
 
       el.dataset.status = player.status;
       el.dataset.flip7 = String(player.flip7);
+      el.classList.toggle('is-absent', !!player.absent);
 
       // Nome, CPU e carteador
       clear(parts.tags);
+      if (player.isMe) parts.tags.appendChild(h('span', { class: 'badge badge--me' }, 'Você'));
       if (player.isBot) parts.tags.appendChild(h('span', { class: 'badge badge--bot' }, 'CPU'));
       if (game.dealer === player && game.round > 0) {
         parts.tags.appendChild(h('span', { class: 'dealer-chip', title: 'Carteador da rodada' }, 'D'));
@@ -167,11 +213,13 @@
       // Situação
       const statusKey = player.flip7 ? 'flip7' : player.status;
       parts.status.className = `badge seat__status badge--${statusKey}`;
-      parts.status.textContent = player.flip7
-        ? 'Vira 7!'
-        : isTurn && player.isActive()
-          ? 'Na vez'
-          : STATUS_LABEL[player.status];
+      parts.status.textContent = player.absent
+        ? 'Saiu'
+        : player.flip7
+          ? 'Vira 7!'
+          : isTurn && player.isActive()
+            ? 'Na vez'
+            : STATUS_LABEL[player.status];
 
       // Pontos
       if (!keepTotal) parts.total.textContent = String(player.total);
