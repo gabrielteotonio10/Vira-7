@@ -46,8 +46,10 @@ def test_lotacao_e_uma_sala_por_pessoa(signup):
     ana, beto, caio = signup("Ana"), signup("Beto"), signup("Caio")
     code = ana.post("/rooms", {"maxPlayers": 2}).json()["room"]["code"]
     assert beto.post(f"/rooms/{code}/join").status_code == 200
-    full = caio.post(f"/rooms/{code}/join")
-    assert full.status_code == 409 and error_code(full) == "ROOM_FULL"
+    # Sala cheia: quem chega depois entra como espectador.
+    watching = caio.post(f"/rooms/{code}/join")
+    assert watching.status_code == 200 and watching.json()["me"]["isSpectator"] is True
+    assert caio.post(f"/rooms/{code}/leave").json() == {"left": True, "closed": False}
 
     other = caio.post("/rooms", {}).json()["room"]["code"]
     busy = beto.post(f"/rooms/{other}/join")
@@ -90,7 +92,8 @@ def test_partida_so_comeca_com_todos_prontos(signup):
     assert room["status"] == "playing" and room["gameId"]
     # Não dá para iniciar de novo nem entrar depois que começou.
     assert error_code(ana.post(f"/rooms/{code}/start")) == "ROOM_NOT_OPEN"
-    assert error_code(signup("Caio").post(f"/rooms/{code}/join")) == "ROOM_NOT_OPEN"
+    # Depois que a partida começa, quem chega só assiste.
+    assert signup("Caio").post(f"/rooms/{code}/join").json()["me"]["isSpectator"] is True
 
 
 def test_anfitriao_expulsa_e_convidado_pode_sair_sem_fechar_a_sala(table):
@@ -155,8 +158,13 @@ def test_editar_perfil_e_preferencias(signup, client):
     saved = ana.put("/me/settings", {"settings": {"volume": 7, "sound": False, "animationSpeed": 9, "hack": 1}})
     assert saved.json()["settings"] == {
         "volume": 1.0, "sound": False, "animationSpeed": 1, "reducedMotion": False,
-        "showRisk": True, "confirmStay": False,
+        "showRisk": True, "confirmStay": False, "theme": "light", "tableTheme": "felt",
+        "cardBack": "classic", "colorblind": False, "vibration": True, "handsFree": False, "language": "pt",
     }
+    themed = ana.put("/me/settings", {"settings": {"theme": "dark", "language": "es", "cardBack": "x", "colorblind": True}})
+    assert themed.json()["settings"]["theme"] == "dark" and themed.json()["settings"]["language"] == "es"
+    assert themed.json()["settings"]["cardBack"] == "classic" and themed.json()["settings"]["colorblind"] is True
+    ana.put("/me/settings", {"settings": {"sound": False}})
     assert ana.get("/me").json()["settings"]["sound"] is False
     assert beto.get("/me").json()["settings"]["sound"] is True
 
