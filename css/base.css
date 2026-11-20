@@ -8,6 +8,18 @@
   box-sizing: border-box;
 }
 
+/* Toque duplo não dá zoom (o gesto de pinça continua funcionando, por acessibilidade). */
+html,
+body,
+button,
+a,
+input,
+select,
+label,
+[role='button'] {
+  touch-action: manipulation;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
