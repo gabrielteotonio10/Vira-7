@@ -17,6 +17,7 @@ import secrets
 import httpx
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -47,6 +48,8 @@ def content_security_policy(settings: Settings) -> str:
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src https://fonts.gstatic.com",
             "img-src 'self' data:",
+            "worker-src 'self'",
+            "manifest-src 'self'",
             f"connect-src {' '.join(connect)}",
             "object-src 'none'",
             "base-uri 'self'",
@@ -122,12 +125,19 @@ def create_app(settings: Settings | None = None, store=None) -> FastAPI:
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        # O microfone fica liberado só para a própria página (modo mãos livres).
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=()")
+        response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        if settings.environment == "production":
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         if path.startswith(STATIC_PREFIXES):
             # O navegador sempre confere se o arquivo mudou (304 quando não mudou),
             # então ninguém fica com CSS/JS antigo depois de uma atualização.
             response.headers["Cache-Control"] = "no-cache"
         return response
+
+    # Compacta respostas grandes (JS, CSS, listas): a página abre bem mais rápido no celular.
+    app.add_middleware(GZipMiddleware, minimum_size=800, compresslevel=6)
 
     if settings.cors_origins:
         app.add_middleware(

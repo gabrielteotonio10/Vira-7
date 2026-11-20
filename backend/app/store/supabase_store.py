@@ -6,6 +6,7 @@ operações que precisam ser atômicas chamam as funções `vira7_*` das migrati
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 
 import httpx
@@ -25,6 +26,16 @@ def like_exact(value: str) -> str:
 
 
 KNOWN_ERRORS = ("ROOM_NOT_FOUND", "ROOM_FULL", "ROOM_NOT_OPEN", "ALREADY_IN_ROOM")
+UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+
+def is_uuid(value) -> bool:
+    """Ids vindos da URL só chegam ao PostgREST se forem UUIDs de verdade.
+
+    Isso impede que um id forjado (ex.: "x),(status.eq.accepted") altere o filtro da consulta."""
+    return isinstance(value, str) and bool(UUID_RE.match(value))
+
+
 ROOM_COLUMNS = (
     "id,code,name,host_id,visibility,mode,status,max_players,target_score,turn_seconds,"
     "current_game_id,created_at,updated_at,team_mode"
@@ -144,6 +155,8 @@ class SupabaseStore:
     # ------------------------------------------------------------------ amigos
 
     async def get_friendship(self, a: str, b: str) -> dict | None:
+        if not (is_uuid(a) and is_uuid(b)):
+            return None
         return await self._first(
             "friendships",
             {
@@ -290,12 +303,35 @@ class SupabaseStore:
 
     async def active_membership(self, user_id: str) -> dict | None:
         player = await self._first(
-            "room_players", {"user_id": f"eq.{user_id}", "status": "eq.joined", "select": "*"}
+            "room_players",
+            {"user_id": f"eq.{user_id}", "status": "eq.joined", "select": f"*,room:rooms({ROOM_COLUMNS})"},
         )
         if not player:
             return None
-        room = await self.get_room(player["room_id"])
+        room = player.pop("room", None)
         return {"room": room, "player": player} if room else None
+
+    async def rooms_of_users(self, user_ids: list[str]) -> dict[str, dict]:
+        """Sala atual de cada pessoa (com quantos estão nela), em uma consulta só."""
+        ids = [uid for uid in user_ids if is_uuid(uid)]
+        if not ids:
+            return {}
+        rows = await self._select(
+            "room_players",
+            {
+                "user_id": f"in.({','.join(ids)})", "status": "eq.joined",
+                "select": f"user_id,room:rooms({ROOM_COLUMNS},room_players(status))",
+            },
+        )
+        out = {}
+        for row in rows:
+            room = row.get("room")
+            if not room or room["status"] not in ("lobby", "playing"):
+                continue
+            members = room.pop("room_players", None) or []
+            room["player_count"] = sum(1 for m in members if m["status"] == "joined")
+            out[row["user_id"]] = room
+        return out
 
     async def join_room(self, room_id: str, user_id: str) -> dict:
         return await self._rpc("vira7_join_room", {"p_room": room_id, "p_user": user_id})
@@ -304,6 +340,8 @@ class SupabaseStore:
         return await self._rpc("vira7_add_bot", {"p_room": room_id, "p_name": name, "p_avatar": avatar})
 
     async def remove_bot(self, room_id: str, player_id: str) -> bool:
+        if not is_uuid(player_id):
+            return False
         rows = await self._request(
             "PATCH", "room_players",
             params={"id": f"eq.{player_id}", "room_id": f"eq.{room_id}", "is_bot": "eq.true", "status": "eq.joined"},
@@ -401,6 +439,8 @@ class SupabaseStore:
         )
 
     async def get_game(self, game_id: str) -> dict | None:
+        if not is_uuid(game_id):
+            return None
         return await self._first("games", {"id": f"eq.{game_id}", "select": "*"})
 
     async def get_secret(self, game_id: str) -> dict | None:

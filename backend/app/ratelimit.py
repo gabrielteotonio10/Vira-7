@@ -34,6 +34,8 @@ DEFAULT_RULES: dict[str, tuple[int, float]] = {
     "read": (1500, 60.0),        # GET, por IP
     "user": (900, 60.0),         # qualquer rota autenticada, por usuário
     "create_room": (20, 60.0),   # criar sala ou partida rápida, por usuário
+    "friend_request": (20, 60.0),  # pedidos de amizade, por usuário
+    "chat": (40, 60.0),          # mensagens rápidas, por usuário
 }
 
 MESSAGE = "Muitas tentativas em pouco tempo. Aguarde alguns segundos e tente de novo."

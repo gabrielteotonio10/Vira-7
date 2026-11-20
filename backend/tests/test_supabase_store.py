@@ -237,3 +237,21 @@ def test_salas_abertas_trazem_o_ultimo_sinal_so_de_pessoas(run):
     assert rooms[0]["humans_seen"] == ["2026-01-01T00:01:00+00:00"]
     assert calls[0].url.params["status"] == "in.(lobby,playing)"
     assert calls[1].url.params["room_id"] == "in.(r1)"
+
+
+def test_ids_forjados_nunca_chegam_ao_filtro_do_postgrest(run):
+    store, calls = make_store(reply([]))
+    forged = "x),(status.eq.accepted"
+    assert run(store.get_friendship(forged, "00000000-0000-0000-0000-000000000001")) is None
+    assert run(store.get_game("nao-existe")) is None
+    assert run(store.remove_bot("r1", "1;drop")) is False
+    assert run(store.rooms_of_users([forged])) == {}
+    assert calls == [], "nenhuma requisição sai com um id inválido"
+
+
+def test_sala_atual_vem_em_uma_consulta_so(run):
+    row = {"id": "p1", "user_id": "u1", "room_id": "r1", "room": {"id": "r1", "code": "ABC234", "status": "lobby"}}
+    store, calls = make_store(reply([row]))
+    membership = run(store.active_membership("u1"))
+    assert membership["room"]["code"] == "ABC234" and "room" not in membership["player"]
+    assert len(calls) == 1 and "room:rooms(" in calls[0].url.params["select"]

@@ -49,8 +49,8 @@ async def my_matches(
 
 
 @router.get("/profiles/{username}")
-async def public_profile(username: str, _: AuthUser = Depends(current_user), store=Depends(get_store)) -> dict:
-    return await profiles.public_profile(store, username)
+async def public_profile(username: str, user: AuthUser = Depends(current_user), store=Depends(get_store)) -> dict:
+    return await profiles.public_profile(store, username, user.id)
 
 
 @router.get("/leaderboard")

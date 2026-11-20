@@ -126,7 +126,7 @@ async def start_game(code: str, user: AuthUser = Depends(current_user), store=De
     return await rooms.start(store, user.id, code)
 
 
-@router.post("/{code}/chat", status_code=201)
+@router.post("/{code}/chat", status_code=201, dependencies=[Depends(user_limit("chat"))])
 async def send_chat(
     code: str, body: ChatMessage, user: AuthUser = Depends(current_user), store=Depends(get_store)
 ) -> dict:

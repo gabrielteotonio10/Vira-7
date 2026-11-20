@@ -55,6 +55,9 @@ def clean_settings(raw: dict) -> dict:
     for key, options in CHOICES.items():
         if raw.get(key) in options:
             settings[key] = raw[key]
+    stamp = raw.get("updatedAt")
+    if isinstance(stamp, (int, float)) and not isinstance(stamp, bool) and 0 < stamp < 10**14:
+        settings["updatedAt"] = int(stamp)
     if raw.get("animationSpeed") in SPEEDS:
         settings["animationSpeed"] = raw["animationSpeed"]
     return settings
@@ -160,13 +163,19 @@ async def matches(store, user_id: str, limit: int, offset: int) -> dict:
     return {"matches": [serialize_match(row) for row in rows], "hasMore": len(rows) == limit}
 
 
-async def public_profile(store, username: str) -> dict:
+async def public_profile(store, username: str, viewer_id: str | None = None) -> dict:
     # Só nomes válidos chegam ao banco: o resto não pode existir.
     profile = await store.get_profile_by_username(username) if USERNAME_RE.match(username or "") else None
     if not profile:
         raise ApiError(404, "PROFILE_NOT_FOUND", "Jogador não encontrado.")
     recent = await store.list_matches(profile["id"], 5, 0)
+    friendship = "self" if viewer_id == profile["id"] else "none"
+    if viewer_id and friendship == "none":
+        row = await store.get_friendship(viewer_id, profile["id"])
+        if row:
+            friendship = "friends" if row["status"] == "accepted" else ("sent" if row["requester_id"] == viewer_id else "received")
     return {
+        "friendship": friendship,
         "profile": serialize_profile(profile),
         "stats": serialize_stats(await store.get_stats(profile["id"])),
         "recentMatches": [serialize_match(row) for row in recent],
