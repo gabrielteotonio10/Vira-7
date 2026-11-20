@@ -34,12 +34,12 @@
 
   soundButton.addEventListener('click', () => {
     const enabled = !F7.Sound.enabled;
-    App.applySettings({ ...App.state.settings, sound: enabled });
     F7.storage.save('sound', enabled);
+    // Com conta, a preferência acompanha o jogador em outros dispositivos.
+    if (App.state.me) App.saveSettings({ ...App.state.settings, sound: enabled });
+    else App.applySettings({ ...App.state.settings, sound: enabled });
     F7.Sound.click();
     paintSound();
-    // Com conta, a preferência acompanha o jogador em outros dispositivos.
-    if (App.state.me) Api.put('/me/settings', { settings: App.state.settings }).catch(() => {});
   });
 
   qs('#btn-rules').addEventListener('click', () => F7.Modals.rules());
@@ -58,7 +58,15 @@
   window.addEventListener('keydown', unlockAudio, { once: true });
 
   F7.i18n.start();
-  App.applySettings({ ...App.DEFAULT_SETTINGS, ...F7.Theme.cached(), language: F7.i18n.lang, sound: F7.storage.load('sound', true) });
+  App.applySettings({
+    ...App.DEFAULT_SETTINGS,
+    ...F7.storage.load('settings', {}),
+    ...F7.Theme.cached(),
+    language: F7.i18n.lang,
+    sound: F7.storage.load('sound', true),
+  });
+  // Fechou a aba logo depois de mudar algo: a gravação pendente ainda é enviada.
+  window.addEventListener('pagehide', () => App.flushSettings({ keepalive: true }));
   paintSound();
 
   /* ------------------------------------------------------------------ */
@@ -79,7 +87,7 @@
   App.route('/historico', Screens.history);
   App.route('/ranking', () => Screens.ranking());
   App.route('/amigos', Screens.friends);
-  App.route('/tutorial', Screens.tutorial);
+  App.route('/tutorial', Screens.tutorial, { auth: false });
   App.route('/config', async () => {
     const cleanup = await Screens.settings();
     return () => {

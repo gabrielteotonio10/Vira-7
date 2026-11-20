@@ -22,24 +22,14 @@
 
   async function settings() {
     const current = { ...App.state.settings };
-    let timer = null;
     const saved = h('span', { class: 'settings__saved', 'aria-live': 'polite' });
 
-    const change = (key, value) => {
+    const change = async (key, value) => {
       current[key] = value;
-      App.applySettings(current);
-      clearTimeout(timer);
       saved.textContent = 'Salvando…';
-      timer = setTimeout(async () => {
-        try {
-          const result = await F7.Api.put('/me/settings', { settings: current });
-          App.state.me.settings = result.settings;
-          saved.textContent = 'Preferências salvas ✓';
-        } catch (error) {
-          saved.textContent = '';
-          App.toast(error.message, { variant: 'bust' });
-        }
-      }, 500);
+      const ok = await App.saveSettings(current);
+      if (!saved.isConnected) return;
+      saved.textContent = ok ? 'Preferências salvas ✓' : 'Salvo neste aparelho (sem conexão com o servidor)';
     };
 
     const volume = h('input', { type: 'range', class: 'range', min: 0, max: 100, step: 5, value: Math.round(current.volume * 100), 'aria-label': 'Volume' });
@@ -102,11 +92,7 @@
     language.el.addEventListener('click', async () => {
       if (language.value === F7.i18n.lang) return;
       current.language = language.value;
-      try {
-        await F7.Api.put('/me/settings', { settings: current });
-      } catch (error) {
-        /* o idioma vale neste aparelho mesmo assim */
-      }
+      await App.saveSettings(current, { immediate: true });
       F7.i18n.set(language.value);
     });
 
@@ -235,7 +221,8 @@
     );
 
     return () => {
-      clearTimeout(timer);
+      // Saiu da tela: envia já o que estiver pendente.
+      App.flushSettings();
       stopInstall();
     };
   }
