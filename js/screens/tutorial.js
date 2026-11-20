@@ -147,14 +147,14 @@
     override(F7.AI, 'decideMove', () => () => 'stay');
 
     const STEPS = {
-      1: { step: 'Passo 1 de 8', allow: ['#btn-hit'], text: 'Você recebeu um 5. Na sua vez, toque em VIRAR para comprar mais uma carta e somar pontos.' },
-      2: { step: 'Passo 3 de 8', allow: ['#btn-hit'], text: 'A Rita virou 1, 4 e 6 sem estourar e decidiu parar. Sua vez de novo: toque em VIRAR.' },
-      3: { step: 'Passo 4 de 8', allow: ['#btn-hit'], highlight: ['#risk', '#btn-hit'], text: 'Agora você tem 5 e 7. Este medidor mostra a chance de ESTOURAR (virar um número que você já tem e zerar a rodada). Está baixa: vire de novo.' },
-      4: { step: 'Passo 5 de 8', allow: ['#btn-hit'], text: 'Um ×2! Ele dobra a soma dos seus números no fim da rodada. Continue: VIRAR.' },
-      5: { step: 'Passo 6 de 8', allow: ['#btn-hit'], text: 'Segunda Chance guardada: se você repetir um número, ela é gasta no lugar do estouro. Vire mais uma.' },
-      6: { step: 'Passo 6 de 8', allow: ['#btn-hit'], text: 'Outro 7! Seria estouro, mas a Segunda Chance salvou você: as duas cartas foram descartadas. Vire de novo.' },
-      7: { step: 'Passo 7 de 8', allow: ['#btn-hit'], text: 'Penalidade −2: tira pontos da rodada (que nunca fica abaixo de 0) e nunca estoura você. Vire mais uma.' },
-      8: { step: 'Passo 8 de 8', allow: ['#btn-stay'], text: `Bônus +4: soma pontos e nunca estoura. Você tem ${total} pontos: (5 + 7) × 2 − 2 + 4. Toque em PARAR para guardar tudo.` },
+      1: { step: 'Passo 1 de 9', allow: ['#btn-hit'], text: 'Você recebeu um 5. Na sua vez, toque em VIRAR para comprar mais uma carta e somar pontos.' },
+      2: { step: 'Passo 3 de 9', allow: ['#btn-hit'], text: 'A Rita virou 1, 4 e 6 sem estourar e decidiu parar. Sua vez de novo: toque em VIRAR.' },
+      3: { step: 'Passo 4 de 9', allow: ['#btn-hit'], highlight: ['#risk', '#btn-hit'], text: 'Agora você tem 5 e 7. Este medidor mostra a chance de ESTOURAR (virar um número que você já tem e zerar a rodada). Está baixa: vire de novo.' },
+      4: { step: 'Passo 5 de 9', allow: ['#btn-hit'], text: 'Um ×2! Ele dobra a soma dos seus números no fim da rodada. Continue: VIRAR.' },
+      5: { step: 'Passo 6 de 9', allow: ['#btn-hit'], text: 'Segunda Chance guardada: se você repetir um número, ela é gasta no lugar do estouro. Vire mais uma.' },
+      6: { step: 'Passo 7 de 9', allow: ['#btn-hit'], text: 'Outro 7! Seria estouro, mas a Segunda Chance salvou você: as duas cartas foram descartadas. Vire de novo.' },
+      7: { step: 'Passo 8 de 9', allow: ['#btn-hit'], text: 'Penalidade −2: tira pontos da rodada (que nunca fica abaixo de 0) e nunca estoura você. Vire mais uma.' },
+      8: { step: 'Passo 9 de 9', allow: ['#btn-stay'], text: `Bônus +4: soma pontos e nunca estoura. Você tem ${total} pontos: (5 + 7) × 2 − 2 + 4. Toque em PARAR para guardar tudo.` },
     };
 
     override(controller, 'promptMove', (original) => (player, g) => {
@@ -170,7 +170,7 @@
       const promise = original(player, kind, candidates);
       const seat = App.table.seatEl(rita);
       coach.show({
-        step: 'Passo 2 de 8',
+        step: 'Passo 2 de 9',
         allow: [seat],
         text: 'Você virou VIRA TRÊS! Escolha alguém ativo para ser obrigado a virar 3 cartas seguidas. Toque na Rita.',
       });

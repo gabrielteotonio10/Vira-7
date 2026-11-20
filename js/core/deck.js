@@ -14,7 +14,7 @@
    * Cada carta recebe um `id` único, usado pela interface para animar e localizar a carta.
    * @returns {object[]}
    */
-  function createCards() {
+  function createCards(version = 2) {
     const cards = [];
     let nextId = 1;
     const push = (card) => cards.push({ id: `c${nextId++}`, ...card });
@@ -31,7 +31,8 @@
     });
 
     // As penalidades ficam no fim da lista: os ids das outras cartas não mudam.
-    F7.NEGATIVE_MODIFIERS.forEach((value) => push({ type: T.MODIFIER, op: OPS.ADD, value }));
+    // Versão 1 = baralho clássico do Flip 7 (94 cartas, sem penalidades).
+    if (version >= 2) F7.NEGATIVE_MODIFIERS.forEach((value) => push({ type: T.MODIFIER, op: OPS.ADD, value }));
 
     return cards;
   }
@@ -42,10 +43,10 @@
      *   `cards` monta um baralho em ordem fixa (útil nos testes):
      *   a primeira carta da lista é a primeira a ser comprada.
      */
-    constructor({ rng = Math.random, cards } = {}) {
+    constructor({ rng = Math.random, cards, version = 2 } = {}) {
       this.rng = rng;
       this.discardPile = [];
-      this.drawPile = cards ? cards.slice().reverse() : F7.utils.shuffle(createCards(), rng);
+      this.drawPile = cards ? cards.slice().reverse() : F7.utils.shuffle(createCards(version), rng);
     }
 
     get size() {

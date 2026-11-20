@@ -101,13 +101,17 @@ def too_many(wait: float) -> ApiError:
     return ApiError(429, "RATE_LIMITED", MESSAGE, headers={"Retry-After": str(ceil(wait))})
 
 
-def client_ip(request: Request, trust_proxy: bool) -> str:
-    """IP de quem chama. Atrás de um proxy confiável, vale o primeiro de X-Forwarded-For."""
+def client_ip(request: Request, trust_proxy: bool, hops: int = 2) -> str:
+    """IP de quem chama.
+
+    Atrás de proxies confiáveis, o IP real é o que o proxy mais próximo anotou: contando da direita
+    para a esquerda em X-Forwarded-For, o item `hops`. Tudo que o cliente escreveu antes disso
+    (à esquerda) é ignorado, então forjar o cabeçalho não escapa do limite. Se a cadeia for mais
+    curta do que `hops`, vale o primeiro item (nunca junta todo mundo num IP só)."""
     if trust_proxy:
-        forwarded = request.headers.get("x-forwarded-for", "")
-        first = forwarded.split(",")[0].strip()
-        if first:
-            return first
+        parts = [p.strip() for p in request.headers.get("x-forwarded-for", "").split(",") if p.strip()]
+        if parts:
+            return parts[max(0, len(parts) - max(1, hops))]
     return request.client.host if request.client else "desconhecido"
 
 

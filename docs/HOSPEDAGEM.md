@@ -24,6 +24,8 @@ cd backend
 python scripts/migrate.py
 ```
 
+A versão 2.1 traz a migration `0010`. Se for usar **convidado** ou **Google** (`GUEST_LOGIN`/`GOOGLE_LOGIN` no Render), ligue antes o provedor em Supabase → Authentication → Sign In / Providers (*Allow anonymous sign-ins* e *Google*).
+
 ## 1. Enviar o código para o GitHub
 
 O repositório já tem o remoto `origin`. Depois de fazer os commits:
@@ -86,4 +88,5 @@ Abra o endereço em dois navegadores (ou em uma janela anônima e no celular), c
 - As chaves ficam só nas variáveis do Render; o `render.yaml` não tem nenhum valor secreto.
 - A documentação interativa da API (`/api/docs`) fica desligada com `APP_ENV=production`.
 - Para trocar uma chave: gere outra no Supabase, atualize em **Environment** no Render e o serviço reinicia.
-- O limite de requisições usa o IP do visitante (`TRUST_PROXY=true`), porque o Render fica na frente da API.
+- O limite de requisições usa o IP do visitante (`TRUST_PROXY=true`), porque o Render fica na frente da API. `TRUSTED_PROXY_HOPS` diz quantos proxies são confiáveis; o IP é lido a partir da direita do `X-Forwarded-For`, então o cliente não consegue forjá-lo.
+- O plano grátis dorme após alguns minutos parado: a primeira abertura pode levar ~50 s. O jogo mostra a tela "Acordando o servidor" e tenta de novo sozinho.

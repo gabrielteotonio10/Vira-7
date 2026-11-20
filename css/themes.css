@@ -28,9 +28,15 @@
 }
 
 :root[data-theme='dark'] .btn--primary,
-:root[data-theme='dark'] .btn--success,
-:root[data-theme='dark'] .btn--danger {
+:root[data-theme='dark'] .btn--success {
   color: #1b2333;
+}
+
+/* Fundo vermelho: texto branco também no escuro (Parar, Sair, Remover…) */
+:root[data-theme='dark'] .btn--danger,
+:root[data-theme='dark'] .match__badge,
+:root[data-theme='dark'] .auth__brand {
+  color: #fff;
 }
 
 :root[data-theme='dark'] .rank-card.is-me,
@@ -47,8 +53,8 @@
 :root[data-theme='dark'] :is(
   .home__hello, .action-card, .code, .nav__link.is-active, .nav__user:hover, .icon-btn:hover:not(:disabled),
   .badge--flip7, .badge--host, .badge--team, .medal, .modal__head, .log-drawer__head, .empty__icon,
-  .avatar-picker__item[aria-checked='true'], .final-table .is-flip7, .btn--primary, .btn--success, .btn--danger,
-  .btn--whatsapp, .coach, .spectator-bar, .auth__brand, .match__badge,
+  .avatar-picker__item[aria-checked='true'], .final-table .is-flip7, .btn--primary, .btn--success,
+  .btn--whatsapp, .coach, .spectator-bar,
   .pile__count, .swatch span, .rank-card__pos .medal, .chat-float--say, .summary-row.is-leader,
   .lobby-player.is-ready, .form__message.is-error, .form__message.is-ok
 ) {

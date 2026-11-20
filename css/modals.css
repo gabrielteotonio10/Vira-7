@@ -432,7 +432,7 @@
   color: #fff;
   font-family: var(--font-display);
   font-size: 1.8rem;
-  -webkit-text-stroke: 4px var(--ink);
+  -webkit-text-stroke: 4px var(--card-ink);
   paint-order: stroke fill;
   transform-origin: bottom;
   animation: podium-rise 650ms var(--ease-spring) both;

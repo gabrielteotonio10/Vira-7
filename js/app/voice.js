@@ -102,6 +102,56 @@
       }
     },
 
+    /** Escuta o nome de um jogador ("Rita", "eu", "mim") para escolher o alvo de uma carta de ação. */
+    listenTarget(candidates, onPick, { seconds = 15, self = null } = {}) {
+      if (!this.enabled || !Recognition) return;
+      this.stopListening();
+      const recognition = new Recognition();
+      recognition.lang = this.locale;
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      const stopAt = Date.now() + seconds * 1000;
+      let done = false;
+      recognition.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const target = Voice.parseTarget(event.results[i][0].transcript, candidates, self);
+          if (target && !done) {
+            done = true;
+            Voice.stopListening();
+            onPick(target);
+            return;
+          }
+        }
+      };
+      recognition.onend = () => {
+        if (!done && Voice.listening === recognition && Date.now() < stopAt) {
+          try {
+            recognition.start();
+          } catch (error) {
+            /* já estava ouvindo */
+          }
+        }
+      };
+      recognition.onerror = () => {};
+      this.listening = recognition;
+      try {
+        recognition.start();
+      } catch (error) {
+        this.listening = null;
+      }
+    },
+
+    /** Acha, entre os candidatos, quem foi dito. "eu/mim/me/myself/yo" escolhe a si mesmo. */
+    parseTarget(text, candidates, self = null) {
+      const normalize = (value) =>
+        String(value).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, ' ');
+      const said = ` ${normalize(text)} `;
+      const byName = candidates.filter((p) => said.includes(` ${normalize(p.name).trim()} `));
+      if (byName.length === 1) return byName[0];
+      if (/ (eu|mim|me|myself|yo|mi) /.test(said)) return candidates.find((p) => p === self || p.isMe) || null;
+      return null;
+    },
+
     /** "vira mais uma" -> hit; "para" -> stay. Ambíguo ou desconhecido -> null. */
     parse(text) {
       const hit = WORDS.hit.test(text);
@@ -125,7 +175,27 @@
       if (Voice.enabled) {
         Voice.say(F7.i18n ? F7.i18n.t('Sua vez! Diga virar ou parar.') : 'Sua vez! Diga virar ou parar.', { urgent: true });
         const answer = this.pendingMove;
-        setTimeout(() => Voice.listen((move) => this.pendingMove === answer && answer(move)), 1800);
+        // Só abre o microfone se ninguém jogou na mão enquanto a frase era falada.
+        setTimeout(() => {
+          if (this.pendingMove === answer) Voice.listen((move) => this.pendingMove === answer && answer(move));
+        }, 1800);
+      }
+      promise.then(() => Voice.stopListening());
+      return promise;
+    };
+  }
+
+  // Escolha de alvo (Congelar, Vira Três, Segunda Chance): a pessoa também pode dizer o nome.
+  if (F7.GameController) {
+    const promptTarget = F7.GameController.prototype.promptTarget;
+    F7.GameController.prototype.promptTarget = function listeningTarget(player, kind, candidates) {
+      const promise = promptTarget.call(this, player, kind, candidates);
+      if (Voice.enabled) {
+        Voice.say(F7.i18n ? F7.i18n.t('Escolha um jogador') : 'Escolha um jogador', { urgent: true });
+        const table = this.table;
+        setTimeout(() => {
+          if (table.targeting) Voice.listenTarget(candidates, (target) => table.pickTarget(target), { self: player });
+        }, 1500);
       }
       promise.then(() => Voice.stopListening());
       return promise;

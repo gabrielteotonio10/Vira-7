@@ -7,6 +7,8 @@ recuperação de senha são feitos pelo Supabase Auth.
 
 from __future__ import annotations
 
+import random
+import secrets
 import time
 
 import jwt
@@ -52,6 +54,16 @@ async def signup(body: SignUp, request: Request, store=Depends(get_store)) -> di
     username = profiles.validate_username(body.username)
     avatar = body.avatar if body.avatar in AVATARS else "raposa"
     user = await store.dev_create_user(body.email, body.password, username, avatar)
+    return issue_token(request.app.state.settings.supabase_jwt_secret, user)
+
+
+@router.post("/guest", status_code=201)
+async def guest(request: Request, store=Depends(get_store)) -> dict:
+    """Conta de convidado: nome e personagem sorteados, sem e-mail nem senha para lembrar."""
+    suffix = secrets.token_hex(3)
+    user = await store.dev_create_user(
+        f"convidado-{suffix}@convidado.local", secrets.token_urlsafe(18), f"convidado_{suffix}", random.choice(AVATARS)
+    )
     return issue_token(request.app.state.settings.supabase_jwt_secret, user)
 
 

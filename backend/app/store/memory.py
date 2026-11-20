@@ -13,7 +13,7 @@ import random
 import re
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from ..config import AVATARS
 from ..errors import StoreError
@@ -179,12 +179,16 @@ class MemoryStore:
     async def get_stats(self, user_id: str) -> dict:
         return copy.deepcopy(self.stats.get(user_id) or new_stats(user_id))
 
-    async def leaderboard(self, limit: int = 20, user_ids: list[str] | None = None) -> list[dict]:
+    async def leaderboard(
+        self, limit: int = 20, user_ids: list[str] | None = None, sort: str = "wins", min_games: int = 0
+    ) -> list[dict]:
         rows = []
         for stats in self.stats.values():
             if stats["games_played"] <= 0:
                 continue
             if user_ids is not None and stats["user_id"] not in user_ids:
+                continue
+            if stats["games_played"] < min_games:
                 continue
             profile = self.profiles[stats["user_id"]]
             rows.append(
@@ -196,7 +200,12 @@ class MemoryStore:
                     "win_rate": round(100 * stats["wins"] / stats["games_played"]),
                 }
             )
-        rows.sort(key=lambda r: (-r["wins"], -r["total_points"], r["username"]))
+        if sort == "rate":
+            rows.sort(key=lambda r: (-r["win_rate"], -r["games_played"], r["username"]))
+        elif sort == "average":
+            rows.sort(key=lambda r: (-(r["total_points"] / max(1, r["games_played"])), r["username"]))
+        else:
+            rows.sort(key=lambda r: (-r["wins"], -r["total_points"], r["username"]))
         return rows[:limit]
 
     async def list_matches(self, user_id: str, limit: int = 20, offset: int = 0) -> list[dict]:
@@ -251,7 +260,7 @@ class MemoryStore:
                 "id": str(uuid.uuid4()), "code": code, "name": name, "host_id": host_id,
                 "visibility": visibility, "mode": mode, "status": "lobby", "max_players": max_players,
                 "target_score": target_score, "turn_seconds": turn_seconds, "current_game_id": None,
-                "team_mode": False,
+                "team_mode": False, "friends_join": False, "deck_version": 2,
                 "created_at": iso(now()), "updated_at": iso(now()),
             }
             self.rooms[room["id"]] = room
@@ -348,7 +357,37 @@ class MemoryStore:
             self._touch(room)
             return copy.deepcopy(player)
 
-    async def add_bot(self, room_id: str, name: str, avatar: str) -> dict:
+    async def swap_seats(self, room_id: str, player_a: str, player_b: str) -> None:
+        async with self._lock:
+            room = self.rooms.get(room_id)
+            if not room:
+                raise StoreError("ROOM_NOT_FOUND")
+            if room["status"] != "lobby":
+                raise StoreError("ROOM_NOT_OPEN")
+            a, b = self.players.get(player_a), self.players.get(player_b)
+            ok = all(p and p["room_id"] == room_id and p["status"] == "joined" for p in (a, b))
+            if not ok:
+                raise StoreError("PLAYER_NOT_FOUND")
+            a["seat"], b["seat"] = b["seat"], a["seat"]
+            self._touch(room)
+
+    async def set_host(self, room_id: str, user_id: str) -> None:
+        room = self.rooms.get(room_id)
+        if room:
+            room["host_id"] = user_id
+            self._touch(room)
+
+    async def prune_finished_games(self, days: int) -> dict:
+        cutoff = now() - timedelta(days=max(1, days))
+        old = [
+            gid for gid, g in self.games.items()
+            if g["status"] != "playing" and g.get("finished_at") and datetime.fromisoformat(g["finished_at"]) < cutoff
+        ]
+        events = sum(len(self.events.pop(gid, [])) for gid in old)
+        secrets_removed = sum(1 for gid in old if self.secrets.pop(gid, None) is not None)
+        return {"events": events, "secrets": secrets_removed}
+
+    async def add_bot(self, room_id: str, name: str, avatar: str, level: str | None = None) -> dict:
         async with self._lock:
             room = self.rooms.get(room_id)
             if not room:
@@ -359,7 +398,9 @@ class MemoryStore:
             if seat is None:
                 raise StoreError("ROOM_FULL")
             self._touch(room)
-            return copy.deepcopy(self._add_player(room_id, seat=seat, bot_name=name, bot_avatar=avatar))
+            bot = self._add_player(room_id, seat=seat, bot_name=name, bot_avatar=avatar)
+            bot["bot_level"] = level
+            return copy.deepcopy(bot)
 
     async def remove_bot(self, room_id: str, player_id: str) -> bool:
         player = self.players.get(player_id)
@@ -440,10 +481,11 @@ class MemoryStore:
             if room["status"] not in ("lobby", "playing"):
                 continue
             row = copy.deepcopy(room)
-            row["humans_seen"] = [
-                iso(self.presence.get((room["id"], p["user_id"])))
-                for p in self._joined(room["id"]) if not p["is_bot"]
+            humans = sorted((p for p in self._joined(room["id"]) if not p["is_bot"]), key=lambda p: p["joined_at"])
+            row["humans"] = [
+                {"user_id": p["user_id"], "seen": iso(self.presence.get((room["id"], p["user_id"])))} for p in humans
             ]
+            row["humans_seen"] = [h["seen"] for h in row["humans"]]
             out.append(row)
         return out
 

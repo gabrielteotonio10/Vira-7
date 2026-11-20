@@ -154,7 +154,9 @@
       this.game = new RemoteGame(first, this.user.id);
       const me = this.game.me;
 
+      this.rematchNote = F7.dom.h('span', { class: 'rematch-note', 'aria-live': 'polite' });
       this.controller.attach(this.game, {
+        gameOverNote: this.rematchNote,
         perspective: me ? me.id : 0,
         isMe: (player) => player.isMe,
         autoNextMs: 7000,
@@ -266,6 +268,7 @@
         const event = this.queue.shift();
         this.game.apply(event.state);
         if (event.type !== 'gameStart') this.hud.setDeadline(null);
+        if (event.type === 'gameOver') this.startRematchWatch();
         try {
           await this.controller.onEvent(event.type, this.game.hydrate(event.payload || {}), this.game);
         } catch (error) {
@@ -276,6 +279,7 @@
         if (event.type === 'gameStart') this.applyPresence();
         if (event.type === 'gameOver') {
           this.finished = true;
+          this.stopRematchWatch();
           this.processing = false;
           if (!this.destroyed) {
             const choice = this.controller.lastChoice;
@@ -288,6 +292,32 @@
       F7.FX.setSpeed(baseSpeed);
       this.processing = false;
       if (!this.destroyed) this.afterQueue();
+    }
+
+    /* ---------------------------------------------------------------- revanche */
+
+    /** Enquanto o fim de jogo está aberto, mostra quantos já tocaram em "Jogar de novo". */
+    startRematchWatch() {
+      if (this.spectator || !this.rematchNote) return;
+      const update = async () => {
+        try {
+          const detail = await F7.Api.get(`/rooms/${this.room.code}`);
+          const humans = detail.players.filter((p) => !p.isBot);
+          const ready = humans.filter((p) => p.isReady).length;
+          if (this.rematchNote.isConnected || ready) {
+            this.rematchNote.textContent = `${ready}/${humans.length} prontos para a revanche`;
+          }
+        } catch (error) {
+          /* sem a contagem por enquanto */
+        }
+      };
+      update();
+      this.rematchTimer = setInterval(update, 2500);
+    }
+
+    stopRematchWatch() {
+      clearInterval(this.rematchTimer);
+      this.rematchTimer = null;
     }
 
     /* ---------------------------------------------------------------- jogadas */
@@ -394,6 +424,7 @@
       this.destroyed = true;
       this.timers.forEach(clearInterval);
       this.timers = [];
+      this.stopRematchWatch();
       this.queue = [];
       this.cancelPrompt();
       F7.Modals.closeAll();

@@ -44,6 +44,7 @@
       channel
         .on('postgres_changes', { event: '*', schema: 'public', table: 'room_players', filter: `room_id=eq.${roomId}` }, onRoomChange)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, onRoomChange)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'room_spectators', filter: `room_id=eq.${roomId}` }, onRoomChange)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'game_events', filter: `room_id=eq.${roomId}` }, (change) => {
           const row = change.new;
           onGameEvent({ seq: row.seq, type: row.type, payload: row.payload, state: row.state, gameId: row.game_id });
@@ -76,7 +77,10 @@
         .channel('public-rooms')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, onChange)
         .subscribe();
-      return { stop: () => client.removeChannel(channel) };
+      // A política de segurança só entrega o evento enquanto a sala continua pública e aberta:
+      // quando ela começa ou fecha, o aviso não chega. A consulta periódica tira a sala velha da lista.
+      const timer = setInterval(() => document.visibilityState === 'visible' && onChange(), 15000);
+      return { stop: () => { clearInterval(timer); client.removeChannel(channel); } };
     },
   };
 

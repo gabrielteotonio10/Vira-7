@@ -107,7 +107,31 @@
         h('a', { href: '#/cadastro' }, 'Criar uma conta'),
       ),
     );
-    App.render(shell('Entrar', 'Que bom ver você de novo.', form), { nav: false, bare: true });
+
+    // Atalhos sem senha: convidado (jogar já) e Google. Só aparecem quando o servidor os liga.
+    const config = F7.Api.config || {};
+    const shortcut = (label, iconName, action, className = '') => {
+      const button = h('button', { type: 'button', class: `btn btn--block ${className}` }, h('span', { html: F7.icons.icon(iconName) }), label);
+      button.addEventListener('click', () => {
+        F7.Sound.unlock();
+        feedback.replaceChildren();
+        App.busy(button, async () => {
+          try {
+            await action();
+          } catch (error) {
+            feedback.replaceChildren(message(error.message));
+          }
+        });
+      });
+      return button;
+    };
+    const shortcuts = [];
+    if (config.googleLogin) shortcuts.push(shortcut('Entrar com Google', 'user', () => F7.Auth.signInGoogle(), 'btn--google'));
+    if (config.guestLogin) shortcuts.push(shortcut('Entrar como convidado', 'play', () => F7.Auth.signInGuest(), 'btn--ghost'));
+    const extras = shortcuts.length
+      ? h('div', { class: 'auth__shortcuts' }, h('span', { class: 'auth__or' }, 'ou'), shortcuts, config.guestLogin ? h('small', { class: 'form__hint' }, 'Convidados jogam na hora e podem criar a conta depois, sem perder as partidas.') : null)
+      : null;
+    App.render(shell('Entrar', 'Que bom ver você de novo.', form, extras), { nav: false, bare: true });
     email.input.focus();
   }
 

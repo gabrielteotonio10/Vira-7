@@ -13,9 +13,7 @@ from . import get_store
 router = APIRouter(tags=["meta"])
 
 
-# HEAD também: monitores gratuitos de disponibilidade costumam usá-lo.
-@router.api_route("/health", methods=["GET", "HEAD"])
-async def health(request: Request) -> dict:
+def _health(request: Request) -> dict:
     settings = request.app.state.settings
     return {
         "status": "ok",
@@ -23,6 +21,18 @@ async def health(request: Request) -> dict:
         "mode": "development-local" if settings.dev_mode else "supabase",
         "serverTime": datetime.now(timezone.utc).isoformat(),
     }
+
+
+@router.get("/health")
+async def health(request: Request) -> dict:
+    return _health(request)
+
+
+# HEAD também: monitores gratuitos de disponibilidade costumam usá-lo (fora da documentação,
+# para o OpenAPI não ficar com dois "operationId" iguais).
+@router.head("/health", include_in_schema=False)
+async def health_head(request: Request) -> dict:
+    return _health(request)
 
 
 @router.get("/config")
@@ -35,6 +45,8 @@ async def config(request: Request) -> dict:
         "devMode": settings.dev_mode,
         "supabaseUrl": settings.supabase_url or None,
         "supabaseAnonKey": settings.supabase_anon_key or None,
+        "guestLogin": settings.guest_login or settings.dev_mode,
+        "googleLogin": settings.google_login and not settings.dev_mode,
         "serverTime": datetime.now(timezone.utc).isoformat(),
     }
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..errors import ApiError
+from ..errors import ApiError, StoreError
 from . import profiles
 
 MAX_FRIENDS = 100
@@ -41,6 +41,9 @@ def _friend_room(room: dict | None) -> dict | None:
     """A sala em que o amigo está, se dá para entrar nela (jogando ou assistindo)."""
     if not room:
         return None
+    if room.get("visibility") == "private" and not room.get("friends_join"):
+        # Sala privada: o amigo vê que a pessoa está jogando, mas não recebe o código.
+        return {"private": True, "status": room["status"], "mode": "private"}
     full = room["player_count"] >= room["max_players"]
     return {
         "code": room["code"],
@@ -89,7 +92,19 @@ async def request(store, user_id: str, username: str) -> dict:
 
     if len((await _relations(store, user_id))["friends"]) >= MAX_FRIENDS:
         raise ApiError(409, "TOO_MANY_FRIENDS", f"O limite é de {MAX_FRIENDS} amigos.")
-    await store.create_friend_request(user_id, target["id"])
+    try:
+        await store.create_friend_request(user_id, target["id"])
+    except StoreError as error:
+        if error.code != "FRIENDSHIP_EXISTS":
+            raise
+        # Duas pessoas se adicionaram no mesmo instante: o banco deixou só um pedido.
+        row = await store.get_friendship(user_id, target["id"])
+        if row and row["status"] == "pending" and row["requester_id"] != user_id:
+            await store.accept_friendship(row["id"])
+            return {"status": "accepted", **await overview(store, user_id)}
+        if row and row["status"] == "accepted":
+            raise ApiError(409, "ALREADY_FRIENDS", f"Você e {target['username']} já são amigos.") from error
+        raise ApiError(409, "FRIEND_REQUEST_EXISTS", "Você já enviou um pedido para essa pessoa.") from error
     return {"status": "pending", **await overview(store, user_id)}
 
 

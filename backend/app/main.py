@@ -15,10 +15,10 @@ import logging
 import secrets
 
 import httpx
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__, errors
@@ -44,9 +44,9 @@ def content_security_policy(settings: Settings) -> str:
     return "; ".join(
         [
             "default-src 'self'",
-            "script-src 'self' https://cdn.jsdelivr.net",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "font-src https://fonts.gstatic.com",
+            "script-src 'self'",
+            "style-src 'self' 'unsafe-inline'",
+            "font-src 'self'",
             "img-src 'self' data:",
             "worker-src 'self'",
             "manifest-src 'self'",
@@ -84,6 +84,8 @@ def create_app(settings: Settings | None = None, store=None) -> FastAPI:
                 referee.run(
                     app.state.store, settings.referee_interval, settings.disconnect_grace_seconds,
                     stale_room_seconds=settings.stale_room_seconds,
+                    host_away_seconds=settings.host_away_seconds,
+                    prune_games_days=settings.prune_games_days,
                 )
             )
         try:
@@ -115,7 +117,7 @@ def create_app(settings: Settings | None = None, store=None) -> FastAPI:
         path = request.url.path
         if path.startswith("/api/") and app.state.limiter.enabled:
             rule = app.state.limiter.rule_for(request.method, path)
-            wait = app.state.limiter.check(rule, client_ip(request, settings.trust_proxy))
+            wait = app.state.limiter.check(rule, client_ip(request, settings.trust_proxy, settings.trusted_proxy_hops))
             if wait is not None:
                 error = too_many(wait)
                 return JSONResponse(
@@ -180,9 +182,14 @@ def create_app(settings: Settings | None = None, store=None) -> FastAPI:
                 headers={"Cache-Control": "no-cache"},
             )
 
+        template = (PROJECT_DIR / "index.html").read_text(encoding="utf-8")
+
         @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
-        async def index() -> FileResponse:
-            return FileResponse(PROJECT_DIR / "index.html", headers=page_headers)
+        async def index(request: Request) -> HTMLResponse:
+            # A prévia do link (og:image) exige endereço absoluto: usa o do próprio pedido.
+            proto = request.headers.get("x-forwarded-proto", request.url.scheme) if settings.trust_proxy else request.url.scheme
+            origin = f"{proto}://{request.headers.get('host', request.url.netloc)}"
+            return HTMLResponse(template.replace("__ORIGIN__", origin), headers=page_headers)
 
     return app
 

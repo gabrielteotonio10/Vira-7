@@ -8,7 +8,7 @@ import re
 from datetime import timedelta
 
 from ..config import AVATARS, BOT_NAMES, SEAT_COLORS
-from ..errors import ApiError, StoreError
+from ..errors import ApiError, StoreError, from_store
 from ..game import GameSession
 from ..game import constants as C
 from . import chat, games
@@ -17,6 +17,9 @@ log = logging.getLogger("vira7.rooms")
 
 CODE_RE = re.compile(r"^[A-Z2-9]{6}$")
 QUICK_DEFAULTS = {"max_players": 4, "target_score": 200, "turn_seconds": 30}
+#: Personalidade das CPUs: quanto maior, mais arrisca (0 a 1).
+BOT_RISK = {"cautious": 0.18, "balanced": 0.3, "bold": 0.44}
+BOT_LEVELS = tuple(BOT_RISK)
 ONLINE_WINDOW = timedelta(seconds=25)
 
 
@@ -40,6 +43,8 @@ def serialize_room(room: dict) -> dict:
         "targetScore": room["target_score"],
         "turnSeconds": room["turn_seconds"],
         "teamMode": bool(room.get("team_mode")),
+        "friendsJoin": bool(room.get("friends_join")),
+        "deckVersion": room.get("deck_version") or 2,
         "gameId": room.get("current_game_id"),
         "createdAt": room.get("created_at"),
     }
@@ -55,6 +60,7 @@ def serialize_player(player: dict, room: dict) -> dict:
         "seat": player["seat"],
         "color": SEAT_COLORS[player["seat"] % len(SEAT_COLORS)],
         "isBot": player["is_bot"],
+        "botLevel": player.get("bot_level") if player["is_bot"] else None,
         "isReady": player["is_ready"],
         "isHost": player["user_id"] is not None and player["user_id"] == room["host_id"],
         "online": player["is_bot"] or (seen is not None and games.utcnow() - seen < ONLINE_WINDOW),
@@ -142,8 +148,15 @@ async def create(store, user_id: str, data: dict) -> dict:
         user_id, name[:40], data["visibility"], data.get("mode", "custom"),
         data["max_players"], data["target_score"], data["turn_seconds"],
     )
+    extras = {}
     if data.get("team_mode"):
-        room = await store.update_room(room["id"], {"team_mode": True})
+        extras["team_mode"] = True
+    if data.get("friends_join"):
+        extras["friends_join"] = True
+    if data.get("deck_version") in (1, 2) and data["deck_version"] != 2:
+        extras["deck_version"] = data["deck_version"]
+    if extras:
+        room = await store.update_room(room["id"], extras)
     return await detail(store, room, user_id)
 
 
@@ -223,6 +236,35 @@ async def leave(store, user_id: str, code: str) -> dict:
     return {"left": result["left"], "closed": result["closed"]}
 
 
+async def reassign_absent_hosts(store, away_seconds: int) -> int:
+    """No lobby, se o anfitrião sumiu (fechou a aba, perdeu a conexão) e há outra pessoa
+    conectada, a sala passa para quem está há mais tempo nela. Retorna quantas salas mudaram."""
+    if away_seconds <= 0:
+        return 0
+    now = games.utcnow()
+    moved = 0
+    for room in await store.list_open_rooms():
+        humans = room.get("humans") or []
+        if room["status"] != "lobby" or len(humans) < 2:
+            continue
+        seen = {h["user_id"]: games.parse_time(h["seen"]) for h in humans}
+
+        def fresh(user_id: str) -> bool:
+            stamp = seen.get(user_id)
+            return bool(stamp) and (now - stamp).total_seconds() < away_seconds
+
+        if fresh(room["host_id"]):
+            continue
+        successor = next((h["user_id"] for h in humans if h["user_id"] != room["host_id"] and fresh(h["user_id"])), None)
+        if successor:
+            try:
+                await store.set_host(room["id"], successor)
+                moved += 1
+            except Exception:  # uma sala com problema não impede as outras
+                log.exception("Falha ao trocar o anfitrião da sala %s", room["id"])
+    return moved
+
+
 async def close_stale(store, stale_seconds: int) -> int:
     """Fecha as salas em que ninguém dá sinal há `stale_seconds` (abas fechadas, celulares
     bloqueados, pessoas que simplesmente pararam de jogar). Retorna quantas foram fechadas."""
@@ -252,7 +294,12 @@ async def set_ready(store, user_id: str, code: str, ready: bool) -> dict:
     if ready and room["mode"] == "quick":
         players = await store.list_players(room["id"])
         if len(players) >= C.MIN_PLAYERS and all(p["is_ready"] for p in players):
-            await _start(store, room, players)
+            try:
+                await _start(store, room, players)
+            except ApiError as error:
+                # Dois "pronto" quase juntos: um deles já iniciou (ou alguém entrou no meio). Não é erro.
+                if error.code != "ROOM_CHANGED":
+                    raise
             room = await store.get_room(room["id"])
     return await detail(store, room, user_id)
 
@@ -262,6 +309,9 @@ async def update_settings(store, user_id: str, code: str, fields: dict) -> dict:
     _require_host(room, user_id)
     _require_lobby(room)
     changes = {key: value for key, value in fields.items() if value is not None}
+    if room["mode"] == "quick" and changes:
+        # A partida rápida tem regras fixas: só a API poderia mexer, então a API também recusa.
+        raise ApiError(403, "QUICK_LOCKED", "As regras da partida rápida não podem ser alteradas.")
     _check_team_size(changes.get("team_mode", room.get("team_mode", False)), changes.get("max_players", room["max_players"]))
     if "max_players" in changes:
         count = len(await store.list_players(room["id"]))
@@ -274,17 +324,37 @@ async def update_settings(store, user_id: str, code: str, fields: dict) -> dict:
     return await detail(store, room, user_id)
 
 
-async def add_bot(store, user_id: str, code: str) -> dict:
+async def add_bot(store, user_id: str, code: str, level: str | None = None) -> dict:
     room = await _room_for_member(store, code, user_id)
     _require_host(room, user_id)
     _require_lobby(room)
+    if level is not None and level not in BOT_LEVELS:
+        raise ApiError(422, "INVALID_LEVEL", "Nível de CPU desconhecido.")
     players = await store.list_players(room["id"])
     used_names = {p["username"] for p in players}
     used_avatars = {p["avatar"] for p in players}
     name = next((n for n in BOT_NAMES if n not in used_names), f"CPU {len(players) + 1}")
     avatar = next((a for a in reversed(AVATARS) if a not in used_avatars), AVATARS[len(players) % len(AVATARS)])
-    await store.add_bot(room["id"], name, avatar)
+    await store.add_bot(room["id"], name, avatar, level or "balanced")
     return await detail(store, room, user_id)
+
+
+async def move_player(store, user_id: str, code: str, player_id: str, direction: str) -> dict:
+    """O anfitrião troca um jogador de lugar com o vizinho (em duplas, isso muda a dupla)."""
+    room = await _room_for_member(store, code, user_id)
+    _require_host(room, user_id)
+    _require_lobby(room)
+    players = await store.list_players(room["id"])
+    index = next((i for i, p in enumerate(players) if p["id"] == player_id), None)
+    if index is None:
+        raise ApiError(404, "PLAYER_NOT_FOUND", "Esse jogador não está mais na sala.")
+    other = index - 1 if direction == "up" else index + 1
+    if 0 <= other < len(players):
+        try:
+            await store.swap_seats(room["id"], players[index]["id"], players[other]["id"])
+        except StoreError as error:
+            raise from_store(error) from error
+    return await detail(store, await store.get_room(room["id"]), user_id)
 
 
 async def remove_player(store, user_id: str, code: str, player_id: str) -> dict:
@@ -329,12 +399,13 @@ async def _start(store, room: dict, players: list[dict]) -> str:
             "color": SEAT_COLORS[index % len(SEAT_COLORS)],
             "isBot": p["is_bot"],
             # Personalidade fixa por CPU: da mais cautelosa à mais ousada.
-            "riskTolerance": 0.2 + 0.04 * (index % 6),
+            "riskTolerance": BOT_RISK.get(p.get("bot_level")) or 0.2 + 0.04 * (index % 6),
         }
         for index, p in enumerate(players)
     ]
     session = GameSession.create(
-        roster, target_score=room["target_score"], turn_seconds=room["turn_seconds"], teams=bool(room.get("team_mode"))
+        roster, target_score=room["target_score"], turn_seconds=room["turn_seconds"], teams=bool(room.get("team_mode")),
+        deck_version=room.get("deck_version") or 2,
     )
     events = session.drain_events()
     args = games.finalize(session, events)

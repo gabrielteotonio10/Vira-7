@@ -21,6 +21,8 @@
     ],
     targetScore: RULES.DEFAULT_TARGET_SCORE,
     speed: 1,
+    teams: 0,
+    deckVersion: 2,
   };
 
   class SetupScreen {
@@ -55,8 +57,11 @@
           color: PLAYER_COLORS.includes(p.color) ? p.color : PLAYER_COLORS[i % PLAYER_COLORS.length],
           avatar: AVATARS.includes(p.avatar) ? p.avatar : AVATARS[i % (AVATARS.length || 1)],
         })),
-        targetScore: [100, 200, 300].includes(saved.targetScore) ? saved.targetScore : RULES.DEFAULT_TARGET_SCORE,
+        targetScore: [50, 100, 150, 200, 300, 500].includes(saved.targetScore) ? saved.targetScore : RULES.DEFAULT_TARGET_SCORE,
         speed: [1, 1.6, 2.4].includes(saved.speed) ? saved.speed : 1,
+        // Duplas só valem com 4, 6 ou 8 jogadores: se o que foi salvo não serve, volta ao modo individual.
+        teams: saved.teams === 1 && saved.players.length >= 4 && saved.players.length % 2 === 0 ? 1 : 0,
+        deckVersion: saved.deckVersion === 1 ? 1 : 2,
       };
     }
 
@@ -103,27 +108,54 @@
 
       this.bindSegmented('#target-options', 'targetScore');
       this.bindSegmented('#speed-options', 'speed');
+      this.bindSegmented('#deck-options', 'deckVersion');
+      this.bindSegmented('#mode-options', 'teams', () => this.applyTeams());
 
       qs('#start-game', this.root).addEventListener('click', () => this.start());
       qs('#open-rules-setup', this.root).addEventListener('click', () => this.onRules());
     }
 
-    bindSegmented(selector, key) {
+    bindSegmented(selector, key, after) {
       const group = qs(selector, this.root);
       group.addEventListener('click', (event) => {
         const button = event.target.closest('button[data-value]');
-        if (!button) return;
+        if (!button || button.disabled) return;
         this.state[key] = Number(button.dataset.value);
         F7.Sound.click();
+        if (after) after();
         this.persist();
         this.renderSegmented();
       });
+    }
+
+    /**
+     * Duplas só existem com 4, 6 ou 8 jogadores. Ao escolher Duplas com número ímpar (ou menos de 4),
+     * a mesa é completada com uma CPU (ou, na mesa cheia, tira-se a última) e o aviso diz o que mudou.
+     */
+    applyTeams() {
+      const { players } = this.state;
+      if (!this.state.teams) return;
+      let changed = false;
+      while (players.length < 4 || players.length % 2) {
+        if (players.length >= RULES.MAX_PLAYERS) {
+          players.pop();
+        } else {
+          this.pushBot();
+        }
+        changed = true;
+      }
+      if (changed) {
+        F7.App.toast(`Duplas precisam de 4, 6 ou 8 jogadores: a mesa agora tem ${players.length}.`, { iconName: 'user' });
+        this.render();
+      }
     }
 
     renderSegmented() {
       [
         ['#target-options', 'targetScore'],
         ['#speed-options', 'speed'],
+        ['#deck-options', 'deckVersion'],
+        ['#mode-options', 'teams'],
       ].forEach(([selector, key]) => {
         qsa(`${selector} button`, this.root).forEach((button) => {
           button.setAttribute('aria-checked', String(Number(button.dataset.value) === this.state[key]));
@@ -131,9 +163,9 @@
       });
     }
 
-    addPlayer() {
+    /** Acrescenta uma CPU com nome, cor e personagem que ainda não estão em uso. */
+    pushBot() {
       const { players } = this.state;
-      if (players.length >= RULES.MAX_PLAYERS) return;
       const usedNames = new Set(players.map((p) => p.name));
       const usedColors = new Set(players.map((p) => p.color));
       players.push({
@@ -142,6 +174,14 @@
         color: PLAYER_COLORS.find((c) => !usedColors.has(c)) || PLAYER_COLORS[0],
         avatar: AVATARS.find((a) => !players.some((p) => p.avatar === a)) || AVATARS[0],
       });
+    }
+
+    addPlayer() {
+      const { players } = this.state;
+      if (players.length >= RULES.MAX_PLAYERS) return;
+      this.pushBot();
+      // Em duplas a mesa cresce de dois em dois (sempre par).
+      if (this.state.teams && players.length % 2 && players.length < RULES.MAX_PLAYERS) this.pushBot();
       F7.Sound.click();
       this.persist();
       this.render();
@@ -150,10 +190,16 @@
     }
 
     removePlayer(index, row) {
-      if (this.state.players.length <= RULES.MIN_PLAYERS) return;
+      const min = this.state.teams ? 4 : RULES.MIN_PLAYERS;
+      if (this.state.players.length <= min) return;
       row.classList.add('is-leaving');
       setTimeout(() => {
         this.state.players.splice(index, 1);
+        // Em duplas, tirar um jogador tira também a última CPU (a mesa continua par).
+        if (this.state.teams && this.state.players.length % 2) {
+          const last = this.state.players.map((p) => p.isBot).lastIndexOf(true);
+          this.state.players.splice(last >= 0 ? last : this.state.players.length - 1, 1);
+        }
         this.persist();
         this.render();
       }, 200);
@@ -204,11 +250,16 @@
       this.count.textContent = `${players.length}/${RULES.MAX_PLAYERS}`;
       this.addButton.disabled = players.length >= RULES.MAX_PLAYERS;
       this.error.hidden = true;
+      const hint = qs('#mode-hint', this.root);
+      if (hint) {
+        hint.hidden = !this.state.teams;
+        hint.textContent = 'Duplas só aceitam 4, 6 ou 8 jogadores. Quem senta na frente de você é seu parceiro e os pontos são somados.';
+      }
       this.renderSegmented();
     }
 
     renderRow(player, index) {
-      const canRemove = this.state.players.length > RULES.MIN_PLAYERS;
+      const canRemove = this.state.players.length > (this.state.teams ? 4 : RULES.MIN_PLAYERS);
       const avatar = h(
         'button',
         {
@@ -292,6 +343,11 @@
         return;
       }
 
+      if (this.state.teams && (players.length < 4 || players.length % 2)) {
+        this.showError('Duplas precisam de 4, 6 ou 8 jogadores.');
+        return;
+      }
+
       // Partidas só com CPUs são permitidas e funcionam como demonstração.
       const config = {
         players: players.map((p, i) => ({
@@ -303,6 +359,8 @@
         })),
         targetScore: this.state.targetScore,
         speed: this.state.speed,
+        teams: !!this.state.teams,
+        deckVersion: this.state.deckVersion,
       };
       this.persist();
       this.onStart(config);

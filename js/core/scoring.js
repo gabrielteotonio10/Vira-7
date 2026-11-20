@@ -51,8 +51,14 @@
     };
   }
 
+  /** Duplas ficam em lugares opostos: com 4 pessoas, 0 e 2 jogam juntas, assim como 1 e 3. */
+  const teamCount = (players) => Math.floor(players / 2);
+  const teamOf = (seat, players) => seat % teamCount(players);
+  const teamGroups = (players) =>
+    Array.from({ length: teamCount(players) }, (_, team) => Array.from({ length: players }, (__, seat) => seat).filter((seat) => teamOf(seat, players) === team));
+
   /** Classificação ordenada por pontuação total (maior primeiro). */
   const standings = (players) => players.slice().sort((a, b) => b.total - a.total || a.id - b.id);
 
-  F7.Scoring = { compute, checkVictory, standings };
+  F7.Scoring = { compute, checkVictory, standings, teamCount, teamOf, teamGroups };
 })(globalThis.F7 = globalThis.F7 || {});

@@ -22,7 +22,7 @@
    * Abre uma janela genérica.
    * @param {{
    *   title: string, eyebrow?: string, body: Node, wide?: boolean, dismissible?: boolean,
-   *   actions?: Array<{ label: string, value: any, variant?: string, iconName?: string }>,
+   *   actions?: Array<{ label: string, value: any, variant?: string, iconName?: string, beforeClose?: () => Promise<boolean> }>,
    *   footNote?: Node,
    * }} options
    * @returns {{ el: HTMLElement, result: Promise<any>, close: (value?: any) => void }}
@@ -49,7 +49,22 @@
         {
           type: 'button',
           class: `btn ${action.variant ? `btn--${action.variant}` : ''}`,
-          onClick: () => close(action.value),
+          onClick: async (event) => {
+            // `beforeClose`: valida (ex.: salvar no servidor) e só fecha se devolver true.
+            if (action.beforeClose) {
+              const button = event.currentTarget;
+              button.disabled = true;
+              let ok = false;
+              try {
+                ok = await action.beforeClose();
+              } catch (error) {
+                ok = false;
+              }
+              button.disabled = false;
+              if (!ok) return;
+            }
+            close(action.value);
+          },
         },
         action.iconName ? h('span', { html: icon(action.iconName) }) : null,
         action.label,
@@ -400,7 +415,7 @@
    * @param {object} game
    * @param {{ actions?: object[] }} [options] botões (padrão: menu / jogar de novo)
    */
-  function gameOver({ winner, winnerTeam, standings, reason }, game, { actions } = {}) {
+  function gameOver({ winner, winnerTeam, standings, reason }, game, { actions, awards = [], note = null } = {}) {
     const teamWin = winnerTeam !== null && winnerTeam !== undefined && game.teams;
     const podiumOrder = [standings[1], standings[0], standings[2]].filter(Boolean);
     const podium = h(
@@ -471,6 +486,26 @@
         h('div', { class: 'winner__score' }, detail),
       ),
       team ? teamStandings(game) : standings.length > 1 ? podium : null,
+      awards.length
+        ? h(
+            'section',
+            { class: 'awards' },
+            h('h3', {}, 'Prêmios da partida'),
+            h(
+              'ul',
+              { class: 'awards__list' },
+              awards.map((award, index) =>
+                h(
+                  'li',
+                  { class: 'award', style: { '--player-color': award.player.color, '--i': index } },
+                  h('span', { class: 'award__icon', html: icon(award.icon) }),
+                  avatarOf(award.player),
+                  h('div', {}, h('strong', {}, award.title), h('span', {}, award.player.name), h('small', {}, award.detail)),
+                ),
+              ),
+            ),
+          )
+        : null,
       table,
     );
 
@@ -480,6 +515,7 @@
       body,
       wide: true,
       dismissible: false,
+      footNote: note,
       actions: actions || [
         { label: 'Menu inicial', value: 'menu', variant: 'ghost', iconName: 'home' },
         { label: 'Jogar de novo', value: 'again', variant: 'primary', iconName: 'restart' },

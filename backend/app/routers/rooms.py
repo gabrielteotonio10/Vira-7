@@ -35,6 +35,8 @@ class RoomCreate(BaseModel):
     target_score: int = Field(default=C.DEFAULT_TARGET_SCORE, alias="targetScore")
     turn_seconds: int = Field(default=30, alias="turnSeconds")
     team_mode: bool = Field(default=False, alias="teamMode")
+    friends_join: bool = Field(default=False, alias="friendsJoin")
+    deck_version: Literal[1, 2] = Field(default=2, alias="deckVersion")
 
     model_config = {"populate_by_name": True}
 
@@ -49,6 +51,8 @@ class RoomUpdate(BaseModel):
     target_score: int | None = Field(default=None, alias="targetScore")
     turn_seconds: int | None = Field(default=None, alias="turnSeconds")
     team_mode: bool | None = Field(default=None, alias="teamMode")
+    friends_join: bool | None = Field(default=None, alias="friendsJoin")
+    deck_version: Literal[1, 2] | None = Field(default=None, alias="deckVersion")
 
     model_config = {"populate_by_name": True}
 
@@ -63,6 +67,14 @@ class ChatMessage(BaseModel):
 
 class ReadyUpdate(BaseModel):
     ready: bool
+
+
+class BotCreate(BaseModel):
+    level: Literal["cautious", "balanced", "bold"] | None = None
+
+
+class MovePlayer(BaseModel):
+    direction: Literal["up", "down"]
 
 
 @router.get("/public")
@@ -110,8 +122,17 @@ async def set_ready(
 
 
 @router.post("/{code}/bots", status_code=201)
-async def add_bot(code: str, user: AuthUser = Depends(current_user), store=Depends(get_store)) -> dict:
-    return await rooms.add_bot(store, user.id, code)
+async def add_bot(
+    code: str, body: BotCreate | None = None, user: AuthUser = Depends(current_user), store=Depends(get_store)
+) -> dict:
+    return await rooms.add_bot(store, user.id, code, body.level if body else None)
+
+
+@router.post("/{code}/players/{player_id}/move")
+async def move_player(
+    code: str, player_id: str, body: MovePlayer, user: AuthUser = Depends(current_user), store=Depends(get_store)
+) -> dict:
+    return await rooms.move_player(store, user.id, code, player_id, body.direction)
 
 
 @router.delete("/{code}/players/{player_id}")

@@ -11,6 +11,30 @@
   const statCard = (value, label, accent) =>
     h('div', { class: 'stat-card', style: accent ? { '--accent': accent } : undefined }, h('strong', {}, String(value)), h('span', {}, label));
 
+  /** Conquistas: as desbloqueadas coloridas, as demais apagadas (com a dica de como conseguir). */
+  function achievementsPanel(data) {
+    const info = data.achievements;
+    if (!info) return null;
+    return h(
+      'section',
+      { class: 'panel' },
+      h('div', { class: 'section-head' }, h('h2', {}, 'Conquistas'), h('span', { class: 'setup__count' }, `${info.unlocked}/${info.items.length}`)),
+      h(
+        'ul',
+        { class: 'achievements' },
+        info.items.map((item) =>
+          h(
+            'li',
+            { class: `achievement${item.unlocked ? ' is-unlocked' : ''}`, title: item.description },
+            h('span', { class: 'achievement__icon', html: icon(item.unlocked ? 'trophy' : 'lock') }),
+            h('strong', {}, item.title),
+            h('small', {}, item.description),
+          ),
+        ),
+      ),
+    );
+  }
+
   function statsGrid(stats) {
     return h(
       'div',
@@ -46,7 +70,7 @@
       h(
         'div',
         { class: 'match__main' },
-        h('div', { class: 'match__meta' }, `${App.formatDate(match.finishedAt)} · meta ${match.targetScore} · ${match.rounds} rodadas${reason}`),
+        h('div', { class: 'match__meta' }, `${App.formatDate(match.finishedAt)} · meta ${match.targetScore} · ${match.rounds} ${match.rounds === 1 ? 'rodada' : 'rodadas'}${reason}`),
         h(
           'ol',
           { class: 'match__players' },
@@ -72,6 +96,44 @@
 
   /* ------------------------------------------------------------------ perfil */
 
+  /** Convidado (sem e-mail): oferece criar e-mail e senha para guardar o progresso. */
+  function guestBanner() {
+    const button = h('button', { type: 'button', class: 'btn btn--primary' }, 'Criar minha conta');
+    button.addEventListener('click', async () => {
+      const { field } = F7.Screens;
+      const email = field('E-mail', { type: 'email', autocomplete: 'email', required: true, placeholder: 'voce@exemplo.com' });
+      const password = field('Senha', { type: 'password', autocomplete: 'new-password', minlength: 6 }, 'Pelo menos 6 caracteres');
+      const ok = await F7.Modals.open({
+        title: 'Criar minha conta',
+        eyebrow: 'Guarde seu progresso',
+        body: h('div', { class: 'form' }, email.el, password.el),
+        actions: [
+          { label: 'Agora não', value: false, variant: 'ghost' },
+          {
+            label: 'Salvar',
+            value: true,
+            variant: 'primary',
+            beforeClose: async () => {
+              if (password.input.value.length < 6) {
+                password.setNote('A senha precisa ter pelo menos 6 caracteres.', 'error');
+                return false;
+              }
+              try {
+                await F7.Auth.upgradeGuest({ email: email.input.value.trim(), password: password.input.value });
+                return true;
+              } catch (error) {
+                email.setNote(error.message, 'error');
+                return false;
+              }
+            },
+          },
+        ],
+      }).result;
+      if (ok) App.toast('Quase lá! Confirme o e-mail para terminar.', { variant: 'stay' });
+    });
+    return h('section', { class: 'panel guest-note' }, h('div', {}, h('strong', {}, 'Você está jogando como convidado'), h('p', {}, 'Se limpar os dados do navegador, a conta some. Crie e-mail e senha para guardar vitórias e amigos.')), button);
+  }
+
   /** Botão de amizade no perfil de outra pessoa. */
   function friendButton(info, friendship) {
     const box = h('div', { class: 'profile__actions' });
@@ -93,22 +155,26 @@
   }
 
   async function profile({ username } = {}) {
+    const route = App.path;
     App.render(App.loading());
     const own = !username || username.toLowerCase() === App.state.me.profile.username.toLowerCase();
 
     let data;
-    if (own) {
-      const me = await App.refreshMe();
-      const recent = await F7.Api.get('/me/matches?limit=5');
-      data = { profile: me.profile, stats: me.stats, recentMatches: recent.matches };
-    } else {
-      try {
+    try {
+      if (own) {
+        const me = await App.refreshMe();
+        const recent = await F7.Api.get('/me/matches?limit=5');
+        data = { profile: me.profile, stats: me.stats, achievements: me.achievements, recentMatches: recent.matches };
+      } else {
         data = await F7.Api.get(`/profiles/${encodeURIComponent(username)}`);
-      } catch (error) {
-        App.render(App.empty('user', 'Jogador não encontrado', error.message));
-        return;
       }
+    } catch (error) {
+      // A pessoa pode ter saído da tela enquanto carregava: não desenha por cima da tela nova.
+      if (App.path !== route) return;
+      App.render(own ? App.empty('bolt', 'Não foi possível carregar o perfil', error.message) : App.empty('user', 'Jogador não encontrado', error.message));
+      return;
     }
+    if (App.path !== route) return;
 
     const info = data.profile;
     App.render(
@@ -123,6 +189,7 @@
             'div',
             { class: 'profile__id' },
             h('h1', {}, info.username),
+            data.achievements && data.achievements.title ? h('span', { class: 'badge badge--title' }, data.achievements.title) : null,
             h('p', {}, `${F7.Avatars.info(info.avatar).name} · no jogo desde ${new Date(info.createdAt).toLocaleDateString(F7.i18n.locale, { month: 'long', year: 'numeric' })}`),
             own ? h('p', { class: 'profile__email' }, F7.Auth.user.email || '') : null,
           ),
@@ -135,7 +202,9 @@
               )
             : friendButton(info, data.friendship),
         ),
+        own && F7.Auth.mode === 'supabase' && !F7.Auth.user.email ? guestBanner() : null,
         h('section', { class: 'panel' }, h('div', { class: 'section-head' }, h('h2', {}, 'Estatísticas')), statsGrid(data.stats)),
+        achievementsPanel(data),
         h(
           'section',
           { class: 'panel' },
@@ -163,17 +232,26 @@
       body: h('div', { class: 'form' }, username.el, h('div', { class: 'form__field' }, h('span', { class: 'form__label' }, 'Personagem'), picker.el)),
       actions: [
         { label: 'Cancelar', value: false, variant: 'ghost' },
-        { label: 'Salvar', value: true, variant: 'primary' },
+        {
+          label: 'Salvar',
+          value: true,
+          variant: 'primary',
+          // Nome já usado ou inválido: a janela continua aberta com o que a pessoa digitou.
+          beforeClose: async () => {
+            try {
+              await F7.Api.patch('/me', { username: username.input.value.trim(), avatar: picker.value });
+              return true;
+            } catch (error) {
+              username.setNote(error.message, 'error');
+              return false;
+            }
+          },
+        },
       ],
     }).result;
     if (!ok) return;
-    try {
-      await F7.Api.patch('/me', { username: username.input.value.trim(), avatar: picker.value });
-      App.toast('Perfil atualizado!', { variant: 'stay' });
-      await profile();
-    } catch (error) {
-      App.toast(error.message, { variant: 'bust' });
-    }
+    App.toast('Perfil atualizado!', { variant: 'stay' });
+    await profile();
   }
 
   /* ------------------------------------------------------------------ histórico */
@@ -216,17 +294,47 @@
 
   /* ------------------------------------------------------------------ ranking */
 
-  async function ranking({ scope = 'all' } = {}) {
+  async function ranking({ scope = 'all', sort = 'wins' } = {}) {
+    const route = App.path;
     App.render(App.loading());
-    const { players } = await F7.Api.get(`/leaderboard?limit=50&scope=${scope}`);
+    let players;
+    try {
+      ({ players } = await F7.Api.get(`/leaderboard?limit=50&scope=${scope}&sort=${sort}`));
+    } catch (error) {
+      if (App.path !== route) return;
+      // Erro ao trocar de aba: mostra o problema e o botão de tentar de novo (nada de spinner eterno).
+      App.render(
+        h(
+          'div',
+          { class: 'profile' },
+          h('section', { class: 'panel' }, App.empty('bolt', 'Não foi possível carregar o ranking', error.message),
+            h('button', { type: 'button', class: 'btn btn--primary btn--block', onClick: () => ranking({ scope, sort }) }, 'Tentar de novo')),
+        ),
+      );
+      return;
+    }
+    if (App.path !== route) return;
     const myId = F7.Auth.user.id;
 
+    const tabList = (items, current, onPick, label) =>
+      h(
+        'div',
+        { class: 'segmented ranking-tabs', role: 'tablist', 'aria-label': label },
+        items.map(([value, text]) =>
+          h('button', { type: 'button', role: 'tab', 'aria-selected': String(current === value), 'aria-checked': String(current === value), onClick: () => onPick(value) }, text),
+        ),
+      );
+    // role="tab" usa aria-selected; aria-checked só existe em radio.
+    const fix = (el) => {
+      el.querySelectorAll('[role="tab"]').forEach((b) => b.removeAttribute('aria-checked'));
+      return el;
+    };
     const tabs = h(
       'div',
-      { class: 'segmented ranking-tabs', role: 'tablist' },
-      [['all', 'Geral'], ['friends', 'Só amigos']].map(([value, label]) =>
-        h('button', { type: 'button', role: 'tab', 'aria-selected': String(scope === value), 'aria-checked': String(scope === value), onClick: () => ranking({ scope: value }) }, label),
-      ),
+      { class: 'ranking-controls' },
+      fix(tabList([['all', 'Geral'], ['friends', 'Só amigos']], scope, (value) => ranking({ scope: value, sort }), 'Quem aparece')),
+      fix(tabList([['wins', 'Vitórias'], ['rate', 'Aproveitamento'], ['average', 'Média de pontos']], sort, (value) => ranking({ scope, sort: value }), 'Ordenar por')),
+      sort === 'wins' ? null : h('small', { class: 'section-hint' }, 'Só entra quem jogou pelo menos 5 partidas.'),
     );
 
     const position = (p) => (p.position <= 3 ? h('span', { class: `medal medal--${p.position}` }, String(p.position)) : String(p.position));
@@ -248,7 +356,7 @@
           h(
             'dl',
             { class: 'rank-card__stats' },
-            [['Partidas', p.gamesPlayed], ['Aproveit.', `${p.winRate}%`], ['Pontos', p.totalPoints], ['Vira 7', p.flip7Count]].map(([label, value]) =>
+            [['Partidas', p.gamesPlayed], ['Aproveit.', `${p.winRate}%`], ['Pontos', p.totalPoints], ['Média', p.averageScore], ['Vira 7', p.flip7Count]].map(([label, value]) =>
               h('div', {}, h('dt', {}, label), h('dd', {}, String(value))),
             ),
           ),
@@ -263,7 +371,7 @@
           h(
             'table',
             { class: 'final-table ranking' },
-            h('thead', {}, h('tr', {}, ['#', 'Jogador', 'Vitórias', 'Partidas', '%', 'Pontos', 'Vira 7'].map((t) => h('th', { scope: 'col' }, t)))),
+            h('thead', {}, h('tr', {}, ['#', 'Jogador', 'Vitórias', 'Partidas', '%', 'Pontos', 'Média', 'Vira 7'].map((t) => h('th', { scope: 'col' }, t)))),
             h(
               'tbody',
               {},
@@ -277,6 +385,7 @@
                   h('td', {}, String(p.gamesPlayed)),
                   h('td', {}, `${p.winRate}%`),
                   h('td', {}, String(p.totalPoints)),
+                  h('td', {}, String(p.averageScore)),
                   h('td', {}, String(p.flip7Count)),
                 ),
               ),

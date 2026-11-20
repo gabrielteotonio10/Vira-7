@@ -351,6 +351,14 @@
     min-width: 0;
   }
 
+  /* O aviso do rodapé (revanche, próxima rodada) ocupa uma linha própria acima dos botões. */
+  .modal__foot > .rematch-note,
+  .modal__foot > .summary__autonext {
+    flex: 1 0 100%;
+    margin: 0;
+    text-align: center;
+  }
+
   .summary-row {
     grid-template-columns: 30px minmax(0, 1fr) auto;
   }

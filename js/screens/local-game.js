@@ -63,9 +63,9 @@
     App.show('game');
 
     const game = new F7.Game(config, App.controller);
-    // Duas ou mais pessoas no mesmo aparelho: a mesa gira para quem está jogando.
+    // Duas ou mais pessoas no mesmo aparelho: o lugar de quem joga cresce e os outros ficam mais discretos.
     const humans = config.players.filter((p) => !p.isBot).length;
-    App.controller.attach(game, { hotSeat: humans > 1 });
+    App.controller.attach(game, { spotlight: humans > 1 });
     const run = game.run();
     current = { game, run, config };
 

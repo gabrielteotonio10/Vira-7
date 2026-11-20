@@ -25,7 +25,7 @@ def like_exact(value: str) -> str:
     return value
 
 
-KNOWN_ERRORS = ("ROOM_NOT_FOUND", "ROOM_FULL", "ROOM_NOT_OPEN", "ALREADY_IN_ROOM")
+KNOWN_ERRORS = ("ROOM_NOT_FOUND", "ROOM_FULL", "ROOM_NOT_OPEN", "ALREADY_IN_ROOM", "PLAYER_NOT_FOUND")
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 
@@ -38,7 +38,7 @@ def is_uuid(value) -> bool:
 
 ROOM_COLUMNS = (
     "id,code,name,host_id,visibility,mode,status,max_players,target_score,turn_seconds,"
-    "current_game_id,created_at,updated_at,team_mode"
+    "current_game_id,created_at,updated_at,team_mode,friends_join,deck_version"
 )
 
 
@@ -83,6 +83,8 @@ class SupabaseStore:
                 raise StoreError("USERNAME_TAKEN")
             if "one_active_room" in message:
                 raise StoreError("ALREADY_IN_ROOM")
+            if "friendships_pair_key" in message:
+                raise StoreError("FRIENDSHIP_EXISTS")
         raise RuntimeError(f"Supabase respondeu {response.status_code}: {message or response.text[:200]}")
 
     async def _select(self, table: str, params: dict) -> list[dict]:
@@ -136,13 +138,27 @@ class SupabaseStore:
 
         return new_stats(user_id)
 
-    async def leaderboard(self, limit: int = 20, user_ids: list[str] | None = None) -> list[dict]:
+    async def leaderboard(
+        self, limit: int = 20, user_ids: list[str] | None = None, sort: str = "wins", min_games: int = 0
+    ) -> list[dict]:
         params = {"select": "*", "order": "wins.desc,total_points.desc,username.asc", "limit": str(limit)}
+        if sort == "rate":
+            params["order"] = "win_rate.desc,games_played.desc,username.asc"
+        elif sort == "average":
+            # Não dá para ordenar pela média no PostgREST: busca os mais ativos e ordena aqui.
+            params["order"] = "games_played.desc,username.asc"
+            params["limit"] = "300"
+        if min_games:
+            params["games_played"] = f"gte.{min_games}"
         if user_ids is not None:
             if not user_ids:
                 return []
-            params["user_id"] = f"in.({','.join(user_ids)})"
-        return await self._select("leaderboard", params)
+            params["user_id"] = f"in.({','.join(i for i in user_ids if is_uuid(i))})"
+        rows = await self._select("leaderboard", params)
+        if sort == "average":
+            rows.sort(key=lambda r: (-(r["total_points"] / max(1, r["games_played"])), r["username"]))
+            rows = rows[:limit]
+        return rows
 
     async def get_profiles(self, user_ids: list[str]) -> dict[str, dict]:
         if not user_ids:
@@ -336,8 +352,23 @@ class SupabaseStore:
     async def join_room(self, room_id: str, user_id: str) -> dict:
         return await self._rpc("vira7_join_room", {"p_room": room_id, "p_user": user_id})
 
-    async def add_bot(self, room_id: str, name: str, avatar: str) -> dict:
-        return await self._rpc("vira7_add_bot", {"p_room": room_id, "p_name": name, "p_avatar": avatar})
+    async def add_bot(self, room_id: str, name: str, avatar: str, level: str | None = None) -> dict:
+        bot = await self._rpc("vira7_add_bot", {"p_room": room_id, "p_name": name, "p_avatar": avatar})
+        if level and isinstance(bot, dict) and bot.get("id"):
+            await self._request("PATCH", "room_players", params={"id": f"eq.{bot['id']}"}, json={"bot_level": level})
+            bot["bot_level"] = level
+        return bot
+
+    async def swap_seats(self, room_id: str, player_a: str, player_b: str) -> None:
+        if not (is_uuid(player_a) and is_uuid(player_b)):
+            raise StoreError("PLAYER_NOT_FOUND")
+        await self._rpc("vira7_swap_seats", {"p_room": room_id, "p_a": player_a, "p_b": player_b})
+
+    async def set_host(self, room_id: str, user_id: str) -> None:
+        await self._request("PATCH", "rooms", params={"id": f"eq.{room_id}"}, json={"host_id": user_id})
+
+    async def prune_finished_games(self, days: int) -> dict:
+        return await self._rpc("vira7_prune_games", {"p_days": days}) or {}
 
     async def remove_bot(self, room_id: str, player_id: str) -> bool:
         if not is_uuid(player_id):
@@ -367,23 +398,22 @@ class SupabaseStore:
         await self._request("DELETE", "room_spectators", params={"room_id": f"eq.{room_id}"})
 
     async def list_open_rooms(self) -> list[dict]:
+        """Salas em andamento com o último sinal de cada pessoa. A presença vem embutida na própria
+        consulta (sem montar uma lista enorme de ids na URL)."""
         rooms = await self._select(
             "rooms",
-            {"status": "in.(lobby,playing)", "limit": "500", "select": f"{ROOM_COLUMNS},room_players(user_id,is_bot,status)"},
+            {
+                "status": "in.(lobby,playing)", "limit": "500",
+                "select": f"{ROOM_COLUMNS},room_players(user_id,is_bot,status,joined_at),player_presence(user_id,last_seen_at)",
+            },
         )
-        if not rooms:
-            return []
-        ids = ",".join(room["id"] for room in rooms)
-        presence = await self._select(
-            "player_presence", {"room_id": f"in.({ids})", "select": "room_id,user_id,last_seen_at"}
-        )
-        seen = {(row["room_id"], row["user_id"]): row["last_seen_at"] for row in presence}
         for room in rooms:
             members = room.pop("room_players", None) or []
-            room["humans_seen"] = [
-                seen.get((room["id"], m["user_id"]))
-                for m in members if m["status"] == "joined" and not m["is_bot"]
-            ]
+            seen = {row["user_id"]: row["last_seen_at"] for row in (room.pop("player_presence", None) or [])}
+            humans = [m for m in members if m["status"] == "joined" and not m["is_bot"]]
+            humans.sort(key=lambda m: m.get("joined_at") or "")
+            room["humans"] = [{"user_id": m["user_id"], "seen": seen.get(m["user_id"])} for m in humans]
+            room["humans_seen"] = [h["seen"] for h in room["humans"]]
         return rooms
 
     async def list_players(self, room_id: str) -> list[dict]:
@@ -391,7 +421,7 @@ class SupabaseStore:
             "room_players",
             {
                 "room_id": f"eq.{room_id}", "status": "eq.joined", "order": "seat.asc",
-                "select": "id,room_id,user_id,is_bot,bot_name,bot_avatar,seat,is_ready,status,joined_at,"
+                "select": "id,room_id,user_id,is_bot,bot_name,bot_avatar,bot_level,seat,is_ready,status,joined_at,"
                           "profile:profiles(username,avatar)",
             },
         )

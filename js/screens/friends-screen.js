@@ -22,6 +22,21 @@
     window.open(whatsappUrl(text), '_blank', 'noopener');
   }
 
+  /** Convite para uma sala: usa o compartilhamento do aparelho quando existe (celular), senão o WhatsApp. */
+  async function invite(room, friend) {
+    const link = `${siteLink()}#/sala/${room.code}`;
+    const text = `${F7.i18n.t('Bora jogar Vira-7! Entra na minha sala:')} ${link}\n${F7.i18n.t('Código')}: ${room.code}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Vira-7', text: friend ? `${friend.username}, ${text}` : text, url: link });
+        return;
+      } catch (error) {
+        if (error && error.name === 'AbortError') return; // a pessoa fechou a janela de compartilhar
+      }
+    }
+    openWhatsapp(text);
+  }
+
   function person(entry, ...extra) {
     return h(
       'li',
@@ -36,7 +51,9 @@
               'span',
               { class: 'friend__room' },
               h('i', { class: 'dot' }),
-              entry.room.status === 'playing' ? `Jogando em ${entry.room.name}` : `Na sala ${entry.room.name} · ${entry.room.playerCount}/${entry.room.maxPlayers}`,
+              entry.room.private
+                ? 'Em uma sala privada'
+                : entry.room.status === 'playing' ? `Jogando em ${entry.room.name}` : `Na sala ${entry.room.name} · ${entry.room.playerCount}/${entry.room.maxPlayers}`,
             )
           : null,
       ),
@@ -107,9 +124,14 @@
         lists.friends.appendChild(h('li', {}, App.empty('user', 'Nenhum amigo ainda', 'Adicione pelo nome de usuário ou chame alguém pelo WhatsApp.')));
       }
       data.friends.forEach((entry) => {
-        const button = entry.room
-          ? h('button', { type: 'button', class: 'btn btn--success', onClick: () => join(entry) }, entry.room.mode === 'watch' ? 'Assistir' : 'Entrar na sala')
-          : null;
+        // Sala privada sem "amigos entram direto": o servidor nem manda o código, então não há botão.
+        let button = null;
+        if (entry.room && !entry.room.private) {
+          button = h('button', { type: 'button', class: 'btn btn--success', onClick: () => join(entry) }, entry.room.mode === 'watch' ? 'Assistir' : 'Entrar na sala');
+        } else if (!entry.room && App.state.me && App.state.me.activeRoom) {
+          // Eu estou numa sala e o amigo não: convida (compartilhamento do celular ou WhatsApp).
+          button = h('button', { type: 'button', class: 'btn btn--ghost', onClick: () => invite(App.state.me.activeRoom, entry) }, 'Convidar para minha sala');
+        }
         const profileLink = h('a', {
           class: 'icon-btn', href: `#/perfil/${encodeURIComponent(entry.username)}`, html: icon('user'),
           'aria-label': `Ver o perfil de ${entry.username}`, title: 'Ver perfil',
@@ -204,5 +226,5 @@
   }
 
   F7.Screens = Object.assign(F7.Screens || {}, { friends });
-  F7.Share = { whatsappUrl, openWhatsapp, siteLink };
+  F7.Share = { whatsappUrl, openWhatsapp, siteLink, invite };
 })(globalThis.F7 = globalThis.F7 || {});

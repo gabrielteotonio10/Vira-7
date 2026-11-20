@@ -5,23 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Vira-7: jogo de cartas online de risco e estratégia para jogar com amigos. Baseado nas regras do Flip 7." />
     <meta name="theme-color" content="#fff6e5" />
+
+    <!-- Prévia do link (WhatsApp, Discord, redes): __ORIGIN__ vira o endereço do site no servidor -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Vira-7" />
+    <meta property="og:title" content="Vira-7 · jogo de cartas online" />
+    <meta property="og:description" content="Vire mais uma carta ou pare antes de estourar! Jogue com amigos em salas, em duplas, no celular ou no computador." />
+    <meta property="og:image" content="__ORIGIN__/assets/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content="__ORIGIN__/" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Vira-7 · jogo de cartas online" />
+    <meta name="twitter:description" content="Vire mais uma carta ou pare antes de estourar! Jogue com amigos." />
+    <meta name="twitter:image" content="__ORIGIN__/assets/og-image.png" />
     <title>Vira-7 · Jogo de cartas online</title>
 
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="assets/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Vira-7" />
     <!-- O visual escolhido é aplicado antes da primeira pintura (sem piscar o tema claro) -->
     <script src="js/app/theme.js"></script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700;800;900&family=Lilita+One&display=swap"
-    />
+    <!-- Fontes e bibliotecas são servidas pelo próprio jogo: funciona offline e sem pedir nada a terceiros -->
+    <link rel="preload" href="assets/fonts/lilita-one-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="assets/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="css/fonts.css" />
 
     <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/base.css" />
@@ -77,10 +90,28 @@
             <div class="setup__options">
               <div class="option">
                 <span class="option__label" id="target-label">Meta de pontos</span>
-                <div class="segmented" id="target-options" role="radiogroup" aria-labelledby="target-label">
+                <div class="segmented segmented--wrap" id="target-options" role="radiogroup" aria-labelledby="target-label">
+                  <button type="button" role="radio" data-value="50">50</button>
                   <button type="button" role="radio" data-value="100">100</button>
+                  <button type="button" role="radio" data-value="150">150</button>
                   <button type="button" role="radio" data-value="200">200</button>
                   <button type="button" role="radio" data-value="300">300</button>
+                  <button type="button" role="radio" data-value="500">500</button>
+                </div>
+              </div>
+              <div class="option">
+                <span class="option__label" id="mode-label">Modo de jogo</span>
+                <div class="segmented" id="mode-options" role="radiogroup" aria-labelledby="mode-label">
+                  <button type="button" role="radio" data-value="0">Cada um por si</button>
+                  <button type="button" role="radio" data-value="1">Duplas (2x2)</button>
+                </div>
+                <small class="option__hint" id="mode-hint" hidden></small>
+              </div>
+              <div class="option">
+                <span class="option__label" id="deck-label">Baralho</span>
+                <div class="segmented" id="deck-options" role="radiogroup" aria-labelledby="deck-label">
+                  <button type="button" role="radio" data-value="2">Com penalidades (99)</button>
+                  <button type="button" role="radio" data-value="1">Clássico (94)</button>
                 </div>
               </div>
               <div class="option">

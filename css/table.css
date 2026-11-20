@@ -361,7 +361,7 @@
 }
 
 .seat.is-offline::after {
-  content: 'sem conexão';
+  content: attr(data-offline);
   position: absolute;
   top: -11px;
   right: 10px;

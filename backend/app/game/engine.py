@@ -126,6 +126,8 @@ class RoundEngine:
         self.round_over = False
         self.flip7_seat: int | None = None
         self.finished = False
+        #: Assentos que já passaram pela distribuição inicial desta rodada.
+        self.dealt: set[int] = set()
         self.results: list[dict] = []
         self.events: list[dict] = []
 
@@ -253,11 +255,15 @@ class RoundEngine:
     def _deal_initial(self) -> Flow:
         """Uma carta para cada jogador; ações são resolvidas na hora. Quem já recebeu
         cartas (por um Vira Três) ou já saiu da rodada não recebe outra."""
+        # Quem já foi servido (ou virou 3 cartas por um Vira Três durante a distribuição) não recebe
+        # outra. Ter só uma Segunda Chance doada NÃO conta: essa pessoa ainda precisa da carta inicial.
+        self.dealt = set()
         for player in self.turn_order():
             if self.round_over:
                 return
-            if not player.is_active or player.table_cards():
+            if not player.is_active or player.seat in self.dealt:
                 continue
+            self.dealt.add(player.seat)
             self.current_seat = player.seat
             yield from self._draw_card(player, {"source": "deal"})
 
@@ -434,6 +440,8 @@ class RoundEngine:
     def _flip_three(self, target: Player, by: Player) -> Flow:
         """O alvo vira as próximas 3 cartas, parando antes se estourar ou fizer Vira 7."""
         self._emit("flipThreeStart", player=target.seat, by=by.seat)
+        if self.phase == "deal":
+            self.dealt.add(target.seat)  # já virou cartas: não precisa da carta inicial
 
         context = {"source": "flipThree", "index": 0, "queue": []}
         for index in range(1, C.FLIP_THREE_COUNT + 1):

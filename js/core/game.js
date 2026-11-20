@@ -61,8 +61,17 @@
       this.rng = config.rng || Math.random;
       this.players = config.players.map((data, id) => new F7.Player({ ...data, id }));
       this.targetScore = config.targetScore || RULES.DEFAULT_TARGET_SCORE;
-      this.deck = config.deck || new F7.Deck({ rng: this.rng });
+      this.deck = config.deck || new F7.Deck({ rng: this.rng, version: config.deckVersion || 2 });
       this.agent = agent;
+
+      // Duplas (2x2): só com 4, 6 ou 8 jogadores. Parceiros ficam em lugares opostos.
+      this.teamMode = !!config.teams;
+      if (this.teamMode) {
+        if (count < 4 || count % 2) throw new RangeError('Partida em duplas precisa de 4, 6 ou 8 jogadores.');
+        this.players.forEach((player) => {
+          player.team = F7.Scoring.teamOf(player.id, count);
+        });
+      }
 
       const firstDealer = Number.isInteger(config.firstDealer)
         ? config.firstDealer
@@ -85,6 +94,16 @@
 
     get dealer() {
       return this.players[this.dealerIndex];
+    }
+
+    /** Pontos de cada dupla (soma dos jogadores) ou null em partida individual. */
+    get teams() {
+      if (!this.teamMode) return null;
+      return F7.Scoring.teamGroups(this.players.length).map((seats, id) => ({
+        id,
+        seats,
+        total: seats.reduce((sum, seat) => sum + this.players[seat].total, 0),
+      }));
     }
 
     activePlayers() {
@@ -121,6 +140,13 @@
     /** Probabilidade exata de a próxima carta estourar o jogador (0 a 1). */
     bustChance(player) {
       return player.numbers.length ? this.bustOdds(player).chance : 0;
+    }
+
+    /** Classificação: por pontos (ou, em duplas, pelos pontos da dupla e depois do jogador). */
+    standings() {
+      if (!this.teamMode) return F7.Scoring.standings(this.players);
+      const total = new Map(this.teams.map((team) => [team.id, team.total]));
+      return this.players.slice().sort((a, b) => total.get(b.team) - total.get(a.team) || b.total - a.total || a.id - b.id);
     }
 
     /** Interrompe a partida na próxima oportunidade. */
@@ -169,15 +195,27 @@
         let result;
         do {
           await this.playRound();
-          result = F7.Scoring.checkVictory(this.players, this.targetScore);
-          if (result.tie) await this.emit('tieBreak', { leaders: result.leaders });
+          result = F7.Scoring.checkVictory(this.teamMode ? this.teams : this.players, this.targetScore);
+          if (result.tie) {
+            // Em duplas, `leaders` são duplas: o aviso mostra as pessoas de cada uma.
+            const leaders = this.teamMode ? result.leaders.flatMap((team) => team.seats.map((seat) => this.players[seat])) : result.leaders;
+            await this.emit('tieBreak', { leaders });
+          }
         } while (!result.over);
 
         this.phase = PHASES.OVER;
-        this.winner = result.winner;
+        let winnerTeam = null;
+        if (this.teamMode) {
+          // Quem fechou a partida é a pessoa da dupla vencedora com mais pontos.
+          winnerTeam = result.winner.id;
+          this.winner = result.winner.seats.map((seat) => this.players[seat]).sort((a, b) => b.total - a.total || a.id - b.id)[0];
+        } else {
+          this.winner = result.winner;
+        }
         await this.emit('gameOver', {
           winner: this.winner,
-          standings: F7.Scoring.standings(this.players),
+          winnerTeam,
+          standings: this.standings(),
         });
         return this.winner;
       } catch (error) {
@@ -218,9 +256,13 @@
      * ou já saiu da rodada (congelado/estourado) não recebe outra.
      */
     async dealInitialCards() {
+      // Só quem já foi servido (ou virou 3 cartas durante a distribuição) é pulado: uma
+      // Segunda Chance doada não conta como carta inicial.
+      this.dealt = new Set();
       for (const player of this.turnOrder()) {
         if (this.roundOver) return;
-        if (!player.isActive() || player.cardCount() > 0) continue;
+        if (!player.isActive() || this.dealt.has(player)) continue;
+        this.dealt.add(player);
         this.currentPlayer = player;
         await this.drawCard(player, { source: 'deal' });
       }
@@ -271,7 +313,7 @@
         round: this.round,
         results,
         flip7Player: this.flip7Player,
-        standings: F7.Scoring.standings(this.players),
+        standings: this.standings(),
       });
 
       const collected = this.players.map((player) => ({ player, cards: player.collectCards() }));
@@ -414,6 +456,7 @@
      */
     async flipThree(target, by) {
       await this.emit('flipThreeStart', { player: target, by });
+      if (this.phase === PHASES.DEAL && this.dealt) this.dealt.add(target);
 
       const context = { source: 'flipThree', index: 0, queue: [] };
       for (let i = 1; i <= RULES.FLIP_THREE_COUNT; i++) {

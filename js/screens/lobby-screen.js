@@ -41,7 +41,7 @@
       }
     }
 
-    const state = { detail, match: null, onlineIds: null, connection: 'connecting', closed: false, refreshing: false, chatLog: [] };
+    const state = { detail, match: null, onlineIds: null, connection: 'connecting', closed: false, refreshing: false, chatLog: [], botLevel: 'balanced' };
     const els = {};
     let chat = null;
 
@@ -56,6 +56,18 @@
     /** Duplas ficam em lugares opostos: com 4 pessoas, 1º e 3º jogam juntos, 2º e 4º também. */
     function teamOf(index, total) {
       return index % Math.max(1, Math.floor(total / 2));
+    }
+
+    const LEVELS = { cautious: 'Cautelosa', balanced: 'Equilibrada', bold: 'Ousada' };
+
+    /** Quantas CPUs faltam para a sala poder iniciar em duplas (4, 6 ou 8 jogadores). */
+    function missingForTeams(count, max) {
+      const target = count < 4 ? 4 : count % 2 ? count + 1 : count;
+      return target <= max ? target - count : 0;
+    }
+
+    async function move(player, direction) {
+      apply(await F7.Api.post(`/rooms/${code}/players/${player.id}/move`, { direction }));
     }
 
     function playerRow(player, index) {
@@ -75,12 +87,21 @@
             player.name,
             player.userId === userId ? h('span', { class: 'badge badge--me' }, 'Você') : null,
             player.isHost ? h('span', { class: 'badge badge--host', title: 'Anfitrião' }, h('span', { html: icon('crown') }), 'Anfitrião') : null,
-            player.isBot ? h('span', { class: 'badge badge--bot' }, 'CPU') : null,
+            player.isBot ? h('span', { class: 'badge badge--bot', title: LEVELS[player.botLevel] || '' }, player.botLevel ? `CPU · ${LEVELS[player.botLevel]}` : 'CPU') : null,
             info.teamMode ? h('span', { class: `badge badge--team team-${'abcd'[teamOf(index, state.detail.players.length)] || 'a'}` }, F7.teamName(teamOf(index, state.detail.players.length))) : null,
           ),
           h('span', { class: 'lobby-player__status' }, h('i', { class: 'dot' }), online ? 'Conectado' : 'Sem conexão'),
         ),
         h('span', { class: `badge ${player.isReady ? 'badge--stayed' : ''}` }, player.isReady ? 'Pronto' : 'Aguardando'),
+        // O anfitrião troca quem senta ao lado de quem (em duplas, isso decide as parcerias).
+        me.isHost && state.detail.players.length > 1 && info.status === 'lobby'
+          ? h(
+              'span',
+              { class: 'lobby-player__move' },
+              h('button', { type: 'button', class: 'icon-btn icon-btn--sm', html: icon('arrowUp'), disabled: index === 0, 'aria-label': `Subir ${player.name}`, title: 'Subir um lugar', onClick: (event) => App.busy(event.currentTarget, () => move(player, 'up')) }),
+              h('button', { type: 'button', class: 'icon-btn icon-btn--sm', html: icon('arrowDown'), disabled: index === state.detail.players.length - 1, 'aria-label': `Descer ${player.name}`, title: 'Descer um lugar', onClick: (event) => App.busy(event.currentTarget, () => move(player, 'down')) }),
+            )
+          : null,
         canRemove
           ? h('button', {
               type: 'button', class: 'icon-btn', html: icon('close'),
@@ -131,8 +152,9 @@
       );
 
       const spectating = me.isSpectator;
-      const teamIssue = info.teamMode && (players.length < 4 || players.length % 2)
-        ? 'Duplas precisam de 4, 6 ou 8 jogadores: adicione CPUs para completar.'
+      const teamsMissing = info.teamMode && (players.length < 4 || players.length % 2) ? (players.length < 4 ? 4 - players.length : 1) : 0;
+      const teamIssue = teamsMissing
+        ? `Duplas precisam de 4, 6 ou 8 jogadores: falta${teamsMissing > 1 ? 'm' : ''} ${teamsMissing}. Convide alguém ou complete com CPUs.`
         : null;
       const hostHint = players.length < 2
         ? 'Convide alguém ou adicione uma CPU para começar.'
@@ -167,6 +189,9 @@
                 h('span', { html: icon('share') }),
                 'Convidar pelo WhatsApp',
               ),
+              navigator.share
+                ? h('button', { type: 'button', class: 'btn btn--ghost', onClick: () => F7.Share.invite(info) }, h('span', { html: icon('share') }), 'Compartilhar…')
+                : null,
             ),
           ),
           h(
@@ -178,10 +203,32 @@
               h('div', { class: 'section-head' }, h('h2', {}, 'Jogadores'), h('span', { class: 'setup__count' }, `${players.length}/${info.maxPlayers}`)),
               h('ul', { class: 'lobby-players' }, players.map((p, i) => playerRow(p, i)), emptySeats),
               me.isHost && players.length < info.maxPlayers
-                ? h('button', {
-                    type: 'button', class: 'btn btn--ghost btn--block',
-                    onClick: (event) => App.busy(event.currentTarget, async () => apply(await F7.Api.post(`/rooms/${code}/bots`))),
-                  }, h('span', { html: icon('bot') }), 'Adicionar CPU')
+                ? h(
+                    'div',
+                    { class: 'cpu-add' },
+                    h(
+                      'div',
+                      { class: 'segmented segmented--sm', role: 'radiogroup', 'aria-label': 'Nível da CPU' },
+                      Object.entries(LEVELS).map(([value, text]) =>
+                        h('button', { type: 'button', role: 'radio', 'aria-checked': String(state.botLevel === value), onClick: () => { state.botLevel = value; renderLobby(); } }, text),
+                      ),
+                    ),
+                    h('button', {
+                      type: 'button', class: 'btn btn--ghost btn--block',
+                      onClick: (event) => App.busy(event.currentTarget, async () => apply(await F7.Api.post(`/rooms/${code}/bots`, { level: state.botLevel }))),
+                    }, h('span', { html: icon('bot') }), 'Adicionar CPU'),
+                    // Em duplas, um toque completa a mesa com CPUs (4, 6 ou 8 jogadores).
+                    info.teamMode && missingForTeams(players.length, info.maxPlayers) > 0
+                      ? h('button', {
+                          type: 'button', class: 'btn btn--primary btn--block',
+                          onClick: (event) => App.busy(event.currentTarget, async () => {
+                            for (let i = missingForTeams(state.detail.players.length, info.maxPlayers); i > 0; i--) {
+                              apply(await F7.Api.post(`/rooms/${code}/bots`, { level: state.botLevel }));
+                            }
+                          }),
+                        }, `Completar as duplas com ${missingForTeams(players.length, info.maxPlayers)} CPU${missingForTeams(players.length, info.maxPlayers) > 1 ? 's' : ''}`)
+                      : null,
+                  )
                 : null,
             ),
             h(
@@ -203,10 +250,15 @@
                 h('div', {}, h('dt', {}, 'Tempo por jogada'), h('dd', {}, info.turnSeconds ? `${info.turnSeconds} segundos` : 'Sem limite')),
                 h('div', {}, h('dt', {}, 'Acesso'), h('dd', {}, info.visibility === 'public' ? 'Pública' : 'Só com o código')),
                 h('div', {}, h('dt', {}, 'Modo'), h('dd', {}, info.teamMode ? 'Duplas (2x2)' : 'Cada um por si')),
+                h('div', {}, h('dt', {}, 'Baralho'), h('dd', {}, info.deckVersion === 1 ? 'Clássico (94)' : 'Com penalidades (99)')),
+                info.visibility === 'private' ? h('div', {}, h('dt', {}, 'Amigos'), h('dd', {}, info.friendsJoin ? 'Entram direto' : 'Só com o código')) : null,
               ),
               h('button', { type: 'button', class: 'btn btn--ghost btn--block', onClick: () => F7.Modals.rules() }, h('span', { html: icon('help') }), 'Como jogar'),
             ),
           ),
+          !me.isHost && !spectating && players.some((p) => p.isHost && !isOnline(p))
+            ? h('section', { class: 'panel host-away' }, h('span', { html: icon('bolt') }), h('div', {}, h('strong', {}, 'O anfitrião está sem conexão'), h('p', {}, 'Se ele não voltar em instantes, a sala passa para outra pessoa.')))
+            : null,
           spectating
             ? h('section', { class: 'panel spectate-note' }, h('span', { html: icon('eye') }), h('div', {}, h('strong', {}, 'Você está assistindo'), h('p', {}, 'Quando abrir uma vaga e a sala voltar ao lobby, você entra no jogo automaticamente.')))
             : null,
@@ -265,6 +317,7 @@
 
     function onChatMessage(message, { history = false } = {}) {
       state.chatLog.push(message);
+      if (!history && message.userId !== userId) F7.Sound.pop();
       if (state.chatLog.length > 6) state.chatLog.shift();
       if (state.match) {
         if (!history) F7.Chat.floatOnTable(message, App.table);
@@ -402,6 +455,11 @@
       const { room: info, players } = detail;
 
       if (!state.match && before && before.players) announce(before.players, players);
+      if (before && before.room && before.room.hostId !== info.hostId) {
+        const host = players.find((p) => p.userId === info.hostId);
+        if (info.hostId === userId) App.toast('Você agora é o anfitrião da sala.', { variant: 'stay', iconName: 'crown' });
+        else if (host) App.toast(`${host.name} agora é o anfitrião.`, { iconName: 'crown' });
+      }
 
       if (info.status === 'playing' && info.gameId) {
         if (!state.match || state.match.gameId !== info.gameId) {
@@ -413,7 +471,7 @@
       if (state.match) return; // a partida ainda está mostrando o fim de jogo
 
       // Só redesenha o lobby quando algo mudou de verdade (evita piscar a tela).
-      const key = JSON.stringify([info, players, detail.me]);
+      const key = JSON.stringify([info, players, detail.me, detail.spectators || []]);
       if (key === state.renderedKey && qs('.lobby')) return;
       state.renderedKey = key;
       document.title = `Vira-7 · Sala ${info.code}`;
@@ -426,7 +484,10 @@
       const old = names(before);
       const now = names(after);
       now.forEach((name, id) => {
-        if (!old.has(id)) App.toast(`${name} entrou na sala.`, { variant: 'stay', iconName: 'user' });
+        if (!old.has(id)) {
+          App.toast(`${name} entrou na sala.`, { variant: 'stay', iconName: 'user' });
+          F7.Sound.pop();
+        }
       });
       old.forEach((name, id) => {
         if (!now.has(id)) App.toast(`${name} saiu da sala.`, { iconName: 'user' });

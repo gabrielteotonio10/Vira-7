@@ -112,7 +112,13 @@
   const arrivedFromEmail = /access_token=|error_description=|type=recovery/.test(window.location.hash);
   const emailError = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('error_description');
 
-  App.state.apiOnline = await Api.init();
+  App.state.apiOnline = await Api.init({
+    onSlow: () =>
+      App.render(
+        App.loading('Acordando o servidor… no plano gratuito isso pode levar até 1 minuto. Já já você joga!'),
+        { nav: false },
+      ),
+  });
   if (App.state.apiOnline) {
     try {
       await Auth.init(Api.config);

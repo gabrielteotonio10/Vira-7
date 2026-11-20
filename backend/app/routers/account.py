@@ -57,7 +57,8 @@ async def public_profile(username: str, user: AuthUser = Depends(current_user), 
 async def leaderboard(
     limit: int = Query(default=20, ge=1, le=100),
     scope: str = Query(default="all", pattern="^(all|friends)$"),
+    sort: str = Query(default="wins", pattern="^(wins|rate|average)$"),
     user: AuthUser = Depends(current_user),
     store=Depends(get_store),
 ) -> dict:
-    return await profiles.leaderboard(store, limit, user.id, scope)
+    return await profiles.leaderboard(store, limit, user.id, scope, sort)

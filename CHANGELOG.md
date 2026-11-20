@@ -5,11 +5,20 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
-> Versão 2.1.0 em preparação. Aplique a migration `0009` antes de publicar.
+> Versão 2.1.0 em preparação. Aplique as migrations `0009` e `0010` antes de publicar.
 
 ### Adicionado
 
-- **Mesma tela com várias pessoas**: a mesa gira para quem vai jogar (lugar grande embaixo) com o aviso "Passe o aparelho".
+- **Mesma tela com várias pessoas**: a mesa fica parada e quem joga a vez ganha destaque no próprio lugar, com o aviso "Passe o aparelho".
+- **Animações melhores**: a carta voa do monte até o jogador virando, "parar" tem animação própria, e há entradas em cascata, botões vivos e destaques na mesa.
+- **Modo local completo**: duplas (só 4, 6 ou 8), baralho clássico ou com penalidades, meta e níveis de CPU.
+- **Conquistas** no perfil, **prêmios da partida** (Maior Mão, Coração de Ferro, Alvo Favorito, Colecionador de 7) e contador de **revanche**.
+- **Entrar como convidado** e **Entrar com Google** (opcionais, `GUEST_LOGIN`/`GOOGLE_LOGIN`), com convite para o convidado criar a conta depois.
+- **Lobby**: troca de lugar e de dupla, completar com CPUs, nível da CPU e botão de compartilhar convite; amigos podem ser convidados para a sua sala.
+- Mesas com textura, expressões nos personagens, aviso de "quase Vira 7" e fórmula da pontuação ao vivo.
+- Fontes e `supabase-js` servidos localmente (sem CDN), imagem de pré-visualização (Open Graph), tela "Acordando o servidor" para o plano grátis do Render.
+- Migration `0010` e configurações `TRUSTED_PROXY_HOPS`, `HOST_AWAY_SECONDS`, `PRUNE_GAMES_DAYS`, `GUEST_LOGIN` e `GOOGLE_LOGIN`.
+- Integração contínua (GitHub Actions) rodando os testes de JavaScript, do banco e do backend.
 - **Tutorial guiado de verdade**: mostra Vira Três com escolha de alvo, risco, ×2, Segunda Chance salvando um estouro, penalidade, bônus e parar; só o botão indicado responde, e as animações correm mais rápido. Abre também sem conta.
 - Perfil dos amigos (botão "Ver perfil") e botão de amizade no perfil de qualquer jogador.
 - Título da aba pisca "● Sua vez!" quando a partida está em segundo plano.
@@ -28,6 +37,15 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - **Seta de voltar** na barra de navegação (e na mesa, no lugar do ícone de casa). Na sala ela pede confirmação antes de sair.
 - Limpeza automática de salas abandonadas (`STALE_ROOM_SECONDS`, padrão 180 s): sem sinal de ninguém, a sala é fechada e a partida em andamento termina sem vencedor e sem pontuar.
 - Hospedagem gratuita no Render: blueprint `render.yaml` (API e página no mesmo endereço) e guia passo a passo em `docs/HOSPEDAGEM.md`.
+
+### Corrigido
+
+- **Duplas**: as CPUs agora respeitam o parceiro; quem desiste não leva vitória nem sequência para a dupla, e a dupla que ficou sozinha vence por abandono.
+- Segunda Chance doada na distribuição inicial não faz mais ninguém ficar sem a carta inicial.
+- Criar sala de duplas com número ímpar de jogadores (3, 5, 7) deixa de ser possível.
+- Salas privadas não aparecem mais para amigos (nem para a lista pública), e o IP do limite de requisições não pode ser forjado por `X-Forwarded-For`.
+- Corrida no cliente (`this.game` nulo) ao trocar de partida, anfitrião parado no lobby e "pronto" duplo na partida rápida.
+- Contraste do tema escuro, rótulos do tutorial e várias frases sem tradução.
 
 ### Alterado
 

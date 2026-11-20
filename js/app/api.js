@@ -29,15 +29,33 @@
     /** Chamado quando a API responde 401 (sessão expirada). */
     onUnauthorized: () => {},
 
-    /** Busca a configuração. Retorna false se a API estiver fora do ar. */
-    async init() {
+    /**
+     * Busca a configuração. Retorna false se a API estiver fora do ar.
+     * No plano gratuito do Render o servidor dorme e leva de 30 a 60 s para acordar: em vez de
+     * desistir em 15 s, tenta de novo por até ~80 s e avisa (`onSlow`) quando passa de 4 s.
+     */
+    async init({ onSlow } = {}) {
+      const startedAt = Date.now();
+      let warned = false;
+      const slowTimer = onSlow ? setTimeout(() => { warned = true; onSlow(); }, 4000) : null;
       try {
-        this.config = await this.request('GET', '/config', undefined, { auth: false });
-        this.syncClock(this.config.serverTime);
-        return true;
-      } catch (error) {
+        for (let attempt = 0; attempt < 4; attempt++) {
+          try {
+            this.config = await this.request('GET', '/config', undefined, { auth: false, timeout: 25000 });
+            this.syncClock(this.config.serverTime);
+            return true;
+          } catch (error) {
+            // Resposta do servidor (mesmo com erro) quer dizer que ele está de pé: não adianta insistir.
+            if (error.status > 0 && error.status !== 502 && error.status !== 503 && error.status !== 504) break;
+            if (Date.now() - startedAt > 80000) break;
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+        }
         this.config = null;
         return false;
+      } finally {
+        clearTimeout(slowTimer);
+        if (warned && this.onAwake) this.onAwake();
       }
     },
 
@@ -50,7 +68,7 @@
       return iso ? new Date(iso).getTime() - this.clockOffset : null;
     },
 
-    async request(method, path, body, { auth = true, keepalive = false } = {}) {
+    async request(method, path, body, { auth = true, keepalive = false, timeout = TIMEOUT_MS } = {}) {
       const headers = {};
       if (body !== undefined) headers['Content-Type'] = 'application/json';
       if (auth) {
@@ -59,7 +77,7 @@
       }
 
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+      const timer = setTimeout(() => controller.abort(), timeout);
       let response;
       try {
         response = await fetch(`${base}/api${path}`, {
