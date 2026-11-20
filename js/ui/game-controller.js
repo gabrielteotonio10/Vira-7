@@ -214,7 +214,7 @@
     }
 
     /**
-     * Reembaralhamento. No início de cada rodada (`newRound`) as 94 cartas voltam ao monte;
+     * Reembaralhamento. No início de cada rodada (`newRound`) todas as cartas voltam ao monte;
      * no meio da rodada só acontece se o monte acabar.
      */
     async onReshuffle({ count, newRound }) {
@@ -279,7 +279,7 @@
         }
       } else if (card.type === T.MODIFIER) {
         F7.Sound.modifier();
-        F7.FX.floatText(landed, card.op === OPS.MULTIPLY ? '×2!' : `+${card.value}`, color);
+        F7.FX.floatText(landed, card.op === OPS.MULTIPLY ? '×2!' : F7.CardView.cardText(card), color);
         F7.FX.burstAt(landed, { colors: ['#ffd166', '#ffffff', color], count: 16, shape: 'star', speed: 260, size: 5 });
       } else if (card.type === T.ACTION) {
         if (card.action === A.SECOND_CHANCE) F7.Sound.secondChance();

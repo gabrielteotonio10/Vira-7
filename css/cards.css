@@ -184,6 +184,7 @@
 
 /* Bônus e dobro têm rótulo embaixo: só o canto de cima, para não bater nele */
 .card--add .card__corner--br,
+.card--minus .card__corner--br,
 .card--multiply .card__corner--br {
   display: none;
 }
@@ -205,6 +206,26 @@
 .card--add .card__corner,
 .card--add .card__label {
   color: var(--green-d);
+  text-shadow: none;
+}
+
+/* ---- Penalidade (-2, -4, -6): carta branca com número vermelho ---- */
+.card--minus .card__front {
+  background: var(--surface);
+}
+
+.card--minus .card__front::after {
+  border: max(1px, calc(var(--w) * 0.025)) dashed var(--red-d);
+}
+
+.card--minus .card__value {
+  color: var(--red);
+  font-size: calc(var(--w) * 0.46);
+}
+
+.card--minus .card__corner,
+.card--minus .card__label {
+  color: var(--red-d);
   text-shadow: none;
 }
 

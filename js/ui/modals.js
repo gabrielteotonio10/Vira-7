@@ -189,6 +189,12 @@
             'Somam pontos ao total da rodada. Não contam para o Vira 7 e nunca estouram você.',
           ),
           ruleCard(
+            [card({ type: 'modifier', op: 'add', value: -2 }, 'sm'), card({ type: 'modifier', op: 'add', value: -6 }, 'sm')],
+            'Penalidade (−2, −4 e −6)',
+            'Descontam pontos da rodada (há uma −6, duas −4 e duas −2). Não contam para o Vira 7, não estouram você e ' +
+              'a rodada nunca fica abaixo de 0. O ×2 não dobra as penalidades.',
+          ),
+          ruleCard(
             [card({ type: 'modifier', op: 'multiply', value: 2 }, 'sm')],
             'Dobro (×2)',
             'Dobra a soma dos seus números. Não dobra os bônus nem os 15 pontos do Vira 7.',
@@ -234,7 +240,7 @@
         h(
           'p',
           { style: { marginTop: '12px' } },
-          'Some os números, aplique o ×2, some os bônus e, se fez Vira 7, mais 15. ' +
+          'Some os números, aplique o ×2, some os bônus, tire as penalidades e, se fez Vira 7, mais 15. ' +
             'Quando alguém passar de 200 pontos no fim de uma rodada, vence quem tiver mais pontos. ' +
             'Empate na liderança? Joga-se mais uma rodada!',
         ),
@@ -265,7 +271,8 @@
     const parts = [];
     if (breakdown.numbersSum || !breakdown.modifiersSum) parts.push(`${breakdown.numbersSum} em números`);
     if (breakdown.multiplier > 1) parts.push(`×${breakdown.multiplier}`);
-    if (breakdown.modifiersSum) parts.push(`+${breakdown.modifiersSum} de bônus`);
+    if (breakdown.modifiersSum > 0) parts.push(`+${breakdown.modifiersSum} de bônus`);
+    if (breakdown.modifiersSum < 0) parts.push(`−${Math.abs(breakdown.modifiersSum)} de penalidade`);
     if (flip7) parts.push('+15 do Vira 7');
     const how = { stayed: 'Parou', frozen: 'Congelado', active: 'Na mesa' }[status] || '';
     return `${flip7 ? 'Vira 7!' : how} · ${parts.join(' ')}`;

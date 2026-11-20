@@ -14,10 +14,13 @@
     [A.SECOND_CHANCE]: { name: 'Segunda Chance', short: '2ª Chance', icon: 'heart', color: '#5ef2b0' },
   };
 
+  /** "+4" ou "−6" (sinal de menos de verdade, mais legível que o hífen). */
+  const signed = (value) => (value < 0 ? `−${Math.abs(value)}` : `+${value}`);
+
   /** Texto curto exibido na carta (ex.: "7", "+4", "×2"). */
   function cardText(card) {
     if (card.type === T.NUMBER) return String(card.value);
-    if (card.type === T.MODIFIER) return card.op === OPS.MULTIPLY ? `×${card.value}` : `+${card.value}`;
+    if (card.type === T.MODIFIER) return card.op === OPS.MULTIPLY ? `×${card.value}` : signed(card.value);
     return ACTION_INFO[card.action].short;
   }
 
@@ -25,7 +28,7 @@
   function cardName(card) {
     if (card.type === T.NUMBER) return `carta ${card.value}`;
     if (card.type === T.MODIFIER) {
-      return card.op === OPS.MULTIPLY ? 'modificador ×2' : `modificador +${card.value}`;
+      return card.op === OPS.MULTIPLY ? 'modificador ×2' : card.value < 0 ? `penalidade ${signed(card.value)}` : `modificador ${signed(card.value)}`;
     }
     return ACTION_INFO[card.action].name;
   }
@@ -35,13 +38,16 @@
     if (card.type === T.NUMBER) {
       return getComputedStyle(document.documentElement).getPropertyValue(`--n${card.value}`).trim() || '#fff';
     }
-    if (card.type === T.MODIFIER) return card.op === OPS.MULTIPLY ? '#ff7a59' : '#ffd166';
+    if (card.type === T.MODIFIER) {
+      if (card.op === OPS.MULTIPLY) return '#ff7a59';
+      return card.value < 0 ? '#dc3a32' : '#ffd166';
+    }
     return ACTION_INFO[card.action].color;
   }
 
   function classesFor(card) {
     const classes = ['card', `card--${card.type}`];
-    if (card.type === T.MODIFIER) classes.push(card.op === OPS.MULTIPLY ? 'card--multiply' : 'card--add');
+    if (card.type === T.MODIFIER) classes.push(card.op === OPS.MULTIPLY ? 'card--multiply' : card.value < 0 ? 'card--minus' : 'card--add');
     if (card.type === T.ACTION) classes.push('card--action', `card--${card.action}`);
     return classes;
   }
@@ -65,7 +71,7 @@
         { class: 'card__face card__front' },
         h('span', { class: 'card__corner card__corner--tl' }, text),
         h('span', { class: 'card__value' }, text),
-        h('span', { class: 'card__label' }, card.op === OPS.MULTIPLY ? 'Dobro' : 'Bônus'),
+        h('span', { class: 'card__label' }, card.op === OPS.MULTIPLY ? 'Dobro' : card.value < 0 ? 'Penalidade' : 'Bônus'),
         h('span', { class: 'card__corner card__corner--br' }, text),
       );
     }
