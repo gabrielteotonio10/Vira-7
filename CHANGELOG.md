@@ -9,6 +9,10 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### Adicionado
 
+- **Mesma tela com várias pessoas**: a mesa gira para quem vai jogar (lugar grande embaixo) com o aviso "Passe o aparelho".
+- **Tutorial guiado de verdade**: mostra Vira Três com escolha de alvo, risco, ×2, Segunda Chance salvando um estouro, penalidade, bônus e parar; só o botão indicado responde, e as animações correm mais rápido. Abre também sem conta.
+- Perfil dos amigos (botão "Ver perfil") e botão de amizade no perfil de qualquer jogador.
+- Título da aba pisca "● Sua vez!" quando a partida está em segundo plano.
 - **Duplas 2x2** (4, 6 ou 8 jogadores): parceiros em assentos opostos, pontos somados, vitória por dupla.
 - **Amigos**: pedidos por nome de usuário, lista com a sala de cada amigo (entrar ou assistir), convite por WhatsApp e **ranking só entre amigos**.
 - **Espectadores**: sala cheia ou em andamento vira "assistir"; na próxima partida a pessoa assume a vaga livre.
@@ -27,6 +31,11 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### Alterado
 
+- **Preferências**: gravadas na hora neste aparelho e enviadas à conta; nada se perde ao sair da tela ou fechar a página (antes uma mudança feita segundos antes de sair podia sumir).
+- **Modo escuro** revisado: peças de cor viva mantêm tinta escura, opções escolhidas em amarelo, campos e links legíveis.
+- **Salas públicas**: a lista mostra até 10 salas sorteadas (com vaga primeiro).
+- **Desempenho**: respostas compactadas (gzip), sala atual em uma consulta, salas dos amigos em lote (em vez de duas consultas por amigo).
+- **Segurança**: ids vindos da URL só chegam ao banco se forem UUIDs (impede manipular filtros do PostgREST), limite de pedidos de amizade e de mensagens, cabeçalhos COOP e HSTS (produção) e CSP com worker/manifest.
 - **Ranking responsivo**: no celular cada jogador vira um cartão (a tabela de 7 colunas ficava cortada).
 - O anfitrião que sai do lobby **fecha a sala** para todos (antes a sala passava para outra pessoa e ficava esperando).
 - Em produção (`APP_ENV=production`) a documentação interativa da API fica desligada.

@@ -87,6 +87,15 @@ O lobby usa o mesmo canal: mudanças em `rooms` e `room_players` avisam a tela p
 - **Amigos** (`services/friends.py`): pedido cruzado vira amizade; a lista mostra a sala de cada amigo para entrar ou assistir. O ranking de amigos filtra o ranking geral.
 - Quem **sai** da sala durante a partida a abandona: fica fora das próximas rodadas. Se sobrar uma pessoa só, ela vence; se não sobrar ninguém, a partida é encerrada.
 
+## Segurança e desempenho (2.1)
+
+- Ids recebidos pela URL (`/friends/{id}`, `/games/{id}`, jogadores) passam por `is_uuid` antes de entrar em qualquer filtro do PostgREST; um id forjado vira "não encontrado".
+- Limites por usuário: criar sala (20/min), pedidos de amizade (20/min), chat (40/min, e 1 mensagem a cada 0,8 s).
+- Cabeçalhos: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` (microfone só para a própria página), `Cross-Origin-Opener-Policy` e, em produção, `Strict-Transport-Security`.
+- Respostas acima de 800 bytes saem compactadas (gzip). `active_membership` usa uma consulta com a sala embutida; a lista de amigos busca as salas de todos em uma consulta.
+- A lista pública mostra até 10 salas sorteadas entre as abertas.
+- Preferências: `App.saveSettings` grava no aparelho (com `updatedAt`) e na conta; a versão mais nova vence ao abrir o jogo.
+
 ## Frontend: preferências, idiomas e app instalável
 
 - `js/app/theme.js` marca `<html>` com `data-theme`, `data-table`, `data-back` e `data-cb` (veja `css/themes.css`). A escolha também fica no `localStorage` para valer antes do login.
