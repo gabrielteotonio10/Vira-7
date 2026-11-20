@@ -96,6 +96,17 @@ O lobby usa o mesmo canal: mudanças em `rooms` e `room_players` avisam a tela p
 - A lista pública mostra até 10 salas sorteadas entre as abertas.
 - Preferências: `App.saveSettings` grava no aparelho (com `updatedAt`) e na conta; a versão mais nova vence ao abrir o jogo.
 
+### Ajustes da 2.1 (revisão profissional)
+
+- **Duplas**: o assento define a dupla (`team_of(seat, n) = seat % (n // 2)`); a CPU nunca congela nem vira três no parceiro e doa a Segunda Chance a ele. Quem desiste leva a dupla à derrota só se não sobrar nenhuma pessoa da dupla; se só restar uma dupla, ela vence por abandono. O servidor só aceita 4, 6 ou 8 jogadores com duplas.
+- **Distribuição inicial**: o motor guarda quem já recebeu a carta inicial (`dealt`), então uma Segunda Chance doada durante a distribuição não faz ninguém ser pulado.
+- **Salas privadas**: `list_open_rooms` só devolve salas públicas; amigos só veem o código de uma sala privada se o anfitrião ativou "amigos entram direto".
+- **Anfitrião ausente**: o árbitro passa o lobby para outra pessoa quando o anfitrião fica sem sinal por `HOST_AWAY_SECONDS`.
+- **Poda**: o árbitro apaga eventos e segredos de partidas terminadas há mais de `PRUNE_GAMES_DAYS` dias (as estatísticas e o histórico ficam).
+- **Convidado e Google**: login anônimo e OAuth do Supabase, ligados por `GUEST_LOGIN`/`GOOGLE_LOGIN` e anunciados em `/api/config`. O convidado vira conta normal com `auth.updateUser`.
+- **Conquistas**: calculadas a partir das estatísticas (`services/profiles.ACHIEVEMENTS`), sem tabela nova. Os prêmios do fim da partida são calculados no cliente com o que a mesa mostrou.
+- **Frontend sem CDN**: fontes (`assets/fonts`) e `supabase-js` (`assets/vendor`) são servidos pela própria API, e a CSP não libera domínios externos.
+
 ## Frontend: preferências, idiomas e app instalável
 
 - `js/app/theme.js` marca `<html>` com `data-theme`, `data-table`, `data-back` e `data-cb` (veja `css/themes.css`). A escolha também fica no `localStorage` para valer antes do login.

@@ -93,7 +93,7 @@ Para conferir tudo contra o Supabase real (contas, partida completa, RLS, estat�
 python scripts/smoke_online.py
 ```
 
-> **Atualizando uma instalação que já existe?** Rode `python scripts/migrate.py` **antes** de publicar a nova versão: a migration `0009` cria as tabelas de amigos e espectadores e a coluna das duplas. Sem ela, a API nova não consegue ler as salas.
+> **Atualizando uma instalação que já existe?** Rode `python scripts/migrate.py` **antes** de publicar a nova versão: as migrations `0009` e `0010` criam as tabelas de amigos e espectadores, a coluna das duplas, os índices e as regras novas de privacidade das salas. Sem elas, a API nova não consegue ler as salas.
 
 ### Variáveis de ambiente (`backend/.env`)
 
@@ -112,6 +112,11 @@ python scripts/smoke_online.py
 | `STALE_ROOM_SECONDS` | não | Segundos sem sinal de ninguém até a sala ser fechada (padrão 180; 0 desliga). |
 | `RATE_LIMIT_ENABLED` | não | `true` (padrão): limite de requisições por IP e por usuário. |
 | `TRUST_PROXY` | não | `false` (padrão). Ligue só atrás de um proxy/CDN confiável: o limite usa o IP de `X-Forwarded-For`. |
+| `TRUSTED_PROXY_HOPS` | não | Quantos proxies confiáveis ficam na frente da API (padrão 2). O IP é contado a partir da direita do `X-Forwarded-For`, então um cabeçalho forjado pelo cliente é ignorado. |
+| `HOST_AWAY_SECONDS` | não | Anfitrião do lobby sem sinal por este tempo passa a sala para outra pessoa (padrão 60; 0 desliga). |
+| `PRUNE_GAMES_DAYS` | não | Apaga eventos e segredos de partidas terminadas há mais de N dias (padrão 7; 0 desliga). |
+| `GUEST_LOGIN` | não | `true` mostra "Entrar como convidado". Ligue antes em Supabase → Authentication → *Allow anonymous sign-ins*. |
+| `GOOGLE_LOGIN` | não | `true` mostra "Entrar com Google". Configure antes o provedor Google no painel do Supabase. |
 
 O `.env` está no `.gitignore`. A chave `service_role` e o segredo do JWT nunca são enviados ao navegador: o frontend recebe apenas a URL e a chave pública, por `/api/config`.
 
@@ -139,8 +144,8 @@ npm run test:api       # motor Python, API, autenticação, limite de requisiç�
 | Suíte | O que cobre |
 | --- | --- |
 | `tests/` (Node) | Baralho, pontuação, cartas de ação e partidas completas no motor JS. |
-| `database/tests/` (Node + PGlite) | As 9 migrations aplicadas duas vezes, trigger de cadastro, lotação e assentos, início único de partida, jogadas simultâneas, estatísticas e amigos, espectadores, duplas e políticas de RLS. |
-| `backend/tests/` (pytest) | Regras no servidor, reconstrução da partida a cada jogada, tokens inválidos, salas, partidas completas com várias pessoas, concorrência, tempo de turno, desconexão, abandono e revanche; limite de requisições e cabeçalhos de segurança; formato das chamadas ao Supabase (PostgREST) com servidor simulado. |
+| `database/tests/` (Node + PGlite) | As 10 migrations aplicadas duas vezes, trigger de cadastro, lotação e assentos, início único de partida, jogadas simultâneas, estatísticas e amigos, espectadores, duplas, salas privadas e políticas de RLS. |
+| `backend/tests/` (pytest) | Regras no servidor, reconstrução da partida a cada jogada, tokens inválidos, salas, partidas completas com várias pessoas, concorrência, tempo de turno, desconexão, abandono e revanche; regras de duplas (desistência, CPUs, W.O.), conquistas, privacidade das salas, limite de requisições e cabeçalhos de segurança; formato das chamadas ao Supabase (PostgREST) com servidor simulado. |
 
 ## Estrutura
 
