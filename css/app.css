@@ -23,6 +23,11 @@
   border-bottom: 3px solid var(--ink);
 }
 
+.nav__back {
+  flex: none;
+  margin-right: calc(var(--space-2) * -1);
+}
+
 .nav__logo {
   font-size: 1.7rem;
 }
@@ -967,6 +972,101 @@
   width: 34px;
   height: 34px;
   border-width: 2px;
+}
+
+/* ---- Ranking no celular: um cartão por jogador ---- */
+.rank-list {
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: var(--space-3);
+}
+
+.rank-card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-areas: "pos who wins" "stats stats stats";
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.rank-card.is-me {
+  background: #fff0b8;
+}
+
+.rank-card__pos {
+  grid-area: pos;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  color: var(--ink-2);
+}
+
+.rank-card__who {
+  grid-area: who;
+  min-width: 0;
+}
+
+.rank-card__who .ranking__player {
+  max-width: 100%;
+}
+
+.rank-card__who .ranking__player b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-card__wins {
+  grid-area: wins;
+  display: grid;
+  justify-items: center;
+  line-height: 1.05;
+}
+
+.rank-card__wins b {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+
+.rank-card__wins small,
+.rank-card__stats dt {
+  color: var(--ink-2);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rank-card__stats {
+  grid-area: stats;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  text-align: center;
+}
+
+.rank-card__stats dd {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+@media (max-width: 640px) {
+  .ranking-table {
+    display: none;
+  }
+
+  .rank-list {
+    display: grid;
+  }
 }
 
 .medal {

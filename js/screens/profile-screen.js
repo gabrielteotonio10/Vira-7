@@ -201,10 +201,37 @@
     const { players } = await F7.Api.get('/leaderboard?limit=50');
     const myId = F7.Auth.user.id;
 
+    const position = (p) => (p.position <= 3 ? h('span', { class: `medal medal--${p.position}` }, String(p.position)) : String(p.position));
+    const playerLink = (p) =>
+      h('a', { class: 'ranking__player', href: `#/perfil/${encodeURIComponent(p.username)}` },
+        F7.Avatars.create({ avatar: p.avatar, name: p.username }), h('b', {}, p.username));
+
+    // No celular a tabela de 7 colunas não cabe: cada jogador vira um cartão.
+    const cards = h(
+      'ol',
+      { class: 'rank-list' },
+      players.map((p) =>
+        h(
+          'li',
+          { class: `rank-card${p.userId === myId ? ' is-me' : ''}` },
+          h('span', { class: 'rank-card__pos' }, position(p)),
+          h('div', { class: 'rank-card__who' }, playerLink(p)),
+          h('div', { class: 'rank-card__wins' }, h('b', {}, String(p.wins)), h('small', {}, p.wins === 1 ? 'vitória' : 'vitórias')),
+          h(
+            'dl',
+            { class: 'rank-card__stats' },
+            [['Partidas', p.gamesPlayed], ['Aproveit.', `${p.winRate}%`], ['Pontos', p.totalPoints], ['Vira 7', p.flip7Count]].map(([label, value]) =>
+              h('div', {}, h('dt', {}, label), h('dd', {}, String(value))),
+            ),
+          ),
+        ),
+      ),
+    );
+
     const body = players.length
-      ? h(
+      ? h('div', { class: 'ranking-view' }, cards, h(
           'div',
-          { class: 'final-table__wrap' },
+          { class: 'final-table__wrap ranking-table' },
           h(
             'table',
             { class: 'final-table ranking' },
@@ -216,13 +243,8 @@
                 h(
                   'tr',
                   { class: p.userId === myId ? 'is-me' : '' },
-                  h('td', {}, p.position <= 3 ? h('span', { class: `medal medal--${p.position}` }, String(p.position)) : String(p.position)),
-                  h(
-                    'td',
-                    {},
-                    h('a', { class: 'ranking__player', href: `#/perfil/${encodeURIComponent(p.username)}` },
-                      F7.Avatars.create({ avatar: p.avatar, name: p.username }), h('b', {}, p.username)),
-                  ),
+                  h('td', {}, position(p)),
+                  h('td', {}, playerLink(p)),
                   h('td', {}, String(p.wins)),
                   h('td', {}, String(p.gamesPlayed)),
                   h('td', {}, `${p.winRate}%`),
@@ -232,7 +254,7 @@
               ),
             ),
           ),
-        )
+        ))
       : App.empty('trophy', 'O ranking ainda está vazio', 'Termine uma partida online para aparecer aqui.');
 
     App.render(h('div', { class: 'profile' }, h('section', { class: 'panel' }, h('div', { class: 'section-head' }, h('h1', {}, 'Ranking')), body)));
