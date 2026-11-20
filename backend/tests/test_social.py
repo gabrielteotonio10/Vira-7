@@ -208,3 +208,39 @@ def test_chat_limita_a_velocidade_e_espectadores_participam(table, signup):
     caio.post(f"/rooms/{code}/join")
     assert caio.post(f"/rooms/{code}/chat", {"kind": "say", "key": "wow"}).status_code == 201
     assert [m["name"] for m in ana.get(f"/rooms/{code}/chat").json()["messages"]] == ["Ana", "Caio"]
+
+
+def test_lista_publica_mostra_no_maximo_10_salas_sorteadas(signup):
+    codes = set()
+    for i in range(14):
+        codes.add(signup(f"Host{i}").post("/rooms", {"visibility": "public"}).json()["room"]["code"])
+    viewer = signup("Viewer")
+    seen = set()
+    for _ in range(6):
+        rooms = viewer.get("/rooms/public").json()["rooms"]
+        assert len(rooms) == 10
+        seen.update(r["code"] for r in rooms)
+    assert seen <= codes and len(seen) > 10, "a lista muda a cada consulta"
+
+
+def test_respostas_grandes_vem_compactadas(client):
+    response = client.get("/api/openapi.json", headers={"Accept-Encoding": "gzip"})
+    assert response.headers.get("content-encoding") == "gzip"
+
+
+def test_cabecalhos_de_seguranca_extras(client):
+    headers = client.get("/api/health").headers
+    assert headers["cross-origin-opener-policy"] == "same-origin"
+    assert "microphone=(self)" in headers["permissions-policy"]
+
+
+def test_perfil_publico_mostra_a_relacao_de_amizade(signup):
+    ana, beto, caio = signup("Ana"), signup("Beto"), signup("Caio")
+    assert ana.get("/profiles/Beto").json()["friendship"] == "none"
+    assert ana.get("/profiles/Ana").json()["friendship"] == "self"
+    ana.post("/friends/requests", {"username": "Beto"})
+    assert ana.get("/profiles/Beto").json()["friendship"] == "sent"
+    assert beto.get("/profiles/Ana").json()["friendship"] == "received"
+    beto.post(f"/friends/{ana.id}/accept")
+    assert ana.get("/profiles/Beto").json()["friendship"] == "friends"
+    assert caio.get("/profiles/Ana").json()["friendship"] == "none"
