@@ -414,5 +414,5 @@
 }
 
 .log li.log__round::before {
-  background: var(--ink);
+  background: var(--ink-fill);
 }

@@ -240,7 +240,7 @@
 .badge--busted { background: #ffdcd8; color: var(--red-d); }
 .badge--flip7 { background: var(--yellow); color: var(--ink); }
 .badge--bot { background: #e9defd; color: var(--purple-d); }
-.badge--me { background: var(--ink); color: var(--yellow); }
+.badge--me { background: var(--ink-fill); color: var(--yellow); }
 .badge--host { background: var(--yellow); color: var(--ink); }
 
 .badge--host .icon {
@@ -304,7 +304,7 @@
 }
 
 .segmented button[aria-checked='true'] {
-  background: var(--ink);
+  background: var(--ink-fill);
   color: #fff;
 }
 
@@ -360,7 +360,7 @@
   width: 21px;
   height: 21px;
   border-radius: 50%;
-  background: var(--ink);
+  background: var(--ink-fill);
   transition: transform var(--dur-fast) var(--ease-spring);
 }
 

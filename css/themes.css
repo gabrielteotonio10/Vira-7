@@ -1,0 +1,229 @@
+/* ==========================================================================
+   Vira-7 — Temas: escuro, mesas, versos de carta e modo para daltônicos.
+   O JavaScript (js/app/theme.js) marca <html> com:
+     data-theme="light|dark"   data-table="felt|wood|ocean|night"
+     data-back="classic|stripes|dots|stars"   data-cb="on"
+   ========================================================================== */
+
+/* ---- Tema escuro ---- */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --paper: #161b26;
+  --paper-2: #1f2635;
+  --surface: #252d3f;
+  --ink: #f3ecdc;
+  --ink-2: #bcc3d2;
+  --ink-3: #8089a0;
+  --line: #333c52;
+  --night: #0b0f17;
+  --night-2: #151c2a;
+  --rest: 0 5px 0 #0b0f17;
+  --lift-sm: 0 3px 0 #05070b;
+  --lift: 0 5px 0 #05070b;
+  --lift-lg: 0 8px 0 #05070b;
+}
+
+:root[data-theme='dark'] body {
+  background-image: radial-gradient(#232b3c 1.2px, transparent 1.3px);
+}
+
+:root[data-theme='dark'] .btn--primary,
+:root[data-theme='dark'] .btn--success,
+:root[data-theme='dark'] .btn--danger {
+  color: #1b2333;
+}
+
+:root[data-theme='dark'] .rank-card.is-me,
+:root[data-theme='dark'] .ranking tr.is-me td {
+  background: #4a4020;
+}
+
+:root[data-theme='dark'] .nav__link.is-active {
+  color: #1b2333;
+}
+
+/* A mesa de jogo já tem fundo escuro próprio e muitas peças com cor fixa (vez destacada,
+   cartas, selos): ela mantém o papel claro também no tema escuro. */
+:root[data-theme='dark'] .game-screen {
+  color-scheme: light;
+  --paper: #fff6e5;
+  --paper-2: #f6e9cf;
+  --surface: #ffffff;
+  --ink: #1b2333;
+  --ink-2: #4b566b;
+  --ink-3: #8a92a3;
+  --line: #e2d4b8;
+  --lift-sm: 0 3px 0 var(--ink);
+  --lift: 0 5px 0 var(--ink);
+  --lift-lg: 0 8px 0 var(--ink);
+  color: var(--ink);
+}
+
+/* ---- Mesas ---- */
+:root[data-table='wood'] {
+  --felt: #b87a4b;
+  --felt-d: #9a6238;
+}
+
+:root[data-table='ocean'] {
+  --felt: #2f86d6;
+  --felt-d: #2368ad;
+}
+
+:root[data-table='night'] {
+  --felt: #5b4aa8;
+  --felt-d: #473a87;
+}
+
+/* ---- Versos das cartas ---- */
+[data-back='stripes'] .card__back {
+  background-color: var(--blue);
+  background-image: repeating-linear-gradient(
+    0deg,
+    var(--blue-d) 0 calc(var(--w) * 0.05),
+    transparent calc(var(--w) * 0.05) calc(var(--w) * 0.14)
+  );
+}
+
+[data-back='dots'] .card__back {
+  background-color: var(--green);
+  background-image: radial-gradient(var(--green-d) 22%, transparent 24%);
+  background-size: calc(var(--w) * 0.16) calc(var(--w) * 0.16);
+}
+
+[data-back='stars'] .card__back {
+  background-color: var(--purple);
+  background-image:
+    linear-gradient(45deg, var(--purple-d) 25%, transparent 25%, transparent 75%, var(--purple-d) 75%),
+    linear-gradient(45deg, var(--purple-d) 25%, transparent 25%, transparent 75%, var(--purple-d) 75%);
+  background-size: calc(var(--w) * 0.22) calc(var(--w) * 0.22);
+  background-position: 0 0, calc(var(--w) * 0.11) calc(var(--w) * 0.11);
+}
+
+
+/* As amostras mostram cada verso, mesmo com outro escolhido no <html> */
+.swatch--back[data-back='classic'] .card__back {
+  background-color: var(--red);
+  background-image: repeating-linear-gradient(45deg, var(--red-d) 0 calc(var(--w) * 0.05), transparent calc(var(--w) * 0.05) calc(var(--w) * 0.16));
+}
+
+html .swatch--back[data-back='stripes'] .card__back {
+  background-color: var(--blue);
+  background-image: repeating-linear-gradient(
+    0deg,
+    var(--blue-d) 0 calc(var(--w) * 0.05),
+    transparent calc(var(--w) * 0.05) calc(var(--w) * 0.14)
+  );
+}
+
+html .swatch--back[data-back='dots'] .card__back {
+  background-color: var(--green);
+  background-image: radial-gradient(var(--green-d) 22%, transparent 24%);
+  background-size: calc(var(--w) * 0.16) calc(var(--w) * 0.16);
+}
+
+html .swatch--back[data-back='stars'] .card__back {
+  background-color: var(--purple);
+  background-image:
+    linear-gradient(45deg, var(--purple-d) 25%, transparent 25%, transparent 75%, var(--purple-d) 75%),
+    linear-gradient(45deg, var(--purple-d) 25%, transparent 25%, transparent 75%, var(--purple-d) 75%);
+  background-size: calc(var(--w) * 0.22) calc(var(--w) * 0.22);
+  background-position: 0 0, calc(var(--w) * 0.11) calc(var(--w) * 0.11);
+}
+
+/* Amostras usadas na tela de Ajustes */
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.swatch {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  width: 64px;
+  height: 56px;
+  padding: 0 0 4px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--sw, var(--surface));
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.swatch span {
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+}
+
+.swatch[aria-checked='true'] {
+  box-shadow: 0 0 0 3px var(--yellow), 0 0 0 5px var(--ink);
+}
+
+.swatch--back {
+  --w: 64px;
+}
+
+/* ---- Modo para daltônicos: paleta segura + um símbolo em cada número ---- */
+:root[data-cb='on'] {
+  --n0: #6b7280;
+  --n1: #d55e00;
+  --n2: #e69f00;
+  --n3: #c9b800;
+  --n4: #009e73;
+  --n5: #56b4e9;
+  --n6: #0072b2;
+  --n7: #f0e442;
+  --n8: #cc79a7;
+  --n9: #882255;
+  --n10: #44aa99;
+  --n11: #332288;
+  --n12: #aa4499;
+  --p1: #d55e00;
+  --p2: #0072b2;
+  --p3: #009e73;
+  --p4: #e69f00;
+  --p5: #332288;
+  --p6: #56b4e9;
+  --p7: #cc79a7;
+  --p8: #6b7280;
+}
+
+:root[data-cb='on'] .card[data-value] .card__front::before {
+  position: absolute;
+  top: calc(var(--w) * 0.12);
+  right: calc(var(--w) * 0.14);
+  z-index: 1;
+  color: #fff;
+  font-size: calc(var(--w) * 0.2);
+  line-height: 1;
+  text-shadow: 0 0 calc(var(--w) * 0.03) var(--card-ink), 0 calc(var(--w) * 0.02) 0 var(--card-ink);
+}
+
+:root[data-cb='on'] .card[data-value='0'] .card__front::before,
+:root[data-cb='on'] .card[data-value='6'] .card__front::before,
+:root[data-cb='on'] .card[data-value='12'] .card__front::before { content: '●'; }
+:root[data-cb='on'] .card[data-value='1'] .card__front::before,
+:root[data-cb='on'] .card[data-value='7'] .card__front::before { content: '■'; }
+:root[data-cb='on'] .card[data-value='2'] .card__front::before,
+:root[data-cb='on'] .card[data-value='8'] .card__front::before { content: '▲'; }
+:root[data-cb='on'] .card[data-value='3'] .card__front::before,
+:root[data-cb='on'] .card[data-value='9'] .card__front::before { content: '◆'; }
+:root[data-cb='on'] .card[data-value='4'] .card__front::before,
+:root[data-cb='on'] .card[data-value='10'] .card__front::before { content: '★'; }
+:root[data-cb='on'] .card[data-value='5'] .card__front::before,
+:root[data-cb='on'] .card[data-value='11'] .card__front::before { content: '✚'; }
+
+/* Bônus e penalidades também se distinguem por símbolo, não só pela cor */
+:root[data-cb='on'] .card--add .card__label::before { content: '▲ '; }
+:root[data-cb='on'] .card--minus .card__label::before { content: '▼ '; }
+
+/* ---- Equipes: faixa colorida em cada jogador ---- */
+.team-a { --team-color: var(--blue); }
+.team-b { --team-color: var(--pink); }
+.team-c { --team-color: var(--green); }
+.team-d { --team-color: var(--yellow); }

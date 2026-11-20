@@ -229,7 +229,7 @@
 }
 
 .summary-row.is-leader .summary-row__rank {
-  background: var(--ink);
+  background: var(--ink-fill);
   color: var(--yellow);
 }
 
@@ -294,7 +294,7 @@
 }
 
 .summary-row__bar-gain {
-  background: var(--ink);
+  background: var(--ink-fill);
   transform-origin: left;
   animation: bar-grow 800ms var(--ease-out) both;
   animation-delay: calc(300ms + var(--row-index, 0) * 70ms);
@@ -387,7 +387,7 @@
 .winner__score {
   padding: 2px 14px;
   border-radius: var(--radius-pill);
-  background: var(--ink);
+  background: var(--ink-fill);
   color: var(--yellow);
   font-weight: 800;
 }
