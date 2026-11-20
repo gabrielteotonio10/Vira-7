@@ -94,7 +94,7 @@ def test_pedido_de_amizade_aceite_e_lista_com_a_sala_do_amigo(signup):
     assert [p["username"] for p in ana.get("/friends").json()["friends"]] == ["Beto"]
     assert error_code(beto.post("/friends/requests", {"username": "Ana"})) == "ALREADY_FRIENDS"
 
-    code = ana.post("/rooms", {}).json()["room"]["code"]
+    code = ana.post("/rooms", {"visibility": "public"}).json()["room"]["code"]
     friend = beto.get("/friends").json()["friends"][0]
     assert friend["room"]["code"] == code and friend["room"]["mode"] == "play"
 

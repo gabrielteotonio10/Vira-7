@@ -218,25 +218,26 @@ def test_fechar_sala_marca_sala_e_jogadores_e_apaga_a_presenca(run):
 
 def test_salas_abertas_trazem_o_ultimo_sinal_so_de_pessoas(run):
     def handler(request):
-        if request.url.path.endswith("/rooms"):
-            return httpx.Response(200, json=[{
-                "id": "r1", "status": "lobby", "updated_at": "2026-01-01T00:00:00+00:00",
-                "room_players": [
-                    {"user_id": "u1", "is_bot": False, "status": "joined"},
-                    {"user_id": None, "is_bot": True, "status": "joined"},
-                    {"user_id": "u2", "is_bot": False, "status": "left"},
-                ],
-            }])
-        return httpx.Response(200, json=[
-            {"room_id": "r1", "user_id": "u1", "last_seen_at": "2026-01-01T00:01:00+00:00"},
-            {"room_id": "r1", "user_id": "u2", "last_seen_at": "2026-01-01T00:09:00+00:00"},
-        ])
+        return httpx.Response(200, json=[{
+            "id": "r1", "status": "lobby", "updated_at": "2026-01-01T00:00:00+00:00",
+            "room_players": [
+                {"user_id": "u1", "is_bot": False, "status": "joined", "joined_at": "2026-01-01T00:00:01+00:00"},
+                {"user_id": None, "is_bot": True, "status": "joined", "joined_at": "2026-01-01T00:00:02+00:00"},
+                {"user_id": "u2", "is_bot": False, "status": "left", "joined_at": "2026-01-01T00:00:03+00:00"},
+            ],
+            "player_presence": [
+                {"user_id": "u1", "last_seen_at": "2026-01-01T00:01:00+00:00"},
+                {"user_id": "u2", "last_seen_at": "2026-01-01T00:09:00+00:00"},
+            ],
+        }])
 
     store, calls = make_store(handler)
     rooms = run(store.list_open_rooms())
     assert rooms[0]["humans_seen"] == ["2026-01-01T00:01:00+00:00"]
+    assert rooms[0]["humans"] == [{"user_id": "u1", "seen": "2026-01-01T00:01:00+00:00"}]
     assert calls[0].url.params["status"] == "in.(lobby,playing)"
-    assert calls[1].url.params["room_id"] == "in.(r1)"
+    assert "player_presence(" in calls[0].url.params["select"]
+    assert len(calls) == 1, "a presença vem embutida: nada de uma lista enorme de ids na URL"
 
 
 def test_ids_forjados_nunca_chegam_ao_filtro_do_postgrest(run):

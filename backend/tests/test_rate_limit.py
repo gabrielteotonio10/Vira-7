@@ -158,7 +158,7 @@ def test_politica_de_conteudo_so_libera_o_supabase_configurado():
 
     prod = content_security_policy(Settings(supabase_url="https://abc123.supabase.co", supabase_anon_key="x", supabase_service_key="y"))
     assert "connect-src 'self' https://abc123.supabase.co wss://abc123.supabase.co;" in prod
-    assert "script-src 'self' https://cdn.jsdelivr.net;" in prod, "sem scripts inline"
+    assert "script-src 'self';" in prod and "jsdelivr" not in prod and "google" not in prod, "sem scripts inline"
     assert "frame-ancestors 'none'" in prod and "object-src 'none'" in prod
 
 

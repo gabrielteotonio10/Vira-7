@@ -80,6 +80,7 @@ class GameSession:
         base_seed: int | None = None,
         cards: list[dict] | None = None,
         teams: bool = False,
+        deck_version: int = C.DECK_VERSION,
     ) -> "GameSession":
         """Cria a partida e joga até a primeira decisão humana.
 
@@ -117,7 +118,7 @@ class GameSession:
             "winner": None,
             "finishReason": None,
             "baseSeed": base_seed,
-            "deckVersion": C.DECK_VERSION,
+            "deckVersion": deck_version if deck_version in C.DECK_SIZES else C.DECK_VERSION,
             "teams": bool(teams),
             "winnerTeam": None,
             "round": None,
@@ -220,7 +221,7 @@ class GameSession:
             return scoring.team_of(seat, count) if teams else seat
 
         def rank_key(seat: int):
-            won = team_key(seat) == winner_team if teams else seat == winner
+            won = (team_key(seat) == winner_team if teams else seat == winner) and seat not in absent
             return (not won, seat in absent, -scores[seat], seat)
 
         order = sorted(range(count), key=rank_key)
@@ -237,7 +238,8 @@ class GameSession:
                     "isBot": p["isBot"],
                     "score": scores[seat],
                     "placement": placement[seat],
-                    "isWinner": (team_key(seat) == winner_team) if teams else seat == winner,
+                    # Quem abandonou nunca ganha: nem vitória, nem sequência, mesmo que a dupla vença depois.
+                    "isWinner": ((team_key(seat) == winner_team) if teams else seat == winner) and seat not in absent,
                     "forfeited": seat in absent,
                     "roundsPlayed": len(history),
                     "bestRound": max(history, default=0),
@@ -492,10 +494,20 @@ class GameSession:
         if not humans:
             self._finish("abandoned", winner=None, reason="abandoned")
             return True
+        count = len(self.data["players"])
+        if self.data.get("teams"):
+            # Em duplas, a partida acaba quando só resta uma dupla (mesmo que ela tenha 2 pessoas).
+            teams_left = {scoring.team_of(p["seat"], count) for p in present}
+            if len(teams_left) < 2:
+                team = next(iter(teams_left))
+                totals = self.data["round"]["totals"]
+                seat = max((p["seat"] for p in present), key=lambda s: (totals[s], -s))
+                self._finish("finished", winner=seat, reason="forfeit", winner_team=team)
+                return True
+            return False
         if len(present) < C.MIN_PLAYERS:
             seat = present[0]["seat"]
-            team = scoring.team_of(seat, len(self.data["players"])) if self.data.get("teams") else None
-            self._finish("finished", winner=seat, reason="forfeit", winner_team=team)
+            self._finish("finished", winner=seat, reason="forfeit")
             return True
         return False
 

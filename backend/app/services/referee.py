@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from datetime import timedelta
 
 from . import games, rooms
@@ -41,14 +42,28 @@ async def sweep(store, grace_seconds: int) -> int:
 CLEANUP_EVERY = 15
 
 
-async def run(store, interval: float, grace_seconds: int, stale_room_seconds: int = 0) -> None:
+#: A limpeza de partidas antigas (eventos e segredos) roda no máximo uma vez por hora.
+PRUNE_EVERY_SECONDS = 3600
+
+
+async def run(
+    store, interval: float, grace_seconds: int, stale_room_seconds: int = 0,
+    host_away_seconds: int = 0, prune_games_days: int = 0,
+) -> None:
     passes = 0
+    last_prune = 0.0
     while True:
         try:
             await sweep(store, grace_seconds)
             passes += 1
-            if stale_room_seconds > 0 and passes % CLEANUP_EVERY == 0:
-                await rooms.close_stale(store, stale_room_seconds)
+            if passes % CLEANUP_EVERY == 0:
+                if host_away_seconds > 0:
+                    await rooms.reassign_absent_hosts(store, host_away_seconds)
+                if stale_room_seconds > 0:
+                    await rooms.close_stale(store, stale_room_seconds)
+                if prune_games_days > 0 and time.monotonic() - last_prune > PRUNE_EVERY_SECONDS:
+                    last_prune = time.monotonic()
+                    await store.prune_finished_games(prune_games_days)
         except asyncio.CancelledError:
             raise
         except Exception:

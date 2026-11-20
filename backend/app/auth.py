@@ -22,6 +22,11 @@ from .errors import ApiError
 
 ASYMMETRIC = ("ES256", "RS256", "EdDSA")
 UNAUTHORIZED = ApiError(401, "UNAUTHORIZED", "Sessão inválida ou expirada. Entre novamente.")
+UNAVAILABLE = ApiError(503, "AUTH_UNAVAILABLE", "O serviço de contas está indisponível no momento. Tente de novo em instantes.")
+#: Depois de uma tentativa de baixar as chaves públicas, espera este tempo antes de tentar outra
+#: (um token forjado com `kid` aleatório não pode forçar uma consulta ao Supabase a cada requisição).
+JWKS_COOLDOWN = 30.0
+JWKS_TTL = 600.0
 
 
 @dataclass(frozen=True)
@@ -36,6 +41,7 @@ class TokenVerifier:
         self.http = http
         self._jwks: dict[str, object] = {}
         self._jwks_at = 0.0
+        self._jwks_tried_at = -JWKS_COOLDOWN
         self._remote_cache: dict[str, tuple[float, AuthUser]] = {}
 
     async def verify(self, token: str) -> AuthUser:
@@ -73,7 +79,12 @@ class TokenVerifier:
         )
 
     async def _signing_key(self, kid: str | None):
-        if kid not in self._jwks or time.monotonic() - self._jwks_at > 600:
+        now = time.monotonic()
+        expired = now - self._jwks_at > JWKS_TTL
+        unknown = kid not in self._jwks
+        # Só baixa as chaves de novo se estiverem velhas ou se a chave do token for desconhecida,
+        # e nunca mais de uma vez por JWKS_COOLDOWN.
+        if (expired or unknown) and now - self._jwks_tried_at >= JWKS_COOLDOWN:
             await self._load_jwks()
         if kid not in self._jwks:
             raise jwt.InvalidKeyError("Chave de assinatura desconhecida.")
@@ -82,11 +93,15 @@ class TokenVerifier:
     async def _load_jwks(self) -> None:
         if not self.http or not self.settings.supabase_url:
             raise jwt.InvalidKeyError("JWKS indisponível.")
-        response = await self.http.get(f"{self.settings.supabase_url}/auth/v1/.well-known/jwks.json")
-        response.raise_for_status()
-        self._jwks = {
-            item["kid"]: jwt.PyJWK(item).key for item in response.json().get("keys", []) if "kid" in item
-        }
+        self._jwks_tried_at = time.monotonic()
+        try:
+            response = await self.http.get(f"{self.settings.supabase_url}/auth/v1/.well-known/jwks.json")
+            response.raise_for_status()
+            keys = response.json().get("keys", [])
+            self._jwks = {item["kid"]: jwt.PyJWK(item).key for item in keys if "kid" in item}
+        except (httpx.HTTPError, ValueError, KeyError, jwt.PyJWTError) as error:
+            # Rede fora do ar ou resposta estranha: 503 (e não 500) e, se já havia chaves, continuam valendo.
+            raise UNAVAILABLE from error
         self._jwks_at = time.monotonic()
 
     async def _verify_remotely(self, token: str) -> AuthUser:
@@ -96,14 +111,22 @@ class TokenVerifier:
             return cached[1]
         if not self.http or not self.settings.supabase_url:
             raise UNAUTHORIZED
-        response = await self.http.get(
-            f"{self.settings.supabase_url}/auth/v1/user",
-            headers={"apikey": self.settings.supabase_anon_key, "Authorization": f"Bearer {token}"},
-        )
-        if response.status_code != 200:
+        try:
+            response = await self.http.get(
+                f"{self.settings.supabase_url}/auth/v1/user",
+                headers={"apikey": self.settings.supabase_anon_key, "Authorization": f"Bearer {token}"},
+            )
+        except httpx.HTTPError as error:
+            raise UNAVAILABLE from error
+        if response.status_code in (401, 403):
             raise UNAUTHORIZED
-        data = response.json()
-        user = AuthUser(id=str(data["id"]), email=data.get("email"))
+        if response.status_code != 200:
+            raise UNAVAILABLE
+        try:
+            data = response.json()
+            user = AuthUser(id=str(data["id"]), email=data.get("email"))
+        except (ValueError, KeyError) as error:
+            raise UNAVAILABLE from error
         if len(self._remote_cache) > 2000:
             self._remote_cache.clear()
         self._remote_cache[token] = (time.monotonic() + 60, user)

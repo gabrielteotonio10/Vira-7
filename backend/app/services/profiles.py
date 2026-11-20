@@ -63,6 +63,34 @@ def clean_settings(raw: dict) -> dict:
     return settings
 
 
+#: Conquistas: (id, título, descrição, regra sobre as estatísticas). Da mais simples à mais difícil;
+#: o título mostrado no perfil é o da última desbloqueada.
+ACHIEVEMENTS = (
+    ("firstGame", "Na mesa", "Termine uma partida online.", lambda s: s["gamesPlayed"] >= 1),
+    ("firstWin", "Primeira vitória", "Vença uma partida online.", lambda s: s["wins"] >= 1),
+    ("flip7", "Vira 7!", "Junte 7 números diferentes em uma rodada.", lambda s: s["flip7Count"] >= 1),
+    ("streak3", "Sequência de 3", "Vença 3 partidas seguidas.", lambda s: s["bestStreak"] >= 3),
+    ("bounce", "Cai e levanta", "Estoure 10 vezes e continue jogando.", lambda s: s["busts"] >= 10),
+    ("bigRound", "Mão de ouro", "Faça 40 pontos ou mais em uma única rodada.", lambda s: s["bestRoundScore"] >= 40),
+    ("tenWins", "Dez vitórias", "Vença 10 partidas.", lambda s: s["wins"] >= 10),
+    ("veteran", "Veterano", "Jogue 25 partidas.", lambda s: s["gamesPlayed"] >= 25),
+    ("streak5", "Imparável", "Vença 5 partidas seguidas.", lambda s: s["bestStreak"] >= 5),
+    ("flip7Master", "Mestre do Vira 7", "Faça 10 Vira 7.", lambda s: s["flip7Count"] >= 10),
+    ("bigGame", "Placar histórico", "Termine uma partida com 250 pontos ou mais.", lambda s: s["bestGameScore"] >= 250),
+    ("centurion", "Centenário", "Jogue 100 partidas.", lambda s: s["gamesPlayed"] >= 100),
+)
+
+
+def achievements(stats: dict) -> dict:
+    """Conquistas desbloqueadas a partir das estatísticas já serializadas (`serialize_stats`)."""
+    items = [
+        {"id": key, "title": title, "description": description, "unlocked": bool(rule(stats))}
+        for key, title, description, rule in ACHIEVEMENTS
+    ]
+    unlocked = [item for item in items if item["unlocked"]]
+    return {"items": items, "unlocked": len(unlocked), "title": unlocked[-1]["title"] if unlocked else None}
+
+
 def serialize_stats(stats: dict) -> dict:
     played = stats["games_played"]
     return {
@@ -122,10 +150,12 @@ async def _require_profile(store, user_id: str) -> dict:
 async def me(store, user) -> dict:
     profile = await _require_profile(store, user.id)
     membership = await store.active_membership(user.id) or await store.spectator_membership(user.id)
+    stats = serialize_stats(await store.get_stats(user.id))
     return {
         "user": {"id": user.id, "email": user.email},
         "profile": serialize_profile(profile),
-        "stats": serialize_stats(await store.get_stats(user.id)),
+        "stats": stats,
+        "achievements": achievements(stats),
         "settings": clean_settings(await store.get_settings(user.id)),
         "activeRoom": rooms.serialize_room(membership["room"]) if membership else None,
     }
@@ -174,22 +204,29 @@ async def public_profile(store, username: str, viewer_id: str | None = None) -> 
         row = await store.get_friendship(viewer_id, profile["id"])
         if row:
             friendship = "friends" if row["status"] == "accepted" else ("sent" if row["requester_id"] == viewer_id else "received")
+    stats = serialize_stats(await store.get_stats(profile["id"]))
     return {
         "friendship": friendship,
         "profile": serialize_profile(profile),
-        "stats": serialize_stats(await store.get_stats(profile["id"])),
+        "stats": stats,
+        "achievements": achievements(stats),
         "recentMatches": [serialize_match(row) for row in recent],
     }
 
 
-async def leaderboard(store, limit: int, user_id: str | None = None, scope: str = "all") -> dict:
+#: Para ordenar por aproveitamento ou média, é preciso um mínimo de partidas (senão 1 vitória em 1 jogo vira 100%).
+MIN_GAMES_RANKED = 5
+
+
+async def leaderboard(store, limit: int, user_id: str | None = None, scope: str = "all", sort: str = "wins") -> dict:
     user_ids = None
     if scope == "friends":
         from . import friends
 
         # Você e quem você tem como amigo.
         user_ids = [user_id, *await friends.friend_ids(store, user_id)]
-    rows = await store.leaderboard(limit, user_ids)
+    min_games = MIN_GAMES_RANKED if sort in ("rate", "average") else 0
+    rows = await store.leaderboard(limit, user_ids, sort, min_games)
     return {
         "players": [
             {
@@ -198,6 +235,7 @@ async def leaderboard(store, limit: int, user_id: str | None = None, scope: str 
                 "losses": row["losses"], "winRate": row["win_rate"], "totalPoints": row["total_points"],
                 "bestGameScore": row["best_game_score"], "flip7Count": row["flip7_count"],
                 "bestStreak": row["best_streak"],
+                "averageScore": round(row["total_points"] / row["games_played"]) if row["games_played"] else 0,
             }
             for index, row in enumerate(rows)
         ]

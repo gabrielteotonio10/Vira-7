@@ -57,6 +57,16 @@ class Settings:
     rate_limit_enabled: bool = True
     #: Atrás de um proxy/CDN confiável, usa o IP de X-Forwarded-For para o limite.
     trust_proxy: bool = False
+    #: Quantos proxies confiáveis existem na frente da API. O IP do visitante é o que cada proxy
+    #: acrescentou à direita de X-Forwarded-For: o que o cliente escreve à esquerda é ignorado.
+    trusted_proxy_hops: int = 2
+    #: Anfitrião do lobby sem sinal por este tempo passa a sala para outra pessoa (0 desliga).
+    host_away_seconds: int = 60
+    #: Eventos e segredos de partidas terminadas há mais de N dias são apagados (0 desliga).
+    prune_games_days: int = 7
+    #: Entrar como convidado (login anônimo) e entrar com Google: precisam estar ligados no Supabase.
+    guest_login: bool = False
+    google_login: bool = False
     environment: str = "development"
 
     @property
@@ -80,6 +90,11 @@ class Settings:
             stale_room_seconds=int(os.environ.get("STALE_ROOM_SECONDS", "180")),
             rate_limit_enabled=_flag("RATE_LIMIT_ENABLED", True),
             trust_proxy=_flag("TRUST_PROXY", False),
+            trusted_proxy_hops=max(1, int(os.environ.get("TRUSTED_PROXY_HOPS", "2"))),
+            host_away_seconds=int(os.environ.get("HOST_AWAY_SECONDS", "60")),
+            prune_games_days=int(os.environ.get("PRUNE_GAMES_DAYS", "7")),
+            guest_login=_flag("GUEST_LOGIN", False),
+            google_login=_flag("GOOGLE_LOGIN", False),
             environment=os.environ.get("APP_ENV", "development"),
         )
         settings.validate()
