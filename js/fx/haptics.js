@@ -38,6 +38,9 @@
     buzz(name) {
       if (!supported || !this.enabled) return;
       if (F7.FX && F7.FX.state && F7.FX.state.reduced) return;
+      // O navegador só deixa vibrar depois do primeiro toque na página (evita erro no console).
+      const activation = navigator.userActivation;
+      if (activation && !activation.hasBeenActive) return;
       const pattern = PATTERNS[name];
       if (pattern) navigator.vibrate(pattern);
     },
