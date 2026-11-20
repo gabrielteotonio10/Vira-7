@@ -78,7 +78,10 @@ def create_app(settings: Settings | None = None, store=None) -> FastAPI:
         task = None
         if settings.referee_enabled:
             task = asyncio.create_task(
-                referee.run(app.state.store, settings.referee_interval, settings.disconnect_grace_seconds)
+                referee.run(
+                    app.state.store, settings.referee_interval, settings.disconnect_grace_seconds,
+                    stale_room_seconds=settings.stale_room_seconds,
+                )
             )
         try:
             yield
