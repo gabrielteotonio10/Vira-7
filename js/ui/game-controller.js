@@ -192,7 +192,8 @@
     /* ================================================================== */
 
     async onGameStart(payload, game) {
-      this.table.setup(game, { perspective: this.perspective(game) });
+      this.perspectiveId = this.perspective(game);
+      this.table.setup(game, { perspective: this.perspectiveId });
       this.hud.setTarget(game.targetScore);
       this.hud.setDeckCount(game.deck.size);
       this.hud.clearLog();
@@ -234,6 +235,11 @@
     }
 
     async onTurnStart({ player }, game) {
+      // Mesma tela com várias pessoas: quem vai jogar passa a ser o lugar grande, embaixo.
+      if (this.options.hotSeat && !player.isBot && this.perspectiveId !== player.id) {
+        this.perspectiveId = player.id;
+        await this.rotateTo(player, game);
+      }
       this.turnPlayer = player;
       this.table.setTurn(player);
       const mine = this.isMe(player);
@@ -243,6 +249,18 @@
       // A doca muda de altura ao mostrar risco e relógio: confere de novo se o lugar cabe.
       this.table.reveal(player);
       if (mine) F7.Sound.turn();
+    }
+
+    /** Gira a mesa para `player` ficar embaixo, com um aviso de "passe o aparelho". */
+    async rotateTo(player, game) {
+      const seats = this.table.seatsEl;
+      seats.classList.add('is-rotating');
+      await F7.FX.wait(180);
+      this.table.setup(game, { perspective: player.id });
+      this.hud.setDeckCount(game.deck.size);
+      seats.classList.remove('is-rotating');
+      F7.FX.retrigger(seats, 'is-rotated', 500);
+      await F7.FX.banner(`Vez de ${player.name}`, { sub: 'Passe o aparelho', variant: 'round', hold: 650 });
     }
 
     /** O servidor jogou por alguém (tempo esgotado ou sem conexão). */
