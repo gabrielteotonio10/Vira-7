@@ -12,6 +12,7 @@ Tudo o que o Supabase precisa está em [`migrations/`](migrations/), em arquivos
 | `0006_funcoes_partidas.sql` | `vira7_start_game` e `vira7_commit_game` (controle de concorrência) |
 | `0007_seguranca_rls.sql` | Row Level Security, políticas e permissões de todas as tabelas e funções |
 | `0008_realtime.sql` | Publica `game_events`, `room_players` e `rooms` no Supabase Realtime |
+| `0009_amigos_espectadores_equipes.sql` | Duplas (`rooms.team_mode`), amigos (`friendships`) e espectadores (`room_spectators`) |
 
 ## Como aplicar
 
@@ -49,7 +50,8 @@ npm run test:db
 
 Os testes ([`tests/migrations.test.mjs`](tests/migrations.test.mjs)) sobem um PostgreSQL real embutido (PGlite), simulam os papéis do Supabase (`anon`, `authenticated`, `service_role`) e conferem:
 
-- as 8 migrations aplicam sem erro, duas vezes seguidas;
+- as 9 migrations aplicam sem erro, duas vezes seguidas;
+- amigos (um par = uma linha, RLS), espectadores (uma sala por pessoa, acesso à partida) e a coluna das duplas;
 - o cadastro cria perfil, preferências e estatísticas, inclusive com nome repetido ou inválido;
 - lotação, assentos, uma sala por pessoa, troca de anfitrião e fechamento de sala vazia;
 - só uma partida começa por sala, e não se a lista de jogadores mudou;
