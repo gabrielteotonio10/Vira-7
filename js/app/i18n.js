@@ -21,6 +21,7 @@
 
   const dicts = {};
 
+  /** Português é o padrão; só muda se a pessoa escolher outro idioma nos Ajustes. */
   function detect() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -28,8 +29,7 @@
     } catch (error) {
       /* sem armazenamento */
     }
-    const browser = String((typeof navigator !== 'undefined' && navigator.language) || 'pt').slice(0, 2).toLowerCase();
-    return SUPPORTED.includes(browser) ? browser : 'pt';
+    return 'pt';
   }
 
   const state = { lang: detect(), observer: null };
