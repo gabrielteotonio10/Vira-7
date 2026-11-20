@@ -247,7 +247,7 @@
           h(
             'div',
             { class: 'section-head' },
-            h('h2', {}, 'Salas públicas'),
+            h('div', {}, h('h2', {}, 'Salas públicas'), h('small', { class: 'section-hint' }, 'Até 10 salas sorteadas · atualize para ver outras')),
             h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Atualizar lista', title: 'Atualizar', html: icon('restart'), onClick: () => load() }),
           ),
           list,

@@ -72,6 +72,26 @@
 
   /* ------------------------------------------------------------------ perfil */
 
+  /** Botão de amizade no perfil de outra pessoa. */
+  function friendButton(info, friendship) {
+    const box = h('div', { class: 'profile__actions' });
+    const paint = (state) => {
+      box.innerHTML = '';
+      if (state === 'friends') box.appendChild(h('span', { class: 'chip chip--ok' }, 'Vocês são amigos ✓'));
+      else if (state === 'sent') box.appendChild(h('button', { type: 'button', class: 'btn btn--ghost', disabled: true }, 'Pedido enviado'));
+      else if (state === 'received' || state === 'none') {
+        const button = h('button', { type: 'button', class: 'btn btn--primary' }, state === 'received' ? 'Aceitar pedido de amizade' : 'Adicionar amigo');
+        button.addEventListener('click', () => App.busy(button, async () => {
+          const result = await F7.Api.post('/friends/requests', { username: info.username });
+          paint(result.status === 'accepted' ? 'friends' : 'sent');
+        }));
+        box.appendChild(button);
+      }
+    };
+    paint(friendship);
+    return box;
+  }
+
   async function profile({ username } = {}) {
     App.render(App.loading());
     const own = !username || username.toLowerCase() === App.state.me.profile.username.toLowerCase();
@@ -113,7 +133,7 @@
                 h('button', { type: 'button', class: 'btn btn--primary', onClick: () => editProfile(info) }, 'Editar perfil'),
                 h('button', { type: 'button', class: 'btn btn--ghost', onClick: () => App.signOut() }, 'Sair da conta'),
               )
-            : null,
+            : friendButton(info, data.friendship),
         ),
         h('section', { class: 'panel' }, h('div', { class: 'section-head' }, h('h2', {}, 'Estatísticas')), statsGrid(data.stats)),
         h(
