@@ -53,6 +53,11 @@
     async resolve() {
       const path = this.path;
       const token = (this.current = Symbol(path));
+      // As entradas animadas (css/motion.css) valem no primeiro segundo da tela nova.
+      const rootEl = document.documentElement;
+      rootEl.classList.remove('motion-settled');
+      clearTimeout(this.settleTimer);
+      this.settleTimer = setTimeout(() => rootEl.classList.add('motion-settled'), 1400);
 
       if (typeof this.cleanup === 'function') {
         try {

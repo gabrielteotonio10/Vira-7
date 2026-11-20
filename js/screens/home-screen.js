@@ -255,6 +255,15 @@
       ),
     );
 
+    // Os números das estatísticas sobem do zero ao valor real.
+    document.querySelectorAll('.stat-pill strong').forEach((el, i) => {
+      const value = parseInt(el.textContent, 10);
+      const suffix = el.textContent.replace(/^\d+/, '');
+      if (!value) return;
+      el.textContent = `0${suffix}`;
+      setTimeout(() => F7.FX.countUp(el, 0, value, 700).then(() => { el.textContent = `${value}${suffix}`; }), 250 + i * 90);
+    });
+
     let stopped = false;
     async function load() {
       try {

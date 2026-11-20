@@ -54,6 +54,7 @@
     setRound(round) {
       this.el.round.textContent = String(round);
       F7.FX.retrigger(this.el.round.parentElement, 'is-shaking', 400);
+      F7.FX.retrigger(this.el.round, 'is-bumped', 380);
     }
 
     setTarget(target) {
@@ -61,7 +62,10 @@
     }
 
     setDeckCount(count) {
-      if (this.el.deckChip) this.el.deckChip.textContent = String(count);
+      if (!this.el.deckChip) return;
+      const text = String(count);
+      if (this.el.deckChip.textContent !== text) F7.FX.retrigger(this.el.deckChip, 'is-bumped', 380);
+      this.el.deckChip.textContent = text;
     }
 
     /* ------------------------------------------------------------------ */
