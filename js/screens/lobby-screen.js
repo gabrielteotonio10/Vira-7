@@ -189,7 +189,7 @@
           h(
             'section',
             { class: 'lobby__actions' },
-            h('button', { type: 'button', class: 'btn btn--ghost btn--lg', onClick: leave }, 'Sair da sala'),
+            h('button', { type: 'button', class: 'btn btn--ghost btn--lg', onClick: leave }, me.isHost ? 'Fechar sala' : 'Sair da sala'),
             h('span', { class: 'lobby__hint' }, quick ? 'A partida começa sozinha quando todos estiverem prontos.' : me.isHost ? hostHint : 'O anfitrião inicia a partida.'),
             me.isHost && !quick
               ? h('button', {
@@ -227,12 +227,15 @@
 
     async function leave() {
       const playing = state.detail.room.status === 'playing';
+      const hostClosing = !playing && state.detail.me.isHost;
       const ok = await F7.Modals.confirm({
-        title: playing ? 'Abandonar a partida?' : 'Sair da sala?',
+        title: playing ? 'Abandonar a partida?' : hostClosing ? 'Fechar a sala?' : 'Sair da sala?',
         text: playing
           ? 'Você sai da partida, que conta como derrota. Os outros jogadores continuam sem você.'
-          : 'Você pode voltar depois usando o código de convite.',
-        confirmLabel: playing ? 'Abandonar' : 'Sair',
+          : hostClosing
+            ? 'Você é o anfitrião: ao sair, a sala é fechada e todos voltam para o início.'
+            : 'Você pode voltar depois usando o código de convite.',
+        confirmLabel: playing ? 'Abandonar' : hostClosing ? 'Fechar sala' : 'Sair',
       });
       if (!ok) return;
       state.closed = true;
@@ -329,7 +332,7 @@
         if (state.closed) return;
         if (['NOT_IN_ROOM', 'ROOM_NOT_FOUND'].includes(error.code)) {
           state.closed = true;
-          App.toast('Você não está mais nesta sala.', { variant: 'bust' });
+          App.toast('Esta sala foi fechada ou você foi removido dela.', { variant: 'bust' });
           App.navigate('/');
         }
       } finally {
@@ -355,6 +358,7 @@
 
     /* ---------------------------------------------------------------- ciclo de vida */
 
+    App.backHandler = leave;
     apply(detail);
     state.detail = detail;
 
