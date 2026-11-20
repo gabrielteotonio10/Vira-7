@@ -56,6 +56,7 @@
     const players = segmented([2, 3, 4, 5, 6, 7, 8].map((n) => [n, String(n)]), initial.maxPlayers || 4, 'Número de jogadores');
     const target = segmented(TARGETS.map((n) => [n, String(n)]), initial.targetScore || 200, 'Pontos para vencer');
     const timer = segmented(TIMERS, initial.turnSeconds ?? 30, 'Tempo por jogada');
+    const teams = segmented([[false, 'Cada um por si'], [true, 'Duplas (2x2)']], !!initial.teamMode, 'Modo de jogo');
 
     const el = h(
       'div',
@@ -65,6 +66,11 @@
       option('Jogadores (máximo)', players.el),
       option('Pontos para vencer', target.el, 'A regra original do Flip 7 é 200 pontos.'),
       option('Tempo por jogada', timer.el, 'Quando o tempo acaba, o jogador para automaticamente.'),
+      option(
+        'Modo de jogo',
+        teams.el,
+        'Duplas: quem senta na frente de você é seu parceiro e os pontos são somados. Precisa de 4, 6 ou 8 jogadores (CPUs completam a mesa).',
+      ),
     );
     return {
       el,
@@ -74,6 +80,7 @@
         maxPlayers: players.value,
         targetScore: target.value,
         turnSeconds: timer.value,
+        teamMode: teams.value,
       }),
     };
   }
@@ -168,10 +175,12 @@
           `de ${room.hostName} · meta ${room.targetScore} · `,
           room.turnSeconds ? `${room.turnSeconds}s por jogada` : 'sem tempo',
           room.mode === 'quick' ? ' · partida rápida' : '',
+          room.teamMode ? ' · duplas' : '',
         ),
       ),
       h('span', { class: `chip ${full ? 'is-full' : ''}` }, h('span', { html: icon('user') }), h('strong', {}, `${room.playerCount}/${room.maxPlayers}`)),
-      h('button', { type: 'button', class: 'btn btn--success', disabled: full, onClick: () => enter(room.code) }, full ? 'Cheia' : 'Entrar'),
+      room.teamMode ? h('span', { class: 'chip' }, 'Duplas') : null,
+      h('button', { type: 'button', class: `btn ${full ? 'btn--ghost' : 'btn--success'}`, onClick: () => enter(room.code) }, full ? 'Assistir' : 'Entrar na sala'),
     );
   }
 
@@ -225,6 +234,12 @@
           actionCard({ iconName: 'plus', title: 'Criar sala', text: 'Suas regras, seus convidados', accent: '#7be0ac', onClick: createRoom }),
           actionCard({ iconName: 'lock', title: 'Entrar com código', text: 'Recebi um convite', accent: '#8fc1ff', onClick: joinByCode }),
           actionCard({ iconName: 'user', title: 'Mesma tela', text: 'Todo mundo no mesmo aparelho', accent: '#ffa3b8', href: '#/local' }),
+        ),
+        h(
+          'a',
+          { class: 'home__tutorial', href: '#/tutorial' },
+          h('span', { html: icon('help') }),
+          'Nunca jogou? Faça o tutorial interativo',
         ),
         h(
           'section',

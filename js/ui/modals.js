@@ -258,8 +258,14 @@
       eyebrow: 'Regras do Vira-7',
       body,
       wide: true,
-      actions: [{ label: 'Entendi!', value: true, variant: 'primary' }],
-    }).result;
+      actions: [
+        { label: 'Tutorial interativo', value: 'tutorial', variant: 'ghost', iconName: 'play' },
+        { label: 'Entendi!', value: true, variant: 'primary' },
+      ],
+    }).result.then((choice) => {
+      if (choice === 'tutorial') F7.App.navigate('/tutorial');
+      return choice;
+    });
   }
 
   /* ------------------------------------------------------------------ */
@@ -276,6 +282,24 @@
     if (flip7) parts.push('+15 do Vira 7');
     const how = { stayed: 'Parou', frozen: 'Congelado', active: 'Na mesa' }[status] || '';
     return `${flip7 ? 'Vira 7!' : how} · ${parts.join(' ')}`;
+  }
+
+  /** Pontos de cada dupla, da que lidera para a que está atrás. */
+  function teamStandings(game) {
+    const teams = game.teams.slice().sort((a, b) => b.total - a.total || a.id - b.id);
+    return h(
+      'div',
+      { class: 'team-board', style: { '--teams': teams.length } },
+      teams.map((team, index) =>
+        h(
+          'div',
+          { class: `team-board__team team-${'abcd'[team.id] || 'a'} ${index === 0 && team.total > 0 ? 'is-leader' : ''}` },
+          h('b', {}, F7.teamName(team.id)),
+          h('span', {}, team.seats.map((seat) => game.players[seat].name).join(' & ')),
+          h('strong', {}, `${team.total} pts`),
+        ),
+      ),
+    );
   }
 
   /**
@@ -327,6 +351,7 @@
       );
     });
 
+    const teamsBlock = game.teams ? teamStandings(game) : null;
     const note = finalRound
       ? h('p', { class: 'summary__note' }, 'Alguém passou da meta! Vamos ver quem venceu…')
       : tie
@@ -338,7 +363,7 @@
     const modal = open({
       title: `Fim da rodada ${round}`,
       eyebrow: 'Placar',
-      body: h('div', { class: 'summary' }, rows, note),
+      body: h('div', { class: 'summary' }, teamsBlock, rows, note),
       wide: true,
       dismissible: false,
       footNote: autoNote,
@@ -375,7 +400,8 @@
    * @param {object} game
    * @param {{ actions?: object[] }} [options] botões (padrão: menu / jogar de novo)
    */
-  function gameOver({ winner, standings, reason }, game, { actions } = {}) {
+  function gameOver({ winner, winnerTeam, standings, reason }, game, { actions } = {}) {
+    const teamWin = winnerTeam !== null && winnerTeam !== undefined && game.teams;
     const podiumOrder = [standings[1], standings[0], standings[2]].filter(Boolean);
     const podium = h(
       'div',
@@ -393,14 +419,19 @@
     );
 
     const rounds = Math.max(0, ...standings.map((player) => player.history.length));
+    const team = teamWin ? game.teams.find((t) => t.id === winnerTeam) : null;
     const headline = !winner
       ? 'Partida encerrada'
-      : `${winner.name} venceu!`;
+      : team
+        ? `${F7.teamName(team.id)} venceu!`
+        : `${winner.name} venceu!`;
     const detail = !winner
       ? 'Todos os jogadores saíram.'
       : reason === 'forfeit'
         ? 'Os adversários abandonaram a partida'
-        : `${winner.total} pontos em ${rounds} rodadas`;
+        : team
+          ? `${team.seats.map((seat) => game.players[seat].name).join(' & ')} · ${team.total} pontos em ${rounds} rodadas`
+          : `${winner.total} pontos em ${rounds} rodadas`;
     const headers = ['Jogador', ...Array.from({ length: rounds }, (_, i) => `R${i + 1}`), 'Total'];
     const table = h(
       'div',
@@ -439,7 +470,7 @@
         h('div', { class: 'winner__name' }, headline),
         h('div', { class: 'winner__score' }, detail),
       ),
-      standings.length > 1 ? podium : null,
+      team ? teamStandings(game) : standings.length > 1 ? podium : null,
       table,
     );
 

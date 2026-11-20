@@ -63,7 +63,11 @@
     DECK_SIZE: 99,
   });
 
+  /** "Dupla A", "Dupla B"… */
+  const teamName = (index) => `Dupla ${'ABCD'[index] || index + 1}`;
+
   Object.assign(F7, {
+    teamName,
     CARD_TYPES,
     ACTIONS,
     MODIFIER_OPS,

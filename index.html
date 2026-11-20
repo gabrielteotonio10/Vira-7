@@ -8,6 +8,13 @@
     <title>Vira-7 · Jogo de cartas online</title>
 
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Vira-7" />
+    <!-- O visual escolhido é aplicado antes da primeira pintura (sem piscar o tema claro) -->
+    <script src="js/app/theme.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -28,6 +35,8 @@
     <link rel="stylesheet" href="css/modals.css" />
     <link rel="stylesheet" href="css/arena.css" />
     <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="css/themes.css" />
+    <link rel="stylesheet" href="css/social.css" />
     <link rel="stylesheet" href="css/responsive.css" />
   </head>
 
@@ -43,6 +52,7 @@
            ============================================================ -->
       <section class="screen setup-screen" id="setup-screen" aria-labelledby="setup-title" hidden>
         <div class="setup">
+          <button type="button" class="icon-btn setup__back" id="setup-back" aria-label="Voltar" title="Voltar" data-icon="arrowLeft"></button>
           <header class="setup__hero">
             <div class="hero-cards" id="hero-cards" aria-hidden="true"></div>
             <h1 class="logo logo--hero" id="setup-title">
@@ -105,6 +115,7 @@
            ============================================================ -->
       <section class="screen game-screen" id="game-screen" aria-label="Mesa de jogo" hidden>
         <header class="topbar">
+          <button type="button" class="icon-btn topbar__back" id="btn-menu" aria-label="Sair da partida" title="Sair da partida" data-icon="arrowLeft"></button>
           <div class="logo" aria-label="Vira-7">
             <span class="logo__word">VIRA</span><span class="logo__seven">7</span>
           </div>
@@ -118,13 +129,16 @@
           <div class="topbar__spacer"></div>
 
           <div class="topbar__actions">
+            <button type="button" class="icon-btn" id="btn-chat" aria-label="Conversa rápida" title="Conversa rápida" data-icon="chat" hidden></button>
             <button type="button" class="icon-btn" id="btn-log" aria-label="Histórico de jogadas" title="Histórico" data-icon="history"></button>
             <button type="button" class="icon-btn" id="btn-rules" aria-label="Como jogar" title="Como jogar" data-icon="help"></button>
             <button type="button" class="icon-btn" id="btn-sound" aria-pressed="true" aria-label="Desligar som" title="Som ligado"></button>
             <button type="button" class="icon-btn" id="btn-restart" aria-label="Reiniciar partida" title="Reiniciar" data-icon="restart"></button>
-            <button type="button" class="icon-btn" id="btn-menu" aria-label="Sair da partida" title="Sair da partida" data-icon="arrowLeft"></button>
           </div>
         </header>
+
+        <div class="chat-pop" id="chat-pop" hidden></div>
+        <div class="spectator-bar" id="spectator-bar" hidden><span data-icon="eye"></span> Você está assistindo esta partida</div>
 
         <main class="table" id="table">
           <!-- A mesa: adversários em arco, baralho no centro e você embaixo -->
@@ -219,6 +233,7 @@
     <!-- Efeitos visuais e sonoros -->
     <script src="js/fx/effects.js"></script>
     <script src="js/fx/sound.js"></script>
+    <script src="js/fx/haptics.js"></script>
 
     <!-- Interface da mesa -->
     <script src="js/ui/dom.js"></script>
@@ -232,6 +247,13 @@
     <script src="js/ui/modals.js"></script>
     <script src="js/ui/game-controller.js"></script>
 
+    <!-- Idiomas, voz e preferências de acessibilidade -->
+    <script src="js/app/i18n.js"></script>
+    <script src="js/i18n/en.js"></script>
+    <script src="js/i18n/es.js"></script>
+    <script src="js/app/voice.js"></script>
+    <script src="js/app/pwa.js"></script>
+
     <!-- Aplicação online -->
     <script src="js/app/api.js"></script>
     <script src="js/app/auth.js"></script>
@@ -242,6 +264,9 @@
     <script src="js/screens/home-screen.js"></script>
     <script src="js/screens/lobby-screen.js"></script>
     <script src="js/screens/profile-screen.js"></script>
+    <script src="js/screens/friends-screen.js"></script>
+    <script src="js/ui/chat.js"></script>
+    <script src="js/screens/tutorial.js"></script>
     <script src="js/screens/settings-screen.js"></script>
     <script src="js/screens/local-game.js"></script>
     <script src="js/main.js"></script>

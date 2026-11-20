@@ -41,8 +41,9 @@
       }
     }
 
-    const state = { detail, match: null, onlineIds: null, connection: 'connecting', closed: false, refreshing: false };
+    const state = { detail, match: null, onlineIds: null, connection: 'connecting', closed: false, refreshing: false, chatLog: [] };
     const els = {};
+    let chat = null;
 
     /* ---------------------------------------------------------------- lobby */
 
@@ -52,7 +53,12 @@
       return state.onlineIds ? state.onlineIds.has(player.userId) : player.online;
     }
 
-    function playerRow(player) {
+    /** Duplas ficam em lugares opostos: com 4 pessoas, 1º e 3º jogam juntos, 2º e 4º também. */
+    function teamOf(index, total) {
+      return index % Math.max(1, Math.floor(total / 2));
+    }
+
+    function playerRow(player, index) {
       const { me, room: info } = state.detail;
       const online = isOnline(player);
       const canRemove = me.isHost && player.userId !== userId && info.status === 'lobby';
@@ -70,6 +76,7 @@
             player.userId === userId ? h('span', { class: 'badge badge--me' }, 'Você') : null,
             player.isHost ? h('span', { class: 'badge badge--host', title: 'Anfitrião' }, h('span', { html: icon('crown') }), 'Anfitrião') : null,
             player.isBot ? h('span', { class: 'badge badge--bot' }, 'CPU') : null,
+            info.teamMode ? h('span', { class: `badge badge--team team-${'abcd'[teamOf(index, state.detail.players.length)] || 'a'}` }, F7.teamName(teamOf(index, state.detail.players.length))) : null,
           ),
           h('span', { class: 'lobby-player__status' }, h('i', { class: 'dot' }), online ? 'Conectado' : 'Sem conexão'),
         ),
@@ -87,10 +94,10 @@
     }
 
     function renderLobby() {
-      const { room: info, players, me } = state.detail;
+      const { room: info, players, me, spectators = [] } = state.detail;
       const mine = players.find((p) => p.userId === userId);
       const everyoneReady = players.every((p) => p.isReady || p.userId === info.hostId);
-      const canStart = me.isHost && players.length >= 2 && everyoneReady;
+      const canStart = me.isHost && players.length >= 2 && everyoneReady && !(info.teamMode && (players.length < 4 || players.length % 2));
       const link = `${window.location.origin}${window.location.pathname}#/sala/${info.code}`;
       const quick = info.mode === 'quick';
 
@@ -123,6 +130,10 @@
         mine && mine.isReady ? 'Cancelar pronto' : 'Estou pronto!',
       );
 
+      const spectating = me.isSpectator;
+      const teamIssue = info.teamMode && (players.length < 4 || players.length % 2)
+        ? 'Duplas precisam de 4, 6 ou 8 jogadores: adicione CPUs para completar.'
+        : null;
       const hostHint = players.length < 2
         ? 'Convide alguém ou adicione uma CPU para começar.'
         : everyoneReady ? 'Todos prontos!' : 'Aguardando todos ficarem prontos…';
@@ -147,6 +158,15 @@
               h('span', {}, 'Código de convite'),
               h('button', { type: 'button', class: 'code', title: 'Copiar código', onClick: () => copy(info.code, 'Código') }, info.code, h('span', { html: icon('copy') })),
               h('button', { type: 'button', class: 'btn btn--ghost', onClick: () => copy(link, 'Link') }, 'Copiar link de convite'),
+              h(
+                'button',
+                {
+                  type: 'button', class: 'btn btn--whatsapp',
+                  onClick: () => F7.Share.openWhatsapp(`${F7.i18n.t('Bora jogar Vira-7! Entra na minha sala:')} ${link}\n${F7.i18n.t('Código')}: ${info.code}`),
+                },
+                h('span', { html: icon('share') }),
+                'Convidar pelo WhatsApp',
+              ),
             ),
           ),
           h(
@@ -156,7 +176,7 @@
               'section',
               { class: 'panel' },
               h('div', { class: 'section-head' }, h('h2', {}, 'Jogadores'), h('span', { class: 'setup__count' }, `${players.length}/${info.maxPlayers}`)),
-              h('ul', { class: 'lobby-players' }, players.map(playerRow), emptySeats),
+              h('ul', { class: 'lobby-players' }, players.map((p, i) => playerRow(p, i)), emptySeats),
               me.isHost && players.length < info.maxPlayers
                 ? h('button', {
                     type: 'button', class: 'btn btn--ghost btn--block',
@@ -182,16 +202,31 @@
                 h('div', {}, h('dt', {}, 'Jogadores'), h('dd', {}, `até ${info.maxPlayers}`)),
                 h('div', {}, h('dt', {}, 'Tempo por jogada'), h('dd', {}, info.turnSeconds ? `${info.turnSeconds} segundos` : 'Sem limite')),
                 h('div', {}, h('dt', {}, 'Acesso'), h('dd', {}, info.visibility === 'public' ? 'Pública' : 'Só com o código')),
+                h('div', {}, h('dt', {}, 'Modo'), h('dd', {}, info.teamMode ? 'Duplas (2x2)' : 'Cada um por si')),
               ),
               h('button', { type: 'button', class: 'btn btn--ghost btn--block', onClick: () => F7.Modals.rules() }, h('span', { html: icon('help') }), 'Como jogar'),
             ),
           ),
+          spectating
+            ? h('section', { class: 'panel spectate-note' }, h('span', { html: icon('eye') }), h('div', {}, h('strong', {}, 'Você está assistindo'), h('p', {}, 'Quando abrir uma vaga e a sala voltar ao lobby, você entra no jogo automaticamente.')))
+            : null,
+          spectators.length
+            ? h(
+                'section',
+                { class: 'panel' },
+                h('div', { class: 'section-head' }, h('h2', {}, 'Assistindo'), h('span', { class: 'setup__count' }, String(spectators.length))),
+                h('ul', { class: 'spectator-list' }, spectators.map((s) => h('li', { class: 'spectator' }, F7.Avatars.create({ avatar: s.avatar, name: s.name }), h('span', {}, s.name)))),
+              )
+            : null,
+          chatPanel(),
           h(
             'section',
             { class: 'lobby__actions' },
-            h('button', { type: 'button', class: 'btn btn--ghost btn--lg', onClick: leave }, me.isHost ? 'Fechar sala' : 'Sair da sala'),
-            h('span', { class: 'lobby__hint' }, quick ? 'A partida começa sozinha quando todos estiverem prontos.' : me.isHost ? hostHint : 'O anfitrião inicia a partida.'),
-            me.isHost && !quick
+            h('button', { type: 'button', class: 'btn btn--ghost btn--lg lobby__leave', onClick: leave }, me.isHost ? 'Fechar sala' : 'Sair da sala'),
+            h('span', { class: 'lobby__hint' }, spectating ? 'Você entra no jogo quando houver vaga.' : teamIssue || (quick ? 'A partida começa sozinha quando todos estiverem prontos.' : me.isHost ? hostHint : 'O anfitrião inicia a partida.')),
+            spectating
+              ? null
+              : me.isHost && !quick
               ? h('button', {
                   type: 'button', class: 'btn btn--primary btn--lg', disabled: !canStart,
                   onClick: (event) => App.busy(event.currentTarget, async () => {
@@ -203,6 +238,39 @@
           ),
         ),
       );
+    }
+
+    /** Mensagens rápidas da sala (também aparecem sobre a mesa durante a partida). */
+    function chatPanel() {
+      els.chatFeed = h('ul', { class: 'chat-feed', 'aria-live': 'polite' });
+      paintChatFeed();
+      return h(
+        'section',
+        { class: 'panel chat-panel' },
+        h('div', { class: 'section-head' }, h('h2', {}, 'Conversa rápida')),
+        els.chatFeed,
+        F7.Chat.picker((kind, key) => chat.send(kind, key)),
+      );
+    }
+
+    function paintChatFeed() {
+      if (!els.chatFeed) return;
+      clear(els.chatFeed);
+      state.chatLog.forEach((message) => {
+        const { who, text } = F7.Chat.describe(message);
+        els.chatFeed.appendChild(h('li', { class: message.kind === 'emoji' ? 'is-emoji' : '' }, h('b', {}, who), ' ', text));
+      });
+      if (!state.chatLog.length) els.chatFeed.appendChild(h('li', { class: 'is-empty' }, 'Mande um emoji ou uma frase para a mesa.'));
+    }
+
+    function onChatMessage(message, { history = false } = {}) {
+      state.chatLog.push(message);
+      if (state.chatLog.length > 6) state.chatLog.shift();
+      if (state.match) {
+        if (!history) F7.Chat.floatOnTable(message, App.table);
+      } else if (els.chatFeed && els.chatFeed.isConnected) {
+        paintChatFeed();
+      }
     }
 
     async function editSettings() {
@@ -228,6 +296,11 @@
     async function leave() {
       const playing = state.detail.room.status === 'playing';
       const hostClosing = !playing && state.detail.me.isHost;
+      if (state.detail.me.isSpectator) {
+        state.closed = true;
+        await F7.Api.post(`/rooms/${code}/leave`).catch(() => {});
+        return App.navigate('/');
+      }
       const ok = await F7.Modals.confirm({
         title: playing ? 'Abandonar a partida?' : hostClosing ? 'Fechar a sala?' : 'Sair da sala?',
         text: playing
@@ -256,6 +329,7 @@
         controller: App.controller,
         room: state.detail.room,
         user: F7.Auth.user,
+        spectator: !!state.detail.me.isSpectator,
         onExit: async (choice) => {
           match.destroy();
           if (state.match === match) state.match = null;
@@ -265,12 +339,14 @@
             return App.navigate('/');
           }
           App.render(App.loading('Voltando para a sala…'));
+          if (choice === 'rematch') await rematch();
           return refresh();
         },
       });
       state.match = match;
       App.gameHandlers = { online: true, menu: leave };
       qs('#btn-restart').hidden = true;
+      setupGameChat();
       App.show('game');
       document.title = `Vira-7 · ${state.detail.room.name}`;
       if (state.onlineIds) match.setPresence(state.onlineIds);
@@ -282,6 +358,40 @@
         state.match = null;
         App.navigate('/');
       }
+    }
+
+    /** Revanche com um toque: volta para a sala já "pronto" e, se for o anfitrião e todos toparem, começa. */
+    async function rematch() {
+      try {
+        let detail = await F7.Api.get(`/rooms/${code}`);
+        if (detail.me.isSpectator) return;
+        detail = await F7.Api.post(`/rooms/${code}/ready`, { ready: true });
+        const others = detail.players.filter((p) => p.userId !== userId);
+        if (detail.me.isHost && others.length && others.every((p) => p.isReady) && detail.room.mode !== 'quick') {
+          await F7.Api.post(`/rooms/${code}/start`);
+        }
+      } catch (error) {
+        /* a sala mostra o que falta; ninguém fica preso */
+      }
+    }
+
+    /** Botão de conversa na barra da mesa (só nas partidas online). */
+    function setupGameChat() {
+      const button = qs('#btn-chat');
+      const pop = qs('#chat-pop');
+      button.hidden = false;
+      clear(pop);
+      pop.appendChild(F7.Chat.picker((kind, key) => chat.send(kind, key), { onPick: () => { pop.hidden = true; } }));
+      pop.hidden = true;
+      button.onclick = (event) => {
+        event.stopPropagation();
+        pop.hidden = !pop.hidden;
+      };
+      if (els.chatClose) document.removeEventListener('click', els.chatClose);
+      els.chatClose = (event) => {
+        if (!pop.hidden && !pop.contains(event.target)) pop.hidden = true;
+      };
+      document.addEventListener('click', els.chatClose);
     }
 
     /** Aplica um novo retrato da sala vindo da API. */
@@ -359,6 +469,7 @@
     /* ---------------------------------------------------------------- ciclo de vida */
 
     App.backHandler = leave;
+    chat = F7.Chat.create({ code, onMessage: onChatMessage });
     apply(detail);
     state.detail = detail;
 
@@ -394,6 +505,10 @@
     return () => {
       state.closed = true;
       clearTimeout(pending);
+      if (chat) chat.destroy();
+      if (els.chatClose) document.removeEventListener('click', els.chatClose);
+      qs('#btn-chat').hidden = true;
+      qs('#chat-pop').hidden = true;
       clearInterval(heartbeat);
       document.removeEventListener('visibilitychange', onVisible);
       channel.leave();

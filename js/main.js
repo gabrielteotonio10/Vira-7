@@ -46,6 +46,7 @@
   qs('#btn-log').addEventListener('click', () => App.hud.toggleLog());
   qs('#btn-close-log').addEventListener('click', () => App.hud.toggleLog(false));
   qs('#btn-restart').addEventListener('click', () => App.gameHandlers && App.gameHandlers.restart && App.gameHandlers.restart());
+  qs('#setup-back').addEventListener('click', () => App.navigate('/'));
   qs('#btn-menu').addEventListener('click', () => App.gameHandlers && App.gameHandlers.menu && App.gameHandlers.menu());
 
   // Ícones dos botões estáticos do HTML
@@ -56,7 +57,8 @@
   window.addEventListener('pointerdown', unlockAudio, { once: true });
   window.addEventListener('keydown', unlockAudio, { once: true });
 
-  App.applySettings({ ...App.DEFAULT_SETTINGS, sound: F7.storage.load('sound', true) });
+  F7.i18n.start();
+  App.applySettings({ ...App.DEFAULT_SETTINGS, ...F7.Theme.cached(), language: F7.i18n.lang, sound: F7.storage.load('sound', true) });
   paintSound();
 
   /* ------------------------------------------------------------------ */
@@ -75,7 +77,9 @@
   App.route('/perfil', Screens.profile);
   App.route('/perfil/:username', Screens.profile);
   App.route('/historico', Screens.history);
-  App.route('/ranking', Screens.ranking);
+  App.route('/ranking', () => Screens.ranking());
+  App.route('/amigos', Screens.friends);
+  App.route('/tutorial', Screens.tutorial);
   App.route('/config', async () => {
     const cleanup = await Screens.settings();
     return () => {
@@ -140,6 +144,9 @@
   // Aviso de volta da conexão com a internet.
   window.addEventListener('offline', () => App.toast('Você está sem internet.', { variant: 'bust' }));
   window.addEventListener('online', () => App.toast('Conexão restabelecida.', { variant: 'stay' }));
+
+  // App instalável (PWA): service worker só em https ou localhost.
+  F7.Pwa.register();
 
   App.start();
 })();

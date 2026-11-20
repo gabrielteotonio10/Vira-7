@@ -103,7 +103,7 @@
             'div',
             { class: 'profile__id' },
             h('h1', {}, info.username),
-            h('p', {}, `${F7.Avatars.info(info.avatar).name} · no jogo desde ${new Date(info.createdAt).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`),
+            h('p', {}, `${F7.Avatars.info(info.avatar).name} · no jogo desde ${new Date(info.createdAt).toLocaleDateString(F7.i18n.locale, { month: 'long', year: 'numeric' })}`),
             own ? h('p', { class: 'profile__email' }, F7.Auth.user.email || '') : null,
           ),
           own
@@ -196,10 +196,18 @@
 
   /* ------------------------------------------------------------------ ranking */
 
-  async function ranking() {
+  async function ranking({ scope = 'all' } = {}) {
     App.render(App.loading());
-    const { players } = await F7.Api.get('/leaderboard?limit=50');
+    const { players } = await F7.Api.get(`/leaderboard?limit=50&scope=${scope}`);
     const myId = F7.Auth.user.id;
+
+    const tabs = h(
+      'div',
+      { class: 'segmented ranking-tabs', role: 'tablist' },
+      [['all', 'Geral'], ['friends', 'Só amigos']].map(([value, label]) =>
+        h('button', { type: 'button', role: 'tab', 'aria-selected': String(scope === value), 'aria-checked': String(scope === value), onClick: () => ranking({ scope: value }) }, label),
+      ),
+    );
 
     const position = (p) => (p.position <= 3 ? h('span', { class: `medal medal--${p.position}` }, String(p.position)) : String(p.position));
     const playerLink = (p) =>
@@ -255,9 +263,11 @@
             ),
           ),
         ))
-      : App.empty('trophy', 'O ranking ainda está vazio', 'Termine uma partida online para aparecer aqui.');
+      : scope === 'friends'
+        ? App.empty('users', 'Nenhum amigo no ranking ainda', 'Adicione amigos na aba Amigos. Quem já terminou uma partida aparece aqui.')
+        : App.empty('trophy', 'O ranking ainda está vazio', 'Termine uma partida online para aparecer aqui.');
 
-    App.render(h('div', { class: 'profile' }, h('section', { class: 'panel' }, h('div', { class: 'section-head' }, h('h1', {}, 'Ranking')), body)));
+    App.render(h('div', { class: 'profile' }, h('section', { class: 'panel' }, h('div', { class: 'section-head' }, h('h1', {}, 'Ranking')), tabs, body)));
   }
 
   F7.Screens = Object.assign(F7.Screens || {}, { profile, history, ranking });

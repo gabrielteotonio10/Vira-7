@@ -444,7 +444,9 @@
       this.table.renderAll();
       await F7.FX.wait(350);
 
-      const victory = F7.Scoring.checkVictory(game.players, game.targetScore);
+      const victory = game.teams
+        ? F7.Scoring.checkVictory(game.teams, game.targetScore)
+        : F7.Scoring.checkVictory(game.players, game.targetScore);
       const allBots = game.players.every((p) => p.isBot);
       await F7.Modals.roundSummary(payload, game, {
         autoNextMs: this.options.autoNextMs ?? (allBots ? 6000 : 0),
@@ -502,7 +504,8 @@
         F7.FX.confetti({ count: 220 });
         setTimeout(() => F7.FX.confetti({ count: 120 }), F7.FX.dur(1200));
         const how = reason === 'forfeit' ? 'por abandono dos adversários' : `com <b>${winner.total}</b> pontos`;
-        this.hud.log(`🏆 ${who(winner)} venceu ${how}!`, 'var(--gold)');
+        const label = payload.winnerTeam !== null && payload.winnerTeam !== undefined && game.teams ? F7.teamName(payload.winnerTeam) : who(winner);
+        this.hud.log(`🏆 ${label} venceu ${how}!`, 'var(--gold)');
       } else {
         this.hud.log('A partida foi encerrada.', 'var(--text-dim)');
       }

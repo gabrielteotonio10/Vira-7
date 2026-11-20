@@ -30,6 +30,8 @@
       this.deadline = null;
       this.status = 'playing';
       this.turnSeconds = 0;
+      /** Duplas ([{ id, seats, total }]) ou null em partida individual. */
+      this.teams = null;
       this.apply(state);
     }
 
@@ -64,9 +66,11 @@
           pendingActions: data.pendingActions || [],
           bustCard: data.bustCard || null,
           absent: !!data.absent,
+          team: data.team === undefined ? null : data.team,
           odds: data.odds || { matches: 0, total: 0, chance: 0 },
         });
       });
+      this.teams = state.teams || null;
       this.deck = { ...state.deck };
       this.targetScore = state.targetScore;
       this.round = state.round;
@@ -108,13 +112,15 @@
     /**
      * @param {{ table, hud, controller, room: object, user: object, onExit: (choice: string) => void }} deps
      */
-    constructor({ table, hud, controller, room, user, onExit }) {
+    constructor({ table, hud, controller, room, user, onExit, spectator = false }) {
       this.table = table;
       this.hud = hud;
       this.controller = controller;
       this.room = room;
       this.user = user;
       this.onExit = onExit;
+      /** Quem só assiste: vê a mesa toda, mas nunca joga. */
+      this.spectator = spectator;
 
       this.gameId = null;
       this.game = null;
@@ -154,9 +160,13 @@
         autoNextMs: 7000,
         gameOverActions: [
           { label: 'Sair da sala', value: 'leave', variant: 'ghost', iconName: 'home' },
-          { label: 'Voltar para a sala', value: 'lobby', variant: 'primary', iconName: 'restart' },
+          this.spectator
+            ? { label: 'Voltar para a sala', value: 'lobby', variant: 'primary', iconName: 'restart' }
+            : { label: 'Jogar de novo', value: 'rematch', variant: 'primary', iconName: 'restart' },
         ],
       });
+      document.querySelector('#spectator-bar').hidden = !this.spectator;
+      document.querySelector('#game-screen').classList.toggle('is-spectating', this.spectator);
       F7.FX.setSpeed(F7.App.state.settings.animationSpeed || 1);
 
       if (fresh && history.length) {
@@ -267,7 +277,10 @@
         if (event.type === 'gameOver') {
           this.finished = true;
           this.processing = false;
-          if (!this.destroyed) this.onExit(this.controller.lastChoice === 'leave' ? 'leave' : 'lobby');
+          if (!this.destroyed) {
+            const choice = this.controller.lastChoice;
+            this.onExit(choice === 'leave' || choice === 'rematch' ? choice : 'lobby');
+          }
           return;
         }
       }
@@ -381,6 +394,8 @@
       this.queue = [];
       this.cancelPrompt();
       F7.Modals.closeAll();
+      document.querySelector('#spectator-bar').hidden = true;
+      document.querySelector('#game-screen').classList.remove('is-spectating');
       this.hud.setDeadline(null);
       this.hud.setTurn(null);
     }
