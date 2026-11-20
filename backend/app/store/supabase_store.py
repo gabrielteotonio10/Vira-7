@@ -6,7 +6,7 @@ operações que precisam ser atômicas chamam as funções `vira7_*` das migrati
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
 
@@ -237,6 +237,37 @@ class SupabaseStore:
 
     async def leave_room(self, room_id: str, user_id: str) -> dict:
         return await self._rpc("vira7_leave_room", {"p_room": room_id, "p_user": user_id})
+
+    async def close_room(self, room_id: str) -> None:
+        await self._request(
+            "PATCH", "rooms", params={"id": f"eq.{room_id}"},
+            json={"status": "closed", "current_game_id": None, "updated_at": datetime.now(timezone.utc).isoformat()},
+        )
+        await self._request(
+            "PATCH", "room_players", params={"room_id": f"eq.{room_id}", "status": "eq.joined"},
+            json={"status": "left", "is_ready": False},
+        )
+        await self._request("DELETE", "player_presence", params={"room_id": f"eq.{room_id}"})
+
+    async def list_open_rooms(self) -> list[dict]:
+        rooms = await self._select(
+            "rooms",
+            {"status": "in.(lobby,playing)", "limit": "500", "select": f"{ROOM_COLUMNS},room_players(user_id,is_bot,status)"},
+        )
+        if not rooms:
+            return []
+        ids = ",".join(room["id"] for room in rooms)
+        presence = await self._select(
+            "player_presence", {"room_id": f"in.({ids})", "select": "room_id,user_id,last_seen_at"}
+        )
+        seen = {(row["room_id"], row["user_id"]): row["last_seen_at"] for row in presence}
+        for room in rooms:
+            members = room.pop("room_players", None) or []
+            room["humans_seen"] = [
+                seen.get((room["id"], m["user_id"]))
+                for m in members if m["status"] == "joined" and not m["is_bot"]
+            ]
+        return rooms
 
     async def list_players(self, room_id: str) -> list[dict]:
         players = await self._select(

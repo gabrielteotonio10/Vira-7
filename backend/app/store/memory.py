@@ -342,6 +342,33 @@ class MemoryStore:
             self._touch(room)
             return {"left": True, "closed": closed, "host_id": None if closed else room["host_id"]}
 
+    async def close_room(self, room_id: str) -> None:
+        async with self._lock:
+            room = self.rooms.get(room_id)
+            if not room:
+                return
+            room["status"] = "closed"
+            room["current_game_id"] = None
+            for player in self._joined(room_id):
+                player["status"] = "left"
+                player["is_ready"] = False
+                self.presence.pop((room_id, player["user_id"]), None)
+            self._touch(room)
+
+    async def list_open_rooms(self) -> list[dict]:
+        """Salas em andamento (lobby ou partida) com o último sinal de cada pessoa."""
+        out = []
+        for room in self.rooms.values():
+            if room["status"] not in ("lobby", "playing"):
+                continue
+            row = copy.deepcopy(room)
+            row["humans_seen"] = [
+                iso(self.presence.get((room["id"], p["user_id"])))
+                for p in self._joined(room["id"]) if not p["is_bot"]
+            ]
+            out.append(row)
+        return out
+
     async def list_players(self, room_id: str) -> list[dict]:
         out = []
         for player in self._joined(room_id):
