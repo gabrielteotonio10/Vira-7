@@ -142,7 +142,8 @@
       return h(
         'header',
         { class: 'nav' },
-        this.path === '/'
+        // Só nas telas "de dentro" (sala, perfil de outro jogador): as abas do menu não precisam de seta.
+        !/^\/(sala|perfil)\/[^/]+/.test(this.path)
           ? null
           : h('button', {
               type: 'button', class: 'icon-btn nav__back', html: icon('arrowLeft'),
