@@ -65,7 +65,7 @@ test('as migrations aplicam sem erros e são idempotentes', async () => {
       }
     }
   }
-  assert.equal(migrations.length, 8);
+  assert.equal(migrations.length, 9);
 });
 
 test('cadastro cria perfil, preferências e estatísticas', async () => {
@@ -316,4 +316,63 @@ test('as tabelas de tempo real estão na publicação do Supabase Realtime', asy
     `select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by tablename`,
   )).map((r) => r.tablename);
   assert.deepEqual(tables, ['game_events', 'room_players', 'rooms']);
+});
+
+test('equipes: a sala guarda team_mode e começa sem duplas', async () => {
+  const host = await signUp('duplas_host');
+  const room = await createRoom(host, { max: 4 });
+  assert.equal(room.team_mode, false);
+  await db.query(`update rooms set team_mode = true where id = $1`, [room.id]);
+  assert.equal((await one(`select team_mode from rooms where id = $1`, [room.id])).team_mode, true);
+});
+
+test('amigos: um par de pessoas tem uma só linha, em qualquer ordem', async () => {
+  const [a, b] = await Promise.all([signUp('amigo_a'), signUp('amigo_b')]);
+  await db.query(`insert into friendships (requester_id, addressee_id) values ($1, $2)`, [a, b]);
+  await assert.rejects(db.query(`insert into friendships (requester_id, addressee_id) values ($1, $2)`, [b, a]), /friendships_pair_key/);
+  await assert.rejects(db.query(`insert into friendships (requester_id, addressee_id) values ($1, $1)`, [a]), /friendships_not_self/);
+  await assert.rejects(
+    db.query(`insert into friendships (requester_id, addressee_id, status) values ($1, $2, 'x')`, [a, (await signUp('amigo_c'))]),
+    /friendships_status_valid/,
+  );
+});
+
+test('amigos: RLS mostra o pedido só para as duas pessoas e ninguém escreve direto', async () => {
+  const [a, b, c] = await Promise.all([signUp('rls_am_a'), signUp('rls_am_b'), signUp('rls_am_c')]);
+  await db.query(`insert into friendships (requester_id, addressee_id) values ($1, $2)`, [a, b]);
+  for (const [user, expected] of [[a, 1], [b, 1], [c, 0]]) {
+    await as('authenticated', user, async () => {
+      const found = await rows(`select id from friendships where requester_id = $1`, [a]);
+      assert.equal(found.length, expected);
+    });
+  }
+  await as('authenticated', a, async () => {
+    await assert.rejects(db.query(`update friendships set status = 'accepted'`), /permission denied/);
+    await assert.rejects(db.query(`delete from friendships`), /permission denied/);
+  });
+});
+
+test('espectadores: uma sala por pessoa e a RLS libera a sala e a partida para quem assiste', async () => {
+  const [a, b, spectator, outsider] = await Promise.all(['esp_a', 'esp_b', 'esp_c', 'esp_d'].map(signUp));
+  const room = await createRoom(a, { max: 2 });
+  await one(`select * from vira7_join_room($1, $2)`, [room.id, b]);
+  const gameId = await startGame(room);
+
+  await db.query(`insert into room_spectators (room_id, user_id) values ($1, $2)`, [room.id, spectator]);
+  const other = await createRoom(outsider);
+  await assert.rejects(
+    db.query(`insert into room_spectators (room_id, user_id) values ($1, $2)`, [other.id, spectator]),
+    /room_spectators_one_room_key/,
+  );
+
+  await as('authenticated', spectator, async () => {
+    assert.equal((await rows(`select id from rooms where id = $1`, [room.id])).length, 1);
+    assert.equal((await rows(`select id from games where id = $1`, [gameId])).length, 1);
+    assert.ok((await rows(`select seq from game_events where game_id = $1`, [gameId])).length >= 1);
+    await assert.rejects(db.query(`select * from room_spectators`), /permission denied/);
+    await assert.rejects(db.query(`insert into room_spectators (room_id, user_id) values ($1, $2)`, [room.id, spectator]), /permission denied/);
+  });
+  await as('authenticated', outsider, async () => {
+    assert.equal((await rows(`select id from games where id = $1`, [gameId])).length, 0);
+  });
 });
