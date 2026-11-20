@@ -65,7 +65,7 @@ test('as migrations aplicam sem erros e são idempotentes', async () => {
       }
     }
   }
-  assert.equal(migrations.length, 9);
+  assert.equal(migrations.length, 10);
 });
 
 test('cadastro cria perfil, preferências e estatísticas', async () => {
@@ -315,7 +315,7 @@ test('as tabelas de tempo real estão na publicação do Supabase Realtime', asy
   const tables = (await rows(
     `select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by tablename`,
   )).map((r) => r.tablename);
-  assert.deepEqual(tables, ['game_events', 'room_players', 'rooms']);
+  assert.deepEqual(tables, ['game_events', 'room_players', 'room_spectators', 'rooms']);
 });
 
 test('equipes: a sala guarda team_mode e começa sem duplas', async () => {
@@ -369,10 +369,63 @@ test('espectadores: uma sala por pessoa e a RLS libera a sala e a partida para q
     assert.equal((await rows(`select id from rooms where id = $1`, [room.id])).length, 1);
     assert.equal((await rows(`select id from games where id = $1`, [gameId])).length, 1);
     assert.ok((await rows(`select seq from game_events where game_id = $1`, [gameId])).length >= 1);
-    await assert.rejects(db.query(`select * from room_spectators`), /permission denied/);
+    // Quem está na sala enxerga a lista de quem assiste (e recebe as mudanças pelo Realtime), só dela.
+    assert.deepEqual((await rows(`select user_id from room_spectators`)).map((r) => r.user_id), [spectator]);
     await assert.rejects(db.query(`insert into room_spectators (room_id, user_id) values ($1, $2)`, [room.id, spectator]), /permission denied/);
   });
   await as('authenticated', outsider, async () => {
     assert.equal((await rows(`select id from games where id = $1`, [gameId])).length, 0);
   });
+});
+
+test('0010: salas guardam baralho e privacidade para amigos; CPUs guardam o nível', async () => {
+  const host = await signUp('dez_host');
+  const room = await createRoom(host, { max: 4 });
+  assert.equal(room.friends_join, false);
+  assert.equal(room.deck_version, 2);
+  await db.query(`update rooms set deck_version = 1, friends_join = true where id = $1`, [room.id]);
+  await assert.rejects(db.query(`update rooms set deck_version = 3 where id = $1`, [room.id]), /rooms_deck_version_valid/);
+
+  const bot = await one(`select * from vira7_add_bot($1, 'Rita', 'coruja')`, [room.id]);
+  await db.query(`update room_players set bot_level = 'bold' where id = $1`, [bot.id]);
+  await assert.rejects(db.query(`update room_players set bot_level = 'furiosa' where id = $1`, [bot.id]), /bot_level_valid/);
+});
+
+test('0010: vira7_swap_seats troca os assentos de dois jogadores sem quebrar a unicidade', async () => {
+  const [a, b] = await Promise.all([signUp('troca_a'), signUp('troca_b')]);
+  const room = await createRoom(a, { max: 4 });
+  const pb = await one(`select * from vira7_join_room($1, $2)`, [room.id, b]);
+  const pa = await one(`select id, seat from room_players where room_id = $1 and user_id = $2`, [room.id, a]);
+  assert.deepEqual([pa.seat, pb.seat], [0, 1]);
+
+  await db.query(`select vira7_swap_seats($1, $2, $3)`, [room.id, pa.id, pb.id]);
+  const after = await rows(`select id, seat, status from room_players where room_id = $1 order by seat`, [room.id]);
+  assert.deepEqual(after.map((r) => [r.id, r.seat, r.status]), [[pb.id, 0, 'joined'], [pa.id, 1, 'joined']]);
+
+  await assert.rejects(
+    db.query(`select vira7_swap_seats($1, $2, $3)`, [room.id, pa.id, '00000000-0000-0000-0000-000000000000']),
+    /PLAYER_NOT_FOUND/,
+  );
+  await as('authenticated', a, async () => {
+    await assert.rejects(db.query(`select vira7_swap_seats($1, $2, $3)`, [room.id, pa.id, pb.id]), /permission denied/);
+  });
+});
+
+test('0010: vira7_prune_games apaga eventos e segredos antigos e mantém resultados', async () => {
+  const [a, b] = await Promise.all([signUp('prune_a'), signUp('prune_b')]);
+  const room = await createRoom(a, { max: 2 });
+  await one(`select * from vira7_join_room($1, $2)`, [room.id, b]);
+  const gameId = await startGame(room);
+  await db.query(`update games set status = 'finished', finished_at = now() - interval '10 days' where id = $1`, [gameId]);
+
+  const before = await one(`select count(*)::int as n from game_events where game_id = $1`, [gameId]);
+  assert.ok(before.n >= 1);
+  const recent = await one(`select vira7_prune_games(30) as r`);
+  assert.deepEqual(recent.r, { events: 0, secrets: 0 }, 'dentro do prazo nada some');
+
+  const gone = await one(`select vira7_prune_games(7) as r`);
+  assert.equal(gone.r.events, before.n);
+  assert.equal((await one(`select count(*)::int as n from game_events where game_id = $1`, [gameId])).n, 0);
+  assert.equal((await one(`select count(*)::int as n from game_secrets where game_id = $1`, [gameId])).n, 0);
+  assert.equal((await one(`select count(*)::int as n from games where id = $1`, [gameId])).n, 1, 'o resumo da partida fica');
 });
