@@ -18,6 +18,7 @@ Jogue com amigos em qualquer lugar (salas privadas por código ou salas pública
 - **Lobby**: participantes, quem está pronto, quem está conectado, CPUs para completar a mesa, expulsão e troca de regras pelo anfitrião.
 - **Regras configuráveis**: meta de 50 a 500 pontos, 2 a 8 jogadores e tempo por jogada (ou sem tempo).
 - **Desconexões**: quem perde a conexão ou estoura o tempo tem a jogada feita pelo servidor e pode voltar para a partida. Quem sai abandona; a partida continua para os outros.
+- **Sem sala fantasma**: se o anfitrião sai do lobby, a sala fecha; salas em que ninguém dá sinal há 3 minutos são fechadas sozinhas.
 - **Contas**: cadastro, login, confirmação de e-mail e recuperação de senha pelo Supabase Auth.
 - **Perfil**: nome de usuário, 10 personagens (bichinhos), estatísticas, histórico de partidas e ranking.
 - **Mesa**: baralho no centro, adversários em volta e você embaixo, com cartas voando, partículas, confete e sons sintetizados. O visual é de jogo de tabuleiro impresso: papel creme, contorno de tinta, cores chapadas e sombras duras, com as fontes Lilita One e Figtree.
@@ -36,12 +37,13 @@ Jogue com amigos em qualquer lugar (salas privadas por código ou salas pública
 | --- | --- | --- |
 | Números 0 a 12 | 79 | Valem o próprio número. O número N aparece N vezes (e há uma carta 0). |
 | +2, +4, +6, +8, +10 | 5 | Somam pontos. Não contam para o Vira 7 e não estouram. |
-| ×2 | 1 | Dobra a soma dos números (não dobra bônus nem o Vira 7). |
+| −2, −4, −6 | 5 | Penalidades (uma −6, duas −4, duas −2): descontam da rodada, que nunca fica abaixo de 0. |
+| ×2 | 1 | Dobra a soma dos números (não dobra bônus, penalidades nem o Vira 7). |
 | Congelar | 3 | O alvo guarda os pontos e sai da rodada. |
 | Vira Três | 3 | O alvo é obrigado a virar as próximas 3 cartas. |
 | Segunda Chance | 3 | Anula um estouro. Só é possível ter uma por vez. |
 
-Pontuação: soma dos números → ×2 → bônus → +15 do Vira 7. Exemplo: (8 + 6 + 3) × 2 + 4 = **38**.
+Pontuação: soma dos números → ×2 → bônus e penalidades → +15 do Vira 7 (mínimo 0 na rodada). Exemplo: (8 + 6 + 3) × 2 + 4 = **38**.
 
 ## Como rodar
 
@@ -95,6 +97,7 @@ python scripts/smoke_online.py
 | `SERVE_FRONTEND` | não | `true` (padrão): a API serve o frontend. |
 | `REFEREE_ENABLED` | não | `true` (padrão): árbitro de tempo de turno e desconexões. |
 | `DISCONNECT_GRACE_SECONDS` | não | Segundos sem sinal até o servidor jogar pelo jogador (padrão 40). |
+| `STALE_ROOM_SECONDS` | não | Segundos sem sinal de ninguém até a sala ser fechada (padrão 180; 0 desliga). |
 | `RATE_LIMIT_ENABLED` | não | `true` (padrão): limite de requisições por IP e por usuário. |
 | `TRUST_PROXY` | não | `false` (padrão). Ligue só atrás de um proxy/CDN confiável: o limite usa o IP de `X-Forwarded-For`. |
 

@@ -29,7 +29,7 @@ O motor de regras do servidor fica em `backend/app/game/`:
 
 | Arquivo | Papel |
 | --- | --- |
-| `cards.py` | As 94 cartas e o embaralhamento a partir de uma semente. |
+| `cards.py` | As 99 cartas (94 na versão 1 do baralho, que partidas antigas ainda usam) e o embaralhamento a partir de uma semente. |
 | `scoring.py` | Pontuação oficial e condição de vitória. |
 | `engine.py` | Uma rodada: distribuição, turnos, estouro, Congelar, Vira Três, Segunda Chance, Vira 7. |
 | `ai.py` | Decisões das CPUs e a jogada automática de quem estourou o tempo. |
@@ -80,6 +80,7 @@ O lobby usa o mesmo canal: mudanças em `rooms` e `room_players` avisam a tela p
 - O cliente envia um sinal de presença a cada 10 s (`/heartbeat`).
 - Um **árbitro** (`services/referee.py`) roda em segundo plano na API: se o prazo venceu ou o jogador da vez está sem sinal há mais de 40 s, o servidor joga por ele (para, ou escolhe o alvo). Qualquer cliente também pode pedir essa conferência (`/tick`); o servidor só age se for verdade.
 - Quem volta reencontra a sala e a partida pelo `GET /api/me` e retoma do ponto atual.
+- O **anfitrião que sai do lobby** fecha a sala para todos. E a cada ~30 s o árbitro fecha as salas em que ninguém dá sinal há `STALE_ROOM_SECONDS` (partidas assim terminam como `abandoned`, sem vencedor e sem estatísticas).
 - Quem **sai** da sala durante a partida a abandona: fica fora das próximas rodadas. Se sobrar uma pessoa só, ela vence; se não sobrar ninguém, a partida é encerrada.
 
 ## Banco de dados

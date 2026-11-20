@@ -7,10 +7,15 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### Adicionado
 
+- **Cartas de penalidade**: uma −6, duas −4 e duas −2. O baralho passa de 94 para 99 cartas. O ×2 não dobra penalidades e a pontuação da rodada nunca fica abaixo de 0. Partidas já em andamento continuam com o baralho antigo (`deckVersion`).
+- **Seta de voltar** na barra de navegação (e na mesa, no lugar do ícone de casa). Na sala ela pede confirmação antes de sair.
+- Limpeza automática de salas abandonadas (`STALE_ROOM_SECONDS`, padrão 180 s): sem sinal de ninguém, a sala é fechada e a partida em andamento termina sem vencedor e sem pontuar.
 - Hospedagem gratuita no Render: blueprint `render.yaml` (API e página no mesmo endereço) e guia passo a passo em `docs/HOSPEDAGEM.md`.
 
 ### Alterado
 
+- **Ranking responsivo**: no celular cada jogador vira um cartão (a tabela de 7 colunas ficava cortada).
+- O anfitrião que sai do lobby **fecha a sala** para todos (antes a sala passava para outra pessoa e ficava esperando).
 - Em produção (`APP_ENV=production`) a documentação interativa da API fica desligada.
 - `/api/health` e a página inicial também respondem a HEAD, para monitores de disponibilidade gratuitos.
 
