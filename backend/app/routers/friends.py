@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
 from ..auth import AuthUser, current_user
+from ..ratelimit import user_limit
 from ..services import friends
 from . import get_store
 
@@ -21,7 +22,7 @@ async def overview(user: AuthUser = Depends(current_user), store=Depends(get_sto
     return await friends.overview(store, user.id)
 
 
-@router.post("/requests", status_code=201)
+@router.post("/requests", status_code=201, dependencies=[Depends(user_limit("friend_request"))])
 async def request_friend(
     body: FriendRequest, user: AuthUser = Depends(current_user), store=Depends(get_store)
 ) -> dict:
