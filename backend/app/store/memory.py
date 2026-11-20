@@ -51,6 +51,8 @@ class MemoryStore:
         self.secrets: dict[str, dict] = {}
         self.events: dict[str, list[dict]] = {}
         self.results: list[dict] = []
+        self.friendships: dict[str, dict] = {}
+        self.spectators: dict[str, dict] = {}  # user_id -> {room_id, joined_at}
         self._lock = asyncio.Lock()
 
     async def close(self) -> None:
@@ -114,6 +116,43 @@ class MemoryStore:
     async def get_profile(self, user_id: str) -> dict | None:
         return copy.deepcopy(self.profiles.get(user_id))
 
+    async def get_profiles(self, user_ids: list[str]) -> dict[str, dict]:
+        return {uid: copy.deepcopy(self.profiles[uid]) for uid in user_ids if uid in self.profiles}
+
+    # ------------------------------------------------------------------ amigos
+
+    @staticmethod
+    def _pair(a: str, b: str) -> frozenset:
+        return frozenset((a, b))
+
+    async def get_friendship(self, a: str, b: str) -> dict | None:
+        for row in self.friendships.values():
+            if self._pair(row["requester_id"], row["addressee_id"]) == self._pair(a, b):
+                return copy.deepcopy(row)
+        return None
+
+    async def list_friendships(self, user_id: str) -> list[dict]:
+        return [
+            copy.deepcopy(r) for r in self.friendships.values() if user_id in (r["requester_id"], r["addressee_id"])
+        ]
+
+    async def create_friend_request(self, requester: str, addressee: str) -> dict:
+        if await self.get_friendship(requester, addressee):
+            raise StoreError("FRIENDSHIP_EXISTS")
+        row = {
+            "id": str(uuid.uuid4()), "requester_id": requester, "addressee_id": addressee,
+            "status": "pending", "created_at": iso(now()),
+        }
+        self.friendships[row["id"]] = row
+        return copy.deepcopy(row)
+
+    async def accept_friendship(self, friendship_id: str) -> None:
+        if friendship_id in self.friendships:
+            self.friendships[friendship_id]["status"] = "accepted"
+
+    async def delete_friendship(self, friendship_id: str) -> None:
+        self.friendships.pop(friendship_id, None)
+
     async def get_profile_by_username(self, username: str) -> dict | None:
         for profile in self.profiles.values():
             if profile["username"].lower() == username.lower():
@@ -140,10 +179,12 @@ class MemoryStore:
     async def get_stats(self, user_id: str) -> dict:
         return copy.deepcopy(self.stats.get(user_id) or new_stats(user_id))
 
-    async def leaderboard(self, limit: int = 20) -> list[dict]:
+    async def leaderboard(self, limit: int = 20, user_ids: list[str] | None = None) -> list[dict]:
         rows = []
         for stats in self.stats.values():
             if stats["games_played"] <= 0:
+                continue
+            if user_ids is not None and stats["user_id"] not in user_ids:
                 continue
             profile = self.profiles[stats["user_id"]]
             rows.append(
@@ -210,6 +251,7 @@ class MemoryStore:
                 "id": str(uuid.uuid4()), "code": code, "name": name, "host_id": host_id,
                 "visibility": visibility, "mode": mode, "status": "lobby", "max_players": max_players,
                 "target_score": target_score, "turn_seconds": turn_seconds, "current_game_id": None,
+                "team_mode": False,
                 "created_at": iso(now()), "updated_at": iso(now()),
             }
             self.rooms[room["id"]] = room
@@ -342,11 +384,36 @@ class MemoryStore:
             self._touch(room)
             return {"left": True, "closed": closed, "host_id": None if closed else room["host_id"]}
 
+    # ------------------------------------------------------------------ espectadores
+
+    async def add_spectator(self, room_id: str, user_id: str) -> None:
+        self.spectators[user_id] = {"room_id": room_id, "joined_at": iso(now())}
+
+    async def remove_spectator(self, user_id: str) -> bool:
+        return self.spectators.pop(user_id, None) is not None
+
+    async def spectator_membership(self, user_id: str) -> dict | None:
+        entry = self.spectators.get(user_id)
+        room = self.rooms.get(entry["room_id"]) if entry else None
+        if not room or room["status"] not in ("lobby", "playing"):
+            return None
+        return {"room": copy.deepcopy(room), "player": None, "spectator": True}
+
+    async def list_spectators(self, room_id: str) -> list[dict]:
+        rows = [
+            {"user_id": uid, "joined_at": e["joined_at"], "username": self.profiles[uid]["username"],
+             "avatar": self.profiles[uid]["avatar"]}
+            for uid, e in self.spectators.items() if e["room_id"] == room_id and uid in self.profiles
+        ]
+        return sorted(rows, key=lambda r: r["joined_at"])
+
     async def close_room(self, room_id: str) -> None:
         async with self._lock:
             room = self.rooms.get(room_id)
             if not room:
                 return
+            for uid in [u for u, e in self.spectators.items() if e["room_id"] == room_id]:
+                del self.spectators[uid]
             room["status"] = "closed"
             room["current_game_id"] = None
             for player in self._joined(room_id):
