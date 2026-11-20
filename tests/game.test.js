@@ -168,7 +168,7 @@ test('o carteador gira a cada rodada e o jogador à esquerda começa', async () 
   assert.deepEqual(starts, ['C', 'A']);
 });
 
-test('a cada nova rodada todas as 94 cartas voltam ao monte e são reembaralhadas', async () => {
+test('a cada nova rodada todas as 99 cartas voltam ao monte e são reembaralhadas', async () => {
   const { game, agent } = setup(['A', 'B', 'C'], [], {});
   game.deck = new F7.Deck({ rng: F7.utils.createRng(11) });
 
@@ -188,7 +188,7 @@ test('a cada nova rodada todas as 94 cartas voltam ao monte e são reembaralhada
 
   assert.equal(snapshots.length, 2);
   snapshots.forEach((s) => {
-    assert.deepEqual(s, { drawn: 94, used: 0, onTable: 0, count: 94 });
+    assert.deepEqual(s, { drawn: 99, used: 0, onTable: 0, count: 99 });
   });
 });
 
@@ -209,7 +209,7 @@ test('a probabilidade de estourar considera as cartas restantes', () => {
   assert.equal(game.bustChance(A), 0.5);
 });
 
-test('partidas completas entre CPUs respeitam as regras e conservam as 94 cartas', async () => {
+test('partidas completas entre CPUs respeitam as regras e conservam as 99 cartas', async () => {
   for (let seed = 1; seed <= 150; seed++) {
     const rng = F7.utils.createRng(seed);
     const playerCount = 2 + (seed % 7);
@@ -219,7 +219,7 @@ test('partidas completas entre CPUs respeitam as regras e conservam as 94 cartas
       onEvent: async (type, payload, game) => {
         const onTable = game.players.reduce((n, p) => n + p.cardCount(), 0);
         const total = onTable + game.deck.size + game.deck.discardPile.length;
-        assert.equal(total, 94, `semente ${seed}: ${total} cartas após "${type}"`);
+        assert.equal(total, 99, `semente ${seed}: ${total} cartas após "${type}"`);
         if (type === 'roundStart') rounds = payload.round;
         game.players.forEach((p) => {
           assert.ok(p.numbers.length === new Set(p.numbers.map((n) => n.value)).size, 'números repetidos na mão');

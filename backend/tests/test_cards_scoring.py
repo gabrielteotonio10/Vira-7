@@ -9,7 +9,7 @@ from app.game.cards import Deck, create_cards
 from .helpers import num, plus, times2
 
 
-def test_baralho_tem_as_94_cartas_oficiais():
+def test_baralho_tem_as_99_cartas_oficiais():
     cards = create_cards()
     assert len(cards) == C.DECK_SIZE
     assert len({card["id"] for card in cards}) == C.DECK_SIZE
@@ -25,11 +25,33 @@ def test_cada_numero_n_aparece_n_vezes():
 
 def test_modificadores_e_acoes():
     cards = create_cards()
-    adds = [c["value"] for c in cards if c["type"] == "modifier" and c["op"] == "add"]
+    adds = [c["value"] for c in cards if c["type"] == "modifier" and c["op"] == "add" and c["value"] > 0]
     assert adds == [2, 4, 6, 8, 10]
     assert sum(1 for c in cards if c["type"] == "modifier" and c["op"] == "multiply") == 1
     for action in ("freeze", "flipThree", "secondChance"):
         assert sum(1 for c in cards if c.get("action") == action) == 3
+
+
+def test_penalidades_ficam_no_fim_da_lista():
+    cards = create_cards()
+    negatives = [c for c in cards if c["type"] == "modifier" and c["value"] < 0]
+    assert [c["value"] for c in negatives] == [-6, -4, -4, -2, -2]
+    assert cards[-5:] == negatives
+    assert cards[98]["id"] == "c99"
+
+
+def test_baralho_da_versao_1_nao_tem_penalidades():
+    """Partidas antigas gravadas antes das penalidades continuam com as 94 cartas."""
+    old = create_cards(version=1)
+    assert len(old) == 94
+    assert not any(c["type"] == "modifier" and c["value"] < 0 for c in old)
+    assert old == create_cards()[:94]
+
+
+def test_penalidades_descontam_e_o_total_nunca_e_negativo():
+    assert scoring.compute([num(8), num(6)], [plus(-4), plus(-2)])["total"] == 8
+    assert scoring.compute([num(5), num(6)], [times2(), plus(-6)])["total"] == 16, "o x2 não dobra penalidades"
+    assert scoring.compute([num(2)], [plus(-6), plus(-4)])["total"] == 0
 
 
 def test_ids_das_cartas_coincidem_com_o_cliente():

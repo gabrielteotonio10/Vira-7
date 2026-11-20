@@ -138,15 +138,15 @@ def test_carteador_gira_e_todas_as_cartas_voltam_ao_monte_a_cada_rodada():
     reshuffles = [e for e in events if e["type"] == "reshuffle" and e["payload"]["newRound"]]
     assert len(reshuffles) == 2
     for event in reshuffles:
-        assert event["payload"]["count"] == 94
-        assert event["state"]["deck"] == {"size": 94, "totalAvailable": 94}
+        assert event["payload"]["count"] == 99
+        assert event["state"]["deck"] == {"size": 99, "totalAvailable": 99}
 
 
 def test_o_estado_publico_nunca_revela_a_ordem_do_monte():
     session = GameSession.create(humans("A", "B"), base_seed=3)
     blob = json.dumps([session.public_state(), session.drain_events()])
     assert "seed" not in blob and "draw_pile" not in blob and "decisions" not in blob
-    assert session.public_state()["deck"]["size"] == 92
+    assert session.public_state()["deck"]["size"] == 97
 
 
 def test_jogada_fora_da_vez_e_recusada():
