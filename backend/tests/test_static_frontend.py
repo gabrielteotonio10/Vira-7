@@ -59,3 +59,30 @@ def test_modo_so_api_nao_serve_o_frontend():
     with TestClient(create_app(settings, MemoryStore())) as client:
         assert client.get("/").status_code == 404
         assert client.get("/api/health").json()["status"] == "ok"
+
+
+def test_app_instalavel_serve_manifesto_e_service_worker_na_raiz(site):
+    manifest = site.get("/manifest.webmanifest")
+    assert manifest.status_code == 200 and manifest.headers["content-type"].startswith("application/manifest+json")
+    data = manifest.json()
+    assert data["display"] == "standalone" and data["start_url"] == "/"
+    sizes = {icon["sizes"] for icon in data["icons"]}
+    assert {"192x192", "512x512"} <= sizes
+    assert any(icon.get("purpose") == "maskable" for icon in data["icons"])
+    for icon in data["icons"]:
+        assert site.get("/" + icon["src"]).status_code == 200, icon["src"]
+
+    worker = site.get("/sw.js")
+    assert worker.status_code == 200 and "javascript" in worker.headers["content-type"]
+    assert worker.headers["service-worker-allowed"] == "/"
+    assert "/api/" in worker.text, "o service worker nunca guarda respostas da API"
+
+
+def test_todo_arquivo_citado_na_pagina_existe(site):
+    import re
+
+    html = site.get("/").text
+    paths = re.findall(r'(?:src|href)="((?:js|css|assets)/[^"]+)"', html)
+    assert len(paths) > 40
+    for path in paths:
+        assert site.get("/" + path).status_code == 200, path
