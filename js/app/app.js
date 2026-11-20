@@ -12,6 +12,8 @@
 
   const DEFAULT_SETTINGS = {
     volume: 0.6, sound: true, animationSpeed: 1, reducedMotion: false, showRisk: true, confirmStay: false,
+    theme: 'light', tableTheme: 'felt', cardBack: 'classic', colorblind: false, vibration: true, handsFree: false,
+    language: 'pt',
   };
 
   const App = {
@@ -159,6 +161,7 @@
           'nav',
           { class: 'nav__links', 'aria-label': 'Principal' },
           link('/', 'Jogar', 'play'),
+          link('/amigos', 'Amigos', 'users'),
           link('/ranking', 'Ranking', 'trophy'),
           link('/historico', 'Histórico', 'history'),
           link('/config', 'Ajustes', 'menu'),
@@ -255,10 +258,20 @@
       F7.FX.state.reduced = merged.reducedMotion || system;
       document.documentElement.classList.toggle('reduced-motion', merged.reducedMotion);
       if (this.hud) this.hud.showRisk = merged.showRisk;
+      F7.Theme.apply(merged);
+      F7.Haptics.setEnabled(merged.vibration);
+      F7.Voice.setEnabled(merged.handsFree);
       return merged;
     },
 
+    /** Sair da conta, sempre pedindo confirmação (a sessão expirada usa Auth.signOut direto). */
     async signOut() {
+      const ok = await F7.Modals.confirm({
+        title: 'Sair da conta?',
+        text: 'Você precisará entrar de novo com seu e-mail e senha para jogar online.',
+        confirmLabel: 'Sair da conta',
+      });
+      if (!ok) return;
       this.state.me = null;
       await F7.Auth.signOut();
       this.navigate('/entrar');
@@ -273,7 +286,7 @@
       if (minutes < 1) return 'agora mesmo';
       if (minutes < 60) return `há ${minutes} min`;
       if (minutes < 24 * 60) return `há ${Math.round(minutes / 60)} h`;
-      return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+      return date.toLocaleDateString(F7.i18n.locale, { day: '2-digit', month: 'short', year: 'numeric' });
     },
   };
 

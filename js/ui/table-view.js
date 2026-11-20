@@ -96,10 +96,13 @@
 
       for (let i = 0; i < RULES.FLIP7_UNIQUE_COUNT; i++) parts.pips.appendChild(h('i', { class: 'pip' }));
 
+      const teamClass = player.team === null || player.team === undefined ? '' : ` seat--team team-${'abcd'[player.team] || 'a'}`;
+      if (teamClass) parts.tags.appendChild(h('span', { class: 'badge badge--team', title: 'Dupla' }, F7.teamName(player.team)));
+
       const el = h(
         'article',
         {
-          class: 'seat',
+          class: `seat${teamClass}`,
           dataset: { playerId: player.id },
           style: { '--player-color': player.color, '--seat-index': index },
           'aria-label': `Lugar de ${player.name}`,
