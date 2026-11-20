@@ -6,6 +6,7 @@ Ordem oficial:
   3. Aplica o x2 (dobra SOMENTE a soma dos números).
   4. Soma os modificadores +2…+10.
   5. Soma 15 se virou 7 números diferentes.
+  As penalidades (-2, -4, -6) entram junto dos modificadores e o total da rodada nunca é negativo.
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ def compute(numbers: Sequence[dict], modifiers: Sequence[dict], flip7: bool = Fa
     numbers_total = numbers_sum * multiplier
     flip7_bonus = C.FLIP7_BONUS if flip7 else 0
     busted = status == C.BUSTED
-    total = 0 if busted else numbers_total + modifiers_sum + flip7_bonus
+    total = 0 if busted else max(0, numbers_total + modifiers_sum + flip7_bonus)
 
     return {
         "numbersSum": numbers_sum,

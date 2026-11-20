@@ -111,13 +111,14 @@ class RoundEngine:
         target_score: int,
         seed: int | None = None,
         cards: list[Card] | None = None,
+        deck_version: int = C.DECK_VERSION,
     ) -> None:
         self.players = players
         self.round = round_number
         self.dealer_index = dealer_index % len(players)
         self.target_score = target_score
         self.rng = random.Random(seed)
-        self.deck = Deck(self.rng, cards)
+        self.deck = Deck(self.rng, cards, deck_version)
         self.phase = "deal"
         self.current_seat: int | None = None
         self.round_over = False
@@ -221,7 +222,7 @@ class RoundEngine:
             if player.absent:
                 player.status = C.STAYED
 
-        # Toda rodada começa com as 94 cartas no monte, embaralhadas.
+        # Toda rodada começa com todas as cartas no monte, embaralhadas.
         if self.round > 1:
             self._emit("reshuffle", count=self.deck.size, newRound=True)
         self._emit("roundStart", round=self.round, dealer=self.dealer.seat)
