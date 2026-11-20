@@ -52,7 +52,7 @@ def test_recarregar_a_cada_jogada_da_o_mesmo_resultado_que_jogar_direto():
         assert GameSession.load(json.loads(saved)).results() == direct.results()
 
 
-def test_partidas_entre_cpus_terminam_e_conservam_as_94_cartas():
+def test_partidas_entre_cpus_terminam_e_conservam_as_99_cartas():
     for seed in range(1, 121):
         session = GameSession.create(humans("Humano") + bots(1 + seed % 6), base_seed=seed)
         events = session.drain_events()
@@ -65,7 +65,7 @@ def test_partidas_entre_cpus_terminam_e_conservam_as_94_cartas():
         assert [e["seq"] for e in events] == list(range(1, len(events) + 1))
         for event in events:
             state = event["state"]
-            assert table_cards(state) + state["deck"]["totalAvailable"] == 94, f"semente {seed}: {event['type']}"
+            assert table_cards(state) + state["deck"]["totalAvailable"] == 99, f"semente {seed}: {event['type']}"
             for p in state["players"]:
                 values = [card["value"] for card in p["numbers"]]
                 assert len(values) == len(set(values))
@@ -138,3 +138,24 @@ def test_prazo_do_turno_considera_o_tempo_das_animacoes():
     ms = GameSession.presentation_ms(events)
     assert ms >= 1500 + 2 * 950  # anúncio da rodada + duas cartas distribuídas
     assert GameSession.presentation_ms([{"type": "roundEnd"}] * 50) == 45_000
+
+
+def test_partida_salva_antes_das_penalidades_continua_com_94_cartas(monkeypatch):
+    """Um save antigo não tem `deckVersion`: a reconstrução precisa usar o baralho antigo."""
+    from app.game import constants as C
+
+    monkeypatch.setattr(C, "DECK_VERSION", 1)
+    old = GameSession.create(humans("A", "B"), base_seed=11)
+    monkeypatch.undo()
+    saved = json.loads(json.dumps(old.data))
+    saved.pop("deckVersion")
+
+    reloaded = GameSession.load(saved)
+    assert reloaded.awaiting == old.awaiting
+    state = reloaded.public_state()
+    assert table_cards(state) + state["deck"]["totalAvailable"] == 94
+
+    fresh = GameSession.create(humans("A", "B"), base_seed=11)
+    state = fresh.public_state()
+    assert fresh.data["deckVersion"] == 2
+    assert table_cards(state) + state["deck"]["totalAvailable"] == 99

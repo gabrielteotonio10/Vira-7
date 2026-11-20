@@ -1,4 +1,4 @@
-"""Baralho: criação das 94 cartas, embaralhamento determinístico e compra.
+"""Baralho: criação das 99 cartas, embaralhamento determinístico e compra.
 
 As cartas são dicionários simples (prontos para JSON), com o mesmo formato do cliente:
     {"id": "c12", "type": "number", "value": 5}
@@ -16,8 +16,11 @@ from . import constants as C
 Card = dict
 
 
-def create_cards() -> list[Card]:
-    """Lista completa de cartas, sem embaralhar. Os ids coincidem com os do cliente."""
+def create_cards(version: int = C.DECK_VERSION) -> list[Card]:
+    """Lista completa de cartas, sem embaralhar. Os ids coincidem com os do cliente.
+
+    A versão 1 (94 cartas) existe só para reconstruir partidas antigas. As penalidades da
+    versão 2 ficam no fim da lista, então os ids das outras cartas não mudam."""
     cards: list[Card] = []
 
     def push(card: Card) -> None:
@@ -34,6 +37,10 @@ def create_cards() -> list[Card]:
     for action, copies in C.ACTION_COPIES.items():
         for _ in range(copies):
             push({"type": C.ACTION, "action": action})
+
+    if version >= 2:
+        for value in C.NEGATIVE_MODIFIERS:
+            push({"type": C.MODIFIER, "op": C.ADD, "value": value})
 
     return cards
 
@@ -54,11 +61,11 @@ class Deck:
     """Monte de compra. Não existe pilha de descarte visível: `used` guarda as cartas
     que já saíram de jogo na rodada, só para o caso de o monte acabar antes do fim."""
 
-    def __init__(self, rng: random.Random, cards: list[Card] | None = None) -> None:
+    def __init__(self, rng: random.Random, cards: list[Card] | None = None, version: int = C.DECK_VERSION) -> None:
         self.rng = rng
         self.used: list[Card] = []
         # `cards` monta um baralho em ordem fixa (testes): a primeira é a primeira comprada.
-        self.draw_pile: list[Card] = list(reversed(cards)) if cards is not None else shuffle(create_cards(), rng)
+        self.draw_pile: list[Card] = list(reversed(cards)) if cards is not None else shuffle(create_cards(version), rng)
 
     @property
     def size(self) -> int:

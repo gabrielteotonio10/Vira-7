@@ -5,7 +5,7 @@ const { num, freeze } = require('./helpers/cards');
 
 const F7 = loadCore('constants', 'utils', 'deck');
 
-test('o baralho tem as 94 cartas oficiais', () => {
+test('o baralho tem as 99 cartas oficiais', () => {
   const cards = F7.Deck.createCards();
   assert.equal(cards.length, F7.RULES.DECK_SIZE);
   assert.equal(new Set(cards.map((c) => c.id)).size, cards.length, 'ids devem ser únicos');
@@ -23,10 +23,19 @@ test('cada número N aparece N vezes, com uma carta 0 e uma carta 1', () => {
 test('modificadores: +2, +4, +6, +8, +10 e x2', () => {
   const mods = F7.Deck.createCards().filter((c) => c.type === 'modifier');
   assert.deepEqual(
-    mods.filter((c) => c.op === 'add').map((c) => c.value),
+    mods.filter((c) => c.op === 'add' && c.value > 0).map((c) => c.value),
     [2, 4, 6, 8, 10],
   );
   assert.equal(mods.filter((c) => c.op === 'multiply').length, 1);
+});
+
+test('penalidades: uma -6, duas -4 e duas -2, sempre no fim da lista', () => {
+  const cards = F7.Deck.createCards();
+  const negatives = cards.filter((c) => c.type === 'modifier' && c.value < 0);
+  assert.deepEqual(negatives.map((c) => c.value), [-6, -4, -4, -2, -2]);
+  assert.deepEqual(cards.slice(-5), negatives, 'ficam nos últimos ids (c95 a c99)');
+  assert.equal(cards[93].id, 'c94');
+  assert.equal(cards[98].id, 'c99');
 });
 
 test('três cópias de cada carta de ação', () => {

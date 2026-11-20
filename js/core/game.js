@@ -194,7 +194,7 @@
       this.currentPlayer = null;
       this.players.forEach((p) => p.resetRound());
 
-      // Toda rodada começa com as 94 cartas de volta ao monte, embaralhadas.
+      // Toda rodada começa com todas as cartas de volta ao monte, embaralhadas.
       if (this.round > 1) {
         this.deck.reshuffle();
         await this.emit('reshuffle', { count: this.deck.size, newRound: true });

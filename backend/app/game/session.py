@@ -114,6 +114,7 @@ class GameSession:
             "winner": None,
             "finishReason": None,
             "baseSeed": base_seed,
+            "deckVersion": C.DECK_VERSION,
             "round": None,
         }
         session = cls(data)
@@ -278,6 +279,11 @@ class GameSession:
             self._record(pending, value)
             self._advance(value)
 
+    def abandon(self) -> None:
+        """Encerra sem vencedor (sala fechada ou abandonada por todos)."""
+        if not self.is_over:
+            self._finish("abandoned", winner=None, reason="abandoned")
+
     # ------------------------------------------------------------------ interno
 
     def _require_pending(self) -> dict:
@@ -349,6 +355,7 @@ class GameSession:
             target_score=self.data["targetScore"],
             seed=r["seed"],
             cards=r.get("cards"),
+            deck_version=self.data.get("deckVersion", 1),
         )
         self._flow = self._engine.play()
         self._pending = None

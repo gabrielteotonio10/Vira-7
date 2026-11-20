@@ -29,6 +29,22 @@ test('somente modificadores também pontuam', () => {
   assert.equal(compute({ numbers: [], modifiers: [plus(6), plus(2)] }).total, 8);
 });
 
+test('penalidades descontam da rodada', () => {
+  const result = compute({ numbers: [num(8), num(6)], modifiers: [plus(-4), plus(-2)] });
+  assert.equal(result.modifiersSum, -6);
+  assert.equal(result.total, 8);
+});
+
+test('o x2 não dobra as penalidades', () => {
+  const result = compute({ numbers: [num(5), num(5 + 1)], modifiers: [times2(), plus(-6)] });
+  assert.equal(result.total, 22 - 6);
+});
+
+test('a rodada nunca fica abaixo de zero', () => {
+  const result = compute({ numbers: [num(2)], modifiers: [plus(-6), plus(-4)] });
+  assert.equal(result.total, 0);
+});
+
 test('quem estoura marca zero', () => {
   const result = compute({ numbers: [num(12)], modifiers: [plus(10)], status: 'busted' });
   assert.equal(result.total, 0);

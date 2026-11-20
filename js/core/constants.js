@@ -1,10 +1,11 @@
 /**
  * Vira-7 — Constantes oficiais do jogo.
  *
- * Composição do baralho (94 cartas), baseada nas regras originais do Flip 7:
+ * Composição do baralho (99 cartas), baseada nas regras originais do Flip 7:
  *  - 79 cartas numéricas: o número N aparece N vezes (12 cartas "12", 11 cartas "11"…),
  *    mais uma carta "1" e uma carta "0".
  *  - 6 modificadores: +2, +4, +6, +8, +10 e x2 (uma de cada).
+ *  - 5 penalidades: -6 (uma), -4 (duas) e -2 (duas).
  *  - 9 cartas de ação: 3x Congelar (Freeze), 3x Vira Três (Flip Three) e 3x Segunda Chance.
  */
 ((F7) => {
@@ -38,6 +39,8 @@
   const NUMBER_COPIES = Object.freeze([1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 
   const ADD_MODIFIERS = Object.freeze([2, 4, 6, 8, 10]);
+  /** Penalidades: descontam da rodada, que nunca fica abaixo de 0. */
+  const NEGATIVE_MODIFIERS = Object.freeze([-6, -4, -4, -2, -2]);
   const MULTIPLIER_VALUE = 2;
 
   const ACTION_COPIES = Object.freeze({
@@ -57,7 +60,7 @@
     FLIP_THREE_COUNT: 3,
     MIN_PLAYERS: 2,
     MAX_PLAYERS: 8,
-    DECK_SIZE: 94,
+    DECK_SIZE: 99,
   });
 
   Object.assign(F7, {
@@ -67,6 +70,7 @@
     PLAYER_STATUS,
     NUMBER_COPIES,
     ADD_MODIFIERS,
+    NEGATIVE_MODIFIERS,
     MULTIPLIER_VALUE,
     ACTION_COPIES,
     RULES,

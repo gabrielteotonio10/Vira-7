@@ -7,6 +7,7 @@
  *  3. Aplica o x2 (dobra SOMENTE a soma dos números).
  *  4. Soma os modificadores +2…+10.
  *  5. Soma o bônus de 15 pontos se virou 7 números diferentes.
+ *  As penalidades (-2, -4, -6) entram junto dos modificadores; o total da rodada nunca é negativo.
  */
 ((F7) => {
   'use strict';
@@ -29,7 +30,7 @@
     const numbersTotal = numbersSum * multiplier;
     const flip7Bonus = flip7 ? F7.RULES.FLIP7_BONUS : 0;
     const busted = status === S.BUSTED;
-    const total = busted ? 0 : numbersTotal + modifiersSum + flip7Bonus;
+    const total = busted ? 0 : Math.max(0, numbersTotal + modifiersSum + flip7Bonus);
 
     return { numbersSum, multiplier, numbersTotal, modifiersSum, flip7Bonus, total, busted };
   }
