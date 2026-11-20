@@ -513,6 +513,32 @@
   "Mensagem desconhecida.": "Unknown message.",
   "Calma! Espere um instante para enviar outra.": "Easy! Wait a moment before sending another.",
   "Não foi possível concluir a operação.": "Couldn't complete the operation.",
+  "Salvo neste aparelho (sem conexão com o servidor)": "Saved on this device (no connection to the server)",
+  "Aprender a jogar (tutorial)": "Learn to play (tutorial)",
+  "Passe o aparelho": "Pass the device",
+  "Ver perfil": "View profile",
+  "Até 10 salas sorteadas · atualize para ver outras": "Up to 10 random rooms · refresh to see others",
+  "Vocês são amigos ✓": "You're friends ✓",
+  "Pedido enviado": "Request sent",
+  "Aceitar pedido de amizade": "Accept friend request",
+  "Adicionar amigo": "Add friend",
+  "Tutorial": "Tutorial",
+  "Pronto!": "Done!",
+  "Jogar de verdade": "Play for real",
+  "Distribuindo as cartas…": "Dealing the cards…",
+  "Olhe a mesa…": "Watch the table…",
+  "A Rita está virando 3 cartas…": "Rita is flipping 3 cards…",
+  "Fim da rodada! Veja o placar e toque no botão.": "End of the round! Check the score and tap the button.",
+  "Vamos jogar uma rodada de treino contra a Rita. Em cada passo, só o botão destacado funciona. Para sair, use a seta no canto.": "Let's play a practice round against Rita. At each step, only the highlighted button works. To leave, use the arrow in the corner.",
+  "Você recebeu um 5. Na sua vez, toque em VIRAR para comprar mais uma carta e somar pontos.": "You got a 5. On your turn, tap FLIP to draw another card and add points.",
+  "Você virou VIRA TRÊS! Escolha alguém ativo para ser obrigado a virar 3 cartas seguidas. Toque na Rita.": "You flipped FLIP THREE! Choose an active player who must flip 3 cards in a row. Tap Rita.",
+  "A Rita virou 1, 4 e 6 sem estourar e decidiu parar. Sua vez de novo: toque em VIRAR.": "Rita flipped 1, 4 and 6 without busting and decided to stay. Your turn again: tap FLIP.",
+  "Agora você tem 5 e 7. Este medidor mostra a chance de ESTOURAR (virar um número que você já tem e zerar a rodada). Está baixa: vire de novo.": "Now you have 5 and 7. This meter shows the chance to BUST (flipping a number you already have and zeroing the round). It's low: flip again.",
+  "Um ×2! Ele dobra a soma dos seus números no fim da rodada. Continue: VIRAR.": "A ×2! It doubles the sum of your numbers at the end of the round. Keep going: FLIP.",
+  "Segunda Chance guardada: se você repetir um número, ela é gasta no lugar do estouro. Vire mais uma.": "Second Chance kept: if you repeat a number, it's used up instead of busting. Flip one more.",
+  "Outro 7! Seria estouro, mas a Segunda Chance salvou você: as duas cartas foram descartadas. Vire de novo.": "Another 7! That's a bust, but Second Chance saved you: both cards were discarded. Flip again.",
+  "Penalidade −2: tira pontos da rodada (que nunca fica abaixo de 0) e nunca estoura você. Vire mais uma.": "Penalty −2: takes points from the round (which never goes below 0) and never busts you. Flip one more.",
+  "É isso! Também existem Congelar (o alvo para na hora) e o VIRA 7: juntar 7 números diferentes vale +15 e encerra a rodada. Ganha quem passar de 200 pontos primeiro.": "That's it! There's also Freeze (the target stays right away) and FLIP 7: collecting 7 different numbers is worth +15 and ends the round. First to pass 200 points wins.",
   "Seja o primeiro a chegar a 200 pontos! A cada turno, vire mais uma carta para somar pontos ou pare para garantir o que já tem. Mas cuidado: tirar um número repetido estoura a rodada.": "Be the first to reach 200 points! Each turn, flip another card to add points or stay to keep what you have. But careful: drawing a repeated number busts the round.",
   "Valem o próprio número. Existem 12 cartas 12, 11 cartas 11… e apenas uma carta 1 e uma carta 0. Quanto maior o número, mais vezes ele aparece!": "Worth their own number. There are twelve 12s, eleven 11s… and only one 1 and one 0. The bigger the number, the more times it appears!",
   "Descontam pontos da rodada (há uma −6, duas −4 e duas −2). Não contam para o Vira 7, não estouram você e a rodada nunca fica abaixo de 0. O ×2 não dobra as penalidades.": "Subtract points from the round (there's one −6, two −4s and two −2s). They don't count toward Flip 7, don't bust you and the round never drops below 0. The ×2 doesn't double penalties.",
@@ -536,6 +562,18 @@
   [
    "^no jogo desde (.+)$",
    "playing since $1"
+  ],
+  [
+   "^Passo (\\d+) de (\\d+)$",
+   "Step $1 of $2"
+  ],
+  [
+   "^Ver o perfil de (.+)$",
+   "View $1's profile"
+  ],
+  [
+   "^Bônus \\+4: soma pontos e nunca estoura\\. Você tem (\\d+) pontos: \\(5 \\+ 7\\) × 2 − 2 \\+ 4\\. Toque em PARAR para guardar tudo\\.$",
+   "Bonus +4: adds points and never busts. You have $1 points: (5 + 7) × 2 − 2 + 4. Tap STAY to keep it all."
   ],
   [
    "^há (\\d+) min$",

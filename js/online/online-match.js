@@ -325,6 +325,7 @@
     async prompt(awaiting, player) {
       const token = ++this.promptToken;
       let body;
+      F7.Attention.call(F7.i18n.t('Sua vez!'));
       if (awaiting.kind === 'move') {
         this.hud.setStatus('Sua vez!');
         const move = await this.controller.promptMove(player, this.game);
@@ -338,6 +339,7 @@
       // A pergunta foi cancelada (chegou evento novo, tempo esgotou ou a tela fechou).
       if (token !== this.promptToken || this.destroyed) return;
 
+      F7.Attention.clear();
       this.hud.setActionsEnabled(false);
       this.hud.setStatus('Enviando jogada…');
       try {
@@ -354,6 +356,7 @@
     }
 
     cancelPrompt() {
+      F7.Attention.clear();
       this.promptToken += 1;
       this.controller.cancelPending();
     }

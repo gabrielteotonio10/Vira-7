@@ -513,6 +513,32 @@
   "Mensagem desconhecida.": "Mensaje desconocido.",
   "Calma! Espere um instante para enviar outra.": "¡Calma! Espera un momento para enviar otra.",
   "Não foi possível concluir a operação.": "No se pudo completar la operación.",
+  "Salvo neste aparelho (sem conexão com o servidor)": "Guardado en este dispositivo (sin conexión con el servidor)",
+  "Aprender a jogar (tutorial)": "Aprender a jugar (tutorial)",
+  "Passe o aparelho": "Pasa el dispositivo",
+  "Ver perfil": "Ver perfil",
+  "Até 10 salas sorteadas · atualize para ver outras": "Hasta 10 salas al azar · actualiza para ver otras",
+  "Vocês são amigos ✓": "Son amigos ✓",
+  "Pedido enviado": "Solicitud enviada",
+  "Aceitar pedido de amizade": "Aceptar solicitud de amistad",
+  "Adicionar amigo": "Añadir amigo",
+  "Tutorial": "Tutorial",
+  "Pronto!": "¡Listo!",
+  "Jogar de verdade": "Jugar de verdad",
+  "Distribuindo as cartas…": "Repartiendo las cartas…",
+  "Olhe a mesa…": "Mira la mesa…",
+  "A Rita está virando 3 cartas…": "Rita está volteando 3 cartas…",
+  "Fim da rodada! Veja o placar e toque no botão.": "¡Fin de la ronda! Mira el marcador y toca el botón.",
+  "Vamos jogar uma rodada de treino contra a Rita. Em cada passo, só o botão destacado funciona. Para sair, use a seta no canto.": "Vamos a jugar una ronda de práctica contra Rita. En cada paso, solo funciona el botón destacado. Para salir, usa la flecha de la esquina.",
+  "Você recebeu um 5. Na sua vez, toque em VIRAR para comprar mais uma carta e somar pontos.": "Recibiste un 5. En tu turno, toca VOLTEAR para robar otra carta y sumar puntos.",
+  "Você virou VIRA TRÊS! Escolha alguém ativo para ser obrigado a virar 3 cartas seguidas. Toque na Rita.": "¡Volteaste VIRA TRES! Elige a alguien activo que deberá voltear 3 cartas seguidas. Toca a Rita.",
+  "A Rita virou 1, 4 e 6 sem estourar e decidiu parar. Sua vez de novo: toque em VIRAR.": "Rita volteó 1, 4 y 6 sin pasarse y decidió plantarse. Tu turno otra vez: toca VOLTEAR.",
+  "Agora você tem 5 e 7. Este medidor mostra a chance de ESTOURAR (virar um número que você já tem e zerar a rodada). Está baixa: vire de novo.": "Ahora tienes 5 y 7. Este medidor muestra la probabilidad de PASARTE (voltear un número que ya tienes y quedarte en cero). Es baja: voltea de nuevo.",
+  "Um ×2! Ele dobra a soma dos seus números no fim da rodada. Continue: VIRAR.": "¡Un ×2! Duplica la suma de tus números al final de la ronda. Sigue: VOLTEAR.",
+  "Segunda Chance guardada: se você repetir um número, ela é gasta no lugar do estouro. Vire mais uma.": "Segunda Oportunidad guardada: si repites un número, se gasta en lugar de pasarte. Voltea otra.",
+  "Outro 7! Seria estouro, mas a Segunda Chance salvou você: as duas cartas foram descartadas. Vire de novo.": "¡Otro 7! Te habrías pasado, pero la Segunda Oportunidad te salvó: las dos cartas se descartaron. Voltea de nuevo.",
+  "Penalidade −2: tira pontos da rodada (que nunca fica abaixo de 0) e nunca estoura você. Vire mais uma.": "Penalización −2: resta puntos de la ronda (que nunca baja de 0) y nunca te hace pasar. Voltea otra.",
+  "É isso! Também existem Congelar (o alvo para na hora) e o VIRA 7: juntar 7 números diferentes vale +15 e encerra a rodada. Ganha quem passar de 200 pontos primeiro.": "¡Eso es todo! También existen Congelar (el objetivo se planta en el acto) y el VIRA 7: juntar 7 números distintos vale +15 y termina la ronda. Gana quien pase primero de 200 puntos.",
   "Seja o primeiro a chegar a 200 pontos! A cada turno, vire mais uma carta para somar pontos ou pare para garantir o que já tem. Mas cuidado: tirar um número repetido estoura a rodada.": "¡Sé el primero en llegar a 200 puntos! En cada turno, voltea otra carta para sumar puntos o plántate para asegurar lo que tienes. Pero cuidado: sacar un número repetido te hace pasar la ronda.",
   "Valem o próprio número. Existem 12 cartas 12, 11 cartas 11… e apenas uma carta 1 e uma carta 0. Quanto maior o número, mais vezes ele aparece!": "Valen su propio número. Hay 12 cartas 12, 11 cartas 11… y solo una carta 1 y una carta 0. ¡Cuanto mayor es el número, más veces aparece!",
   "Descontam pontos da rodada (há uma −6, duas −4 e duas −2). Não contam para o Vira 7, não estouram você e a rodada nunca fica abaixo de 0. O ×2 não dobra as penalidades.": "Restan puntos de la ronda (hay una −6, dos −4 y dos −2). No cuentan para el Vira 7, no te hacen pasar y la ronda nunca baja de 0. El ×2 no duplica las penalizaciones.",
@@ -536,6 +562,18 @@
   [
    "^no jogo desde (.+)$",
    "jugando desde $1"
+  ],
+  [
+   "^Passo (\\d+) de (\\d+)$",
+   "Paso $1 de $2"
+  ],
+  [
+   "^Ver o perfil de (.+)$",
+   "Ver el perfil de $1"
+  ],
+  [
+   "^Bônus \\+4: soma pontos e nunca estoura\\. Você tem (\\d+) pontos: \\(5 \\+ 7\\) × 2 − 2 \\+ 4\\. Toque em PARAR para guardar tudo\\.$",
+   "Bono +4: suma puntos y nunca te hace pasar. Tienes $1 puntos: (5 + 7) × 2 − 2 + 4. Toca PLANTARME para guardarlo todo."
   ],
   [
    "^há (\\d+) min$",

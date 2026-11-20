@@ -42,6 +42,67 @@
   color: #1b2333;
 }
 
+/* "Ilhas claras": peças com fundo de cor viva (amarelo, verde, vermelho, pastel) continuam com
+   tinta escura no tema escuro. Sem isso o texto claro some em cima do amarelo e dos pastéis. */
+:root[data-theme='dark'] :is(
+  .home__hello, .action-card, .code, .nav__link.is-active, .nav__user:hover, .icon-btn:hover:not(:disabled),
+  .badge--flip7, .badge--host, .badge--team, .medal, .modal__head, .log-drawer__head, .empty__icon,
+  .avatar-picker__item[aria-checked='true'], .final-table .is-flip7, .btn--primary, .btn--success, .btn--danger,
+  .btn--whatsapp, .coach, .spectator-bar, .auth__brand, .match__badge,
+  .pile__count, .swatch span, .rank-card__pos .medal, .chat-float--say, .summary-row.is-leader,
+  .lobby-player.is-ready, .form__message.is-error, .form__message.is-ok
+) {
+  --ink: #1b2333;
+  --ink-2: #4b566b;
+  --ink-3: #8a92a3;
+  --paper: #fff6e5;
+  --paper-2: #f6e9cf;
+  --surface: #ffffff;
+  --line: #e2d4b8;
+  color: var(--ink);
+}
+
+/* Opção escolhida: amarelo com tinta escura, como os botões principais */
+:root[data-theme='dark'] .segmented button[aria-checked='true'] {
+  background: var(--yellow);
+  color: #1b2333;
+}
+
+/* Textos secundários e linhas um pouco mais claros para ler bem no fundo escuro */
+:root[data-theme='dark'] {
+  --ink-2: #c9cfdb;
+  --ink-3: #98a1b5;
+}
+
+:root[data-theme='dark'] .field,
+:root[data-theme='dark'] input,
+:root[data-theme='dark'] select {
+  background-color: #1d2433;
+  color: var(--ink);
+}
+
+:root[data-theme='dark'] .field::placeholder {
+  color: #7c869b;
+}
+
+:root[data-theme='dark'] a:not(.btn):not(.nav__link):not(.nav__user):not(.action-card):not(.ranking__player):not(.friend__name) {
+  color: #8fc1ff;
+}
+
+:root[data-theme='dark'] .panel,
+:root[data-theme='dark'] .modal__dialog,
+:root[data-theme='dark'] .friend,
+:root[data-theme='dark'] .rank-card,
+:root[data-theme='dark'] .match,
+:root[data-theme='dark'] .lobby-player,
+:root[data-theme='dark'] .room-row {
+  border-color: #3b4560;
+}
+
+:root[data-theme='dark'] .badge {
+  border-color: transparent;
+}
+
 /* A mesa de jogo já tem fundo escuro próprio e muitas peças com cor fixa (vez destacada,
    cartas, selos): ela mantém o papel claro também no tema escuro. */
 :root[data-theme='dark'] .game-screen {

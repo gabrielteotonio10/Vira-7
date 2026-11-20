@@ -110,8 +110,17 @@
         const button = entry.room
           ? h('button', { type: 'button', class: 'btn btn--success', onClick: () => join(entry) }, entry.room.mode === 'watch' ? 'Assistir' : 'Entrar na sala')
           : null;
+        const profileLink = h('a', {
+          class: 'icon-btn', href: `#/perfil/${encodeURIComponent(entry.username)}`, html: icon('user'),
+          'aria-label': `Ver o perfil de ${entry.username}`, title: 'Ver perfil',
+        });
         lists.friends.appendChild(
-          person(entry, button, h('button', { type: 'button', class: 'icon-btn', 'aria-label': `Remover ${entry.username}`, title: 'Remover amigo', html: icon('close'), onClick: () => removeFriend(entry) })),
+          person(
+            entry,
+            button,
+            profileLink,
+            h('button', { type: 'button', class: 'icon-btn', 'aria-label': `Remover ${entry.username}`, title: 'Remover amigo', html: icon('close'), onClick: () => removeFriend(entry) }),
+          ),
         );
       });
     }
