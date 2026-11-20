@@ -469,3 +469,45 @@
     flex: 1 1 100%;
   }
 }
+
+.coach--bottom {
+  top: auto;
+  bottom: 12px;
+}
+
+.coach__wait {
+  font-size: var(--fs-sm);
+  opacity: 0.8;
+}
+
+.coach:has(.coach__wait) {
+  padding: var(--space-2) var(--space-3);
+}
+
+/* ---- Mesma tela: a mesa gira para quem está jogando ---- */
+.is-rotating {
+  opacity: 0;
+  transform: scale(0.97);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.is-rotated {
+  animation: seats-in 420ms var(--ease-out) both;
+}
+
+@keyframes seats-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.section-hint {
+  display: block;
+  color: var(--ink-3);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+.chip--ok {
+  border-color: var(--green-d);
+  color: var(--green-d);
+}
