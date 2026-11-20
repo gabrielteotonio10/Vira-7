@@ -43,6 +43,20 @@ def compute(numbers: Sequence[dict], modifiers: Sequence[dict], flip7: bool = Fa
     }
 
 
+def team_count(players: int) -> int:
+    """Quantas duplas existem em uma mesa de `players` pessoas (duplas de 2)."""
+    return players // 2
+
+
+def team_of(seat: int, players: int) -> int:
+    """Duplas ficam em assentos opostos: com 4 pessoas, 0 e 2 jogam juntas, assim como 1 e 3."""
+    return seat % team_count(players)
+
+
+def team_groups(players: int) -> list[list[int]]:
+    return [[seat for seat in range(players) if team_of(seat, players) == team] for team in range(team_count(players))]
+
+
 def check_victory(totals: Sequence[int], target_score: int) -> dict:
     """A partida termina quando alguém atinge a meta e há um líder isolado.
 

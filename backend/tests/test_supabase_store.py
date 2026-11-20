@@ -208,7 +208,7 @@ def test_fechar_sala_marca_sala_e_jogadores_e_apaga_a_presenca(run):
     store, calls = make_store(lambda request: httpx.Response(204))
     run(store.close_room("r1"))
     assert [(c.method, c.url.path.rsplit("/", 1)[-1]) for c in calls] == [
-        ("PATCH", "rooms"), ("PATCH", "room_players"), ("DELETE", "player_presence"),
+        ("PATCH", "rooms"), ("PATCH", "room_players"), ("DELETE", "player_presence"), ("DELETE", "room_spectators"),
     ]
     assert json.loads(calls[0].content)["status"] == "closed"
     assert calls[0].url.params["id"] == "eq.r1"

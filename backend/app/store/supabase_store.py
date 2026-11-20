@@ -27,7 +27,7 @@ def like_exact(value: str) -> str:
 KNOWN_ERRORS = ("ROOM_NOT_FOUND", "ROOM_FULL", "ROOM_NOT_OPEN", "ALREADY_IN_ROOM")
 ROOM_COLUMNS = (
     "id,code,name,host_id,visibility,mode,status,max_players,target_score,turn_seconds,"
-    "current_game_id,created_at,updated_at"
+    "current_game_id,created_at,updated_at,team_mode"
 )
 
 
@@ -125,11 +125,89 @@ class SupabaseStore:
 
         return new_stats(user_id)
 
-    async def leaderboard(self, limit: int = 20) -> list[dict]:
-        return await self._select(
-            "leaderboard",
-            {"select": "*", "order": "wins.desc,total_points.desc,username.asc", "limit": str(limit)},
+    async def leaderboard(self, limit: int = 20, user_ids: list[str] | None = None) -> list[dict]:
+        params = {"select": "*", "order": "wins.desc,total_points.desc,username.asc", "limit": str(limit)}
+        if user_ids is not None:
+            if not user_ids:
+                return []
+            params["user_id"] = f"in.({','.join(user_ids)})"
+        return await self._select("leaderboard", params)
+
+    async def get_profiles(self, user_ids: list[str]) -> dict[str, dict]:
+        if not user_ids:
+            return {}
+        rows = await self._select(
+            "profiles", {"id": f"in.({','.join(user_ids)})", "select": "id,username,avatar,created_at"}
         )
+        return {row["id"]: row for row in rows}
+
+    # ------------------------------------------------------------------ amigos
+
+    async def get_friendship(self, a: str, b: str) -> dict | None:
+        return await self._first(
+            "friendships",
+            {
+                "or": f"(and(requester_id.eq.{a},addressee_id.eq.{b}),and(requester_id.eq.{b},addressee_id.eq.{a}))",
+                "select": "id,requester_id,addressee_id,status,created_at",
+            },
+        )
+
+    async def list_friendships(self, user_id: str) -> list[dict]:
+        return await self._select(
+            "friendships",
+            {
+                "or": f"(requester_id.eq.{user_id},addressee_id.eq.{user_id})",
+                "select": "id,requester_id,addressee_id,status,created_at", "limit": "500",
+            },
+        )
+
+    async def create_friend_request(self, requester: str, addressee: str) -> dict:
+        rows = await self._request(
+            "POST", "friendships", json={"requester_id": requester, "addressee_id": addressee},
+            prefer="return=representation",
+        )
+        return rows[0]
+
+    async def accept_friendship(self, friendship_id: str) -> None:
+        await self._request("PATCH", "friendships", params={"id": f"eq.{friendship_id}"}, json={"status": "accepted"})
+
+    async def delete_friendship(self, friendship_id: str) -> None:
+        await self._request("DELETE", "friendships", params={"id": f"eq.{friendship_id}"})
+
+    # ------------------------------------------------------------------ espectadores
+
+    async def add_spectator(self, room_id: str, user_id: str) -> None:
+        # Uma pessoa assiste a uma sala por vez: entrar em outra troca a linha.
+        await self._request(
+            "POST", "room_spectators", params={"on_conflict": "user_id"},
+            json={"room_id": room_id, "user_id": user_id}, prefer="resolution=merge-duplicates",
+        )
+
+    async def remove_spectator(self, user_id: str) -> bool:
+        rows = await self._request(
+            "DELETE", "room_spectators", params={"user_id": f"eq.{user_id}"}, prefer="return=representation"
+        )
+        return bool(rows)
+
+    async def spectator_membership(self, user_id: str) -> dict | None:
+        row = await self._first(
+            "room_spectators", {"user_id": f"eq.{user_id}", "select": f"room:rooms({ROOM_COLUMNS})"}
+        )
+        room = (row or {}).get("room")
+        if not room or room["status"] not in ("lobby", "playing"):
+            return None
+        return {"room": room, "player": None, "spectator": True}
+
+    async def list_spectators(self, room_id: str) -> list[dict]:
+        rows = await self._select(
+            "room_spectators",
+            {"room_id": f"eq.{room_id}", "order": "joined_at.asc", "select": "user_id,joined_at,profile:profiles(username,avatar)"},
+        )
+        out = []
+        for row in rows:
+            profile = row.pop("profile", None) or {}
+            out.append({**row, "username": profile.get("username", "?"), "avatar": profile.get("avatar") or "raposa"})
+        return out
 
     async def list_matches(self, user_id: str, limit: int = 20, offset: int = 0) -> list[dict]:
         mine = await self._select(
@@ -248,6 +326,7 @@ class SupabaseStore:
             json={"status": "left", "is_ready": False},
         )
         await self._request("DELETE", "player_presence", params={"room_id": f"eq.{room_id}"})
+        await self._request("DELETE", "room_spectators", params={"room_id": f"eq.{room_id}"})
 
     async def list_open_rooms(self) -> list[dict]:
         rooms = await self._select(

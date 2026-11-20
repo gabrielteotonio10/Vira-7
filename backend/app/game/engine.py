@@ -112,8 +112,10 @@ class RoundEngine:
         seed: int | None = None,
         cards: list[Card] | None = None,
         deck_version: int = C.DECK_VERSION,
+        teams: bool = False,
     ) -> None:
         self.players = players
+        self.teams = teams
         self.round = round_number
         self.dealer_index = dealer_index % len(players)
         self.target_score = target_score
@@ -163,7 +165,17 @@ class RoundEngine:
             "currentPlayer": self.current_seat,
             "deck": {"size": self.deck.size, "totalAvailable": self.deck.total_available},
             "players": [self._public_player(p) for p in self.players],
+            "teams": self._public_teams(),
         }
+
+    def _public_teams(self) -> list[dict] | None:
+        """Pontos de cada dupla (soma dos jogadores). `None` quando não é partida em duplas."""
+        if not self.teams:
+            return None
+        return [
+            {"id": index, "seats": seats, "total": sum(self.players[seat].total for seat in seats)}
+            for index, seats in enumerate(scoring.team_groups(len(self.players)))
+        ]
 
     def _public_player(self, p: Player) -> dict:
         return {
@@ -174,6 +186,7 @@ class RoundEngine:
             "avatar": p.avatar,
             "isBot": p.is_bot,
             "absent": p.absent,
+            "team": scoring.team_of(p.seat, len(self.players)) if self.teams else None,
             "total": p.total,
             "history": list(p.history),
             "flip7Rounds": list(p.flip7_rounds),

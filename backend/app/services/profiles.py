@@ -17,6 +17,19 @@ DEFAULT_SETTINGS = {
     "reducedMotion": False,
     "showRisk": True,
     "confirmStay": False,
+    "theme": "light",
+    "tableTheme": "felt",
+    "cardBack": "classic",
+    "colorblind": False,
+    "vibration": True,
+    "handsFree": False,
+    "language": "pt",
+}
+CHOICES = {
+    "theme": ("light", "dark", "auto"),
+    "tableTheme": ("felt", "wood", "ocean", "night"),
+    "cardBack": ("classic", "stripes", "dots", "stars"),
+    "language": ("pt", "en", "es"),
 }
 SPEEDS = (1, 1.5, 2)
 
@@ -36,8 +49,11 @@ def clean_settings(raw: dict) -> dict:
     raw = raw or {}
     if isinstance(raw.get("volume"), (int, float)) and not isinstance(raw.get("volume"), bool):
         settings["volume"] = round(min(1.0, max(0.0, float(raw["volume"]))), 2)
-    for key in ("sound", "reducedMotion", "showRisk", "confirmStay"):
+    for key in ("sound", "reducedMotion", "showRisk", "confirmStay", "colorblind", "vibration", "handsFree"):
         if isinstance(raw.get(key), bool):
+            settings[key] = raw[key]
+    for key, options in CHOICES.items():
+        if raw.get(key) in options:
             settings[key] = raw[key]
     if raw.get("animationSpeed") in SPEEDS:
         settings["animationSpeed"] = raw["animationSpeed"]
@@ -102,7 +118,7 @@ async def _require_profile(store, user_id: str) -> dict:
 
 async def me(store, user) -> dict:
     profile = await _require_profile(store, user.id)
-    membership = await store.active_membership(user.id)
+    membership = await store.active_membership(user.id) or await store.spectator_membership(user.id)
     return {
         "user": {"id": user.id, "email": user.email},
         "profile": serialize_profile(profile),
@@ -157,8 +173,14 @@ async def public_profile(store, username: str) -> dict:
     }
 
 
-async def leaderboard(store, limit: int) -> dict:
-    rows = await store.leaderboard(limit)
+async def leaderboard(store, limit: int, user_id: str | None = None, scope: str = "all") -> dict:
+    user_ids = None
+    if scope == "friends":
+        from . import friends
+
+        # Você e quem você tem como amigo.
+        user_ids = [user_id, *await friends.friend_ids(store, user_id)]
+    rows = await store.leaderboard(limit, user_ids)
     return {
         "players": [
             {

@@ -79,6 +79,7 @@ class GameSession:
         first_dealer: int | None = None,
         base_seed: int | None = None,
         cards: list[dict] | None = None,
+        teams: bool = False,
     ) -> "GameSession":
         """Cria a partida e joga até a primeira decisão humana.
 
@@ -101,6 +102,8 @@ class GameSession:
         count = len(roster)
         if not C.MIN_PLAYERS <= count <= C.MAX_PLAYERS:
             raise ValueError(f"O jogo aceita de {C.MIN_PLAYERS} a {C.MAX_PLAYERS} jogadores.")
+        if teams and (count < 4 or count % 2):
+            raise ValueError("Partida em duplas precisa de 4, 6 ou 8 jogadores.")
 
         data = {
             "v": cls.VERSION,
@@ -115,6 +118,8 @@ class GameSession:
             "finishReason": None,
             "baseSeed": base_seed,
             "deckVersion": C.DECK_VERSION,
+            "teams": bool(teams),
+            "winnerTeam": None,
             "round": None,
         }
         session = cls(data)
@@ -178,6 +183,7 @@ class GameSession:
             {
                 "status": self.data["status"],
                 "winner": self.data["winner"],
+                "winnerTeam": self.data.get("winnerTeam"),
                 "finishReason": self.data["finishReason"],
                 "turnSeconds": self.data["turnSeconds"],
                 "awaiting": self.awaiting,
@@ -204,11 +210,20 @@ class GameSession:
         r = self.data["round"]
         absent = set(self.data["absent"])
         winner = self.data["winner"]
+        count = len(self.data["players"])
+        teams = bool(self.data.get("teams"))
+        winner_team = self.data.get("winnerTeam")
+        # Em duplas, o placar de cada pessoa é o da dupla.
+        scores = self._scores(r["totals"])
+
+        def team_key(seat: int):
+            return scoring.team_of(seat, count) if teams else seat
 
         def rank_key(seat: int):
-            return (seat != winner, seat in absent, -r["totals"][seat], seat)
+            won = team_key(seat) == winner_team if teams else seat == winner
+            return (not won, seat in absent, -scores[seat], seat)
 
-        order = sorted(range(len(self.data["players"])), key=rank_key)
+        order = sorted(range(count), key=rank_key)
         placement = {seat: index + 1 for index, seat in enumerate(order)}
         results = []
         for p in self.data["players"]:
@@ -220,9 +235,9 @@ class GameSession:
                     "userId": p["userId"],
                     "name": p["name"],
                     "isBot": p["isBot"],
-                    "score": r["totals"][seat],
+                    "score": scores[seat],
                     "placement": placement[seat],
-                    "isWinner": seat == winner,
+                    "isWinner": (team_key(seat) == winner_team) if teams else seat == winner,
                     "forfeited": seat in absent,
                     "roundsPlayed": len(history),
                     "bestRound": max(history, default=0),
@@ -231,6 +246,14 @@ class GameSession:
                 }
             )
         return results
+
+    def _scores(self, totals: list[int]) -> list[int]:
+        """Pontos que valem para cada assento: o próprio total ou o da dupla."""
+        if not self.data.get("teams"):
+            return list(totals)
+        groups = scoring.team_groups(len(totals))
+        team_total = {index: sum(totals[s] for s in seats) for index, seats in enumerate(groups)}
+        return [team_total[scoring.team_of(seat, len(totals))] for seat in range(len(totals))]
 
     # ------------------------------------------------------------------ ações
 
@@ -356,6 +379,7 @@ class GameSession:
             seed=r["seed"],
             cards=r.get("cards"),
             deck_version=self.data.get("deckVersion", 1),
+            teams=bool(self.data.get("teams")),
         )
         self._flow = self._engine.play()
         self._pending = None
@@ -424,14 +448,30 @@ class GameSession:
         r["busts"] = [p.busts for p in engine.players]
 
         absent = set(self.data["absent"])
-        eligible = [-1 if seat in absent else total for seat, total in enumerate(r["totals"])]
-        victory = scoring.check_victory(eligible, self.data["targetScore"])
-
-        if victory["over"]:
-            self._finish("finished", winner=victory["winner"], reason="score")
-            return False
-        if victory["tie"]:
-            self._emit_session("tieBreak", {"leaders": victory["leaders"]})
+        count = len(self.data["players"])
+        if self.data.get("teams"):
+            groups = scoring.team_groups(count)
+            eligible = [
+                -1 if all(seat in absent for seat in seats) else sum(r["totals"][seat] for seat in seats)
+                for seats in groups
+            ]
+            victory = scoring.check_victory(eligible, self.data["targetScore"])
+            if victory["over"]:
+                seats = [s for s in groups[victory["winner"]] if s not in absent]
+                best = max(seats, key=lambda s: (r["totals"][s], -s))
+                self._finish("finished", winner=best, reason="score", winner_team=victory["winner"])
+                return False
+            if victory["tie"]:
+                leaders = [seat for team in victory["leaders"] for seat in groups[team]]
+                self._emit_session("tieBreak", {"leaders": leaders})
+        else:
+            eligible = [-1 if seat in absent else total for seat, total in enumerate(r["totals"])]
+            victory = scoring.check_victory(eligible, self.data["targetScore"])
+            if victory["over"]:
+                self._finish("finished", winner=victory["winner"], reason="score")
+                return False
+            if victory["tie"]:
+                self._emit_session("tieBreak", {"leaders": victory["leaders"]})
 
         count = len(self.data["players"])
         self._start_round(
@@ -453,18 +493,26 @@ class GameSession:
             self._finish("abandoned", winner=None, reason="abandoned")
             return True
         if len(present) < C.MIN_PLAYERS:
-            self._finish("finished", winner=present[0]["seat"], reason="forfeit")
+            seat = present[0]["seat"]
+            team = scoring.team_of(seat, len(self.data["players"])) if self.data.get("teams") else None
+            self._finish("finished", winner=seat, reason="forfeit", winner_team=team)
             return True
         return False
 
-    def _finish(self, status: str, *, winner: int | None, reason: str) -> None:
+    def _finish(self, status: str, *, winner: int | None, reason: str, winner_team: int | None = None) -> None:
         r = self.data["round"]
         # Em caso de abandono no meio da rodada, vale o placar das rodadas completas.
         self.data["status"] = status
         self.data["winner"] = winner
+        self.data["winnerTeam"] = winner_team
         self.data["finishReason"] = reason
         self._pending = None
         self._emit_session(
             "gameOver",
-            {"winner": winner, "reason": reason, "standings": scoring.standings(r["totals"])},
+            {
+                "winner": winner,
+                "winnerTeam": winner_team,
+                "reason": reason,
+                "standings": scoring.standings(self._scores(r["totals"])),
+            },
         )
