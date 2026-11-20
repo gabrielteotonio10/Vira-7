@@ -20,6 +20,8 @@
       /** Personalidade do robô: quanto maior, mais arrisca (0 a 1). */
       this.riskTolerance = riskTolerance;
       this.total = 0;
+      /** Número da dupla (partida em duplas) ou null. */
+      this.team = null;
       /** Pontos feitos em cada rodada, na ordem. */
       this.history = [];
       /** Rodadas (1, 2, 3…) em que o jogador fez Vira 7. */

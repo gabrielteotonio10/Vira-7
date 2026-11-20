@@ -11,9 +11,24 @@
 
   const roundPoints = (player) => F7.Scoring.compute(player).total;
 
-  /** Pontuação total da pessoa que está à frente (excluindo `player`). */
+  /** Parceiros de `player` (vazio em partida individual). Em duplas, `player.team` é o número da dupla. */
+  const teammates = (player, game) =>
+    player.team === null || player.team === undefined ? [] : game.players.filter((p) => p !== player && p.team === player.team);
+
+  /** Pontos da partida de quem joga: o próprio ou, em duplas, o da dupla. */
+  const teamTotal = (player, game) => player.total + teammates(player, game).reduce((sum, p) => sum + p.total, 0);
+
+  /** Pontos da rodada em jogo: os seus mais os do parceiro (estourou = 0). */
+  const teamRoundPoints = (player, game) => roundPoints(player) + teammates(player, game).reduce((sum, p) => sum + roundPoints(p), 0);
+
+  /** Maior pontuação entre os adversários (em duplas, a maior soma de uma dupla rival). */
   function bestOpponentTotal(player, game) {
-    return Math.max(0, ...game.players.filter((p) => p !== player).map((p) => p.total));
+    if (player.team === null || player.team === undefined) {
+      return Math.max(0, ...game.players.filter((p) => p !== player).map((p) => p.total));
+    }
+    const totals = new Map();
+    game.players.filter((p) => p.team !== player.team).forEach((p) => totals.set(p.team, (totals.get(p.team) || 0) + p.total));
+    return Math.max(0, ...totals.values());
   }
 
   /**
@@ -26,7 +41,8 @@
 
     const risk = game.bustChance(player);
     const points = roundPoints(player);
-    const projected = player.total + points;
+    // Em duplas a conta é da dupla: os pontos do parceiro também valem.
+    const projected = teamTotal(player, game) + teamRoundPoints(player, game);
 
     // Se parar agora garante a vitória (com folga sobre os rivais), para.
     if (projected >= game.targetScore && projected > bestOpponentTotal(player, game)) return 'stay';
@@ -40,7 +56,7 @@
     if (player.uniqueCount() === RULES.FLIP7_UNIQUE_COUNT - 1) threshold += 0.12;
 
     // Muito atrás na partida: precisa arriscar mais.
-    const gap = bestOpponentTotal(player, game) - player.total;
+    const gap = bestOpponentTotal(player, game) - teamTotal(player, game);
     if (gap > 60) threshold += 0.08;
 
     // Rodada já valiosa: protege o que tem.
@@ -58,18 +74,27 @@
    * @param {string} kind 'freeze' | 'flipThree' | 'secondChance'
    */
   function chooseTarget(player, kind, candidates, game) {
-    const others = candidates.filter((p) => p !== player);
+    const mates = teammates(player, game);
+    const allOthers = candidates.filter((p) => p !== player);
     const includesSelf = candidates.includes(player);
+    // Em duplas, parceiro não é rival: só entra na conta quando não há mais ninguém.
+    const rivals = allOthers.filter((p) => !mates.includes(p));
+    const others = rivals.length ? rivals : allOthers;
+    const partners = allOthers.filter((p) => mates.includes(p));
 
     if (kind === A.SECOND_CHANCE) {
-      // Dá a Segunda Chance para quem menos ameaça.
-      return others.slice().sort((a, b) => threat(a) - threat(b))[0] || candidates[0];
+      // Em duplas, a Segunda Chance extra vai para o parceiro; senão, para quem menos ameaça.
+      if (partners.length) return partners.slice().sort((a, b) => roundPoints(b) - roundPoints(a))[0];
+      return allOthers.slice().sort((a, b) => threat(a) - threat(b))[0] || candidates[0];
     }
 
     if (kind === A.FREEZE) {
       // Congelar a si mesmo é ótimo quando há muito a perder.
       if (includesSelf && roundPoints(player) >= 20 && game.bustChance(player) >= 0.25) return player;
-      if (!others.length) return player;
+      // O mesmo vale para o parceiro: guardar os pontos dele é bom para a dupla.
+      const saved = partners.find((p) => roundPoints(p) >= 20 && game.bustChance(p) >= 0.25);
+      if (saved) return saved;
+      if (!allOthers.length) return player;
       // Congela o rival que tem pouco na mesa, mas é forte na partida.
       return others
         .slice()
@@ -77,7 +102,7 @@
     }
 
     // Vira Três: força o rival mais exposto a arriscar.
-    if (!others.length) return player;
+    if (!allOthers.length) return player;
     return others
       .slice()
       .sort((a, b) => {
