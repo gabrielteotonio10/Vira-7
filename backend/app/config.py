@@ -51,6 +51,8 @@ class Settings:
     referee_interval: float = 2.0
     #: Sem sinal do jogador da vez por este tempo, o servidor joga por ele.
     disconnect_grace_seconds: int = 40
+    #: Sala sem nenhum jogador dando sinal por este tempo é fechada (0 desliga a limpeza).
+    stale_room_seconds: int = 180
     #: Limite de requisições por IP e por usuário (veja app/ratelimit.py).
     rate_limit_enabled: bool = True
     #: Atrás de um proxy/CDN confiável, usa o IP de X-Forwarded-For para o limite.
@@ -75,6 +77,7 @@ class Settings:
             serve_frontend=_flag("SERVE_FRONTEND", True),
             referee_enabled=_flag("REFEREE_ENABLED", True),
             disconnect_grace_seconds=int(os.environ.get("DISCONNECT_GRACE_SECONDS", "40")),
+            stale_room_seconds=int(os.environ.get("STALE_ROOM_SECONDS", "180")),
             rate_limit_enabled=_flag("RATE_LIMIT_ENABLED", True),
             trust_proxy=_flag("TRUST_PROXY", False),
             environment=os.environ.get("APP_ENV", "development"),

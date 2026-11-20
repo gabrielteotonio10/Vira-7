@@ -12,7 +12,7 @@ import asyncio
 import logging
 from datetime import timedelta
 
-from . import games
+from . import games, rooms
 
 log = logging.getLogger("vira7.referee")
 
@@ -37,10 +37,18 @@ async def sweep(store, grace_seconds: int) -> int:
     return applied
 
 
-async def run(store, interval: float, grace_seconds: int) -> None:
+#: A limpeza de salas abandonadas roda a cada tantas passadas do árbitro (~30 s com o padrão).
+CLEANUP_EVERY = 15
+
+
+async def run(store, interval: float, grace_seconds: int, stale_room_seconds: int = 0) -> None:
+    passes = 0
     while True:
         try:
             await sweep(store, grace_seconds)
+            passes += 1
+            if stale_room_seconds > 0 and passes % CLEANUP_EVERY == 0:
+                await rooms.close_stale(store, stale_room_seconds)
         except asyncio.CancelledError:
             raise
         except Exception:

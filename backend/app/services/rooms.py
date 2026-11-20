@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from datetime import timedelta
 
@@ -10,6 +11,8 @@ from ..errors import ApiError, StoreError
 from ..game import GameSession
 from ..game import constants as C
 from . import games
+
+log = logging.getLogger("vira7.rooms")
 
 CODE_RE = re.compile(r"^[A-Z2-9]{6}$")
 QUICK_DEFAULTS = {"max_players": 4, "target_score": 200, "turn_seconds": 30}
@@ -138,11 +141,39 @@ async def leave(store, user_id: str, code: str) -> dict:
     room = await store.get_room_by_code(normalize_code(code))
     if not room:
         return {"left": False}
+    # O anfitrião que sai do lobby fecha a sala para todos (não fica sala "fantasma" esperando).
+    if room["status"] == "lobby" and room["host_id"] == user_id:
+        membership = await store.active_membership(user_id)
+        if membership and membership["room"]["id"] == room["id"]:
+            await store.close_room(room["id"])
+            return {"left": True, "closed": True}
     # Sair no meio da partida = abandonar: o jogo segue sem a pessoa.
     if room["status"] == "playing" and room.get("current_game_id"):
         await games.forfeit(store, room["current_game_id"], user_id)
     result = await store.leave_room(room["id"], user_id)
+    if result["closed"] and room.get("current_game_id"):
+        await games.abandon(store, room["current_game_id"])
     return {"left": result["left"], "closed": result["closed"]}
+
+
+async def close_stale(store, stale_seconds: int) -> int:
+    """Fecha as salas em que ninguém dá sinal há `stale_seconds` (abas fechadas, celulares
+    bloqueados, pessoas que simplesmente pararam de jogar). Retorna quantas foram fechadas."""
+    now = games.utcnow()
+    closed = 0
+    for room in await store.list_open_rooms():
+        seen = [games.parse_time(t) for t in room["humans_seen"]]
+        last = max([t for t in seen if t] + [games.parse_time(room["updated_at"]) or now])
+        if (now - last).total_seconds() < stale_seconds:
+            continue
+        try:
+            if room["status"] == "playing" and room.get("current_game_id"):
+                await games.abandon(store, room["current_game_id"])
+            await store.close_room(room["id"])
+            closed += 1
+        except Exception:  # uma sala com problema não impede a limpeza das outras
+            log.exception("Falha ao fechar a sala %s", room["id"])
+    return closed
 
 
 async def set_ready(store, user_id: str, code: str, ready: bool) -> dict:

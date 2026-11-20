@@ -181,6 +181,22 @@ async def tick(store, game_id: str, grace_seconds: int, *, by_user: str | None =
     return {"events": [], "applied": False}
 
 
+async def abandon(store, game_id: str) -> list[dict]:
+    """Ninguém está mais na partida: encerra sem vencedor e sem pontuar para ninguém."""
+
+    def change(session: GameSession, game: dict):
+        if session.is_over:
+            return False
+        session.abandon()
+
+    try:
+        return await _mutate(store, game_id, change)
+    except ApiError as error:
+        if error.code in ("GAME_OVER", "GAME_NOT_FOUND"):
+            return []
+        raise
+
+
 async def forfeit(store, game_id: str, user_id: str) -> list[dict]:
     """O jogador saiu da sala durante a partida."""
 
