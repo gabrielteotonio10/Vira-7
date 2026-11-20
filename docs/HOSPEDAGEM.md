@@ -15,6 +15,15 @@ Como a API serve a página, não há CORS nem domínio extra para configurar. N�
 - Conta no [GitHub](https://github.com) com o repositório do projeto e no [Render](https://render.com) (entre com o GitHub).
 - A chave secreta (`service_role`/`secret`) **nunca** vai para o GitHub: ela só é digitada no painel do Render.
 
+## 0. Ao atualizar uma versão que já está no ar
+
+Se o Supabase já tem as migrations antigas, aplique as novas **antes** do `git push` (o Render publica sozinho e a API nova precisa das colunas e tabelas novas):
+
+```bash
+cd backend
+python scripts/migrate.py
+```
+
 ## 1. Enviar o código para o GitHub
 
 O repositório já tem o remoto `origin`. Depois de fazer os commits:

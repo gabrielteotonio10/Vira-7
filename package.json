@@ -1,6 +1,6 @@
 {
   "name": "vira-7",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "description": "Jogo de cartas online de risco e estratégia, baseado nas regras do Flip 7. Frontend em HTML/CSS/JS, API em FastAPI e Supabase.",
   "scripts": {

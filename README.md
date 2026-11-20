@@ -23,6 +23,16 @@ Jogue com amigos em qualquer lugar (salas privadas por código ou salas pública
 - **Perfil**: nome de usuário, 10 personagens (bichinhos), estatísticas, histórico de partidas e ranking.
 - **Mesa**: baralho no centro, adversários em volta e você embaixo, com cartas voando, partículas, confete e sons sintetizados. O visual é de jogo de tabuleiro impresso: papel creme, contorno de tinta, cores chapadas e sombras duras, com as fontes Lilita One e Figtree.
 - **Modo local**: várias pessoas e CPUs no mesmo aparelho, sem servidor.
+- **Duplas 2x2**: quem senta na frente de você é seu parceiro e os pontos são somados (4, 6 ou 8 jogadores; CPUs completam a mesa).
+- **Amigos**: pedidos por nome de usuário, lista com a sala de cada amigo (**entrar na sala** ou **assistir**), convite por link no **WhatsApp** e **ranking só entre amigos**.
+- **Espectadores**: quem entra numa sala cheia ou em andamento assiste e vira jogador na próxima partida, se houver vaga.
+- **Conversa rápida**: frases prontas e emojis que sobem pela mesa (sem texto livre).
+- **Revanche com um toque** ao fim da partida.
+- **App instalável (PWA)**: ícone na tela inicial e tela cheia (modelo básico: manifesto, service worker e ícones).
+- **Celular e acessibilidade**: vibração, **modo mãos livres** (narração e comandos de voz "virar"/"parar", onde o navegador permitir) e **modo para daltônicos** (paleta segura e um símbolo em cada número).
+- **Aparência**: tema claro (padrão) e escuro, 4 mesas e 4 versos de carta.
+- **Idiomas**: português, inglês e espanhol.
+- **Tutorial interativo** opcional (só abre quando você pede).
 
 ## Regras do jogo
 
@@ -83,6 +93,8 @@ Para conferir tudo contra o Supabase real (contas, partida completa, RLS, estat�
 python scripts/smoke_online.py
 ```
 
+> **Atualizando uma instalação que já existe?** Rode `python scripts/migrate.py` **antes** de publicar a nova versão: a migration `0009` cria as tabelas de amigos e espectadores e a coluna das duplas. Sem ela, a API nova não consegue ler as salas.
+
 ### Variáveis de ambiente (`backend/.env`)
 
 | Variável | Obrigatória | Onde achar / para que serve |
@@ -127,7 +139,7 @@ npm run test:api       # motor Python, API, autenticação, limite de requisiç�
 | Suíte | O que cobre |
 | --- | --- |
 | `tests/` (Node) | Baralho, pontuação, cartas de ação e partidas completas no motor JS. |
-| `database/tests/` (Node + PGlite) | As 8 migrations aplicadas duas vezes, trigger de cadastro, lotação e assentos, início único de partida, jogadas simultâneas, estatísticas e políticas de RLS. |
+| `database/tests/` (Node + PGlite) | As 9 migrations aplicadas duas vezes, trigger de cadastro, lotação e assentos, início único de partida, jogadas simultâneas, estatísticas e amigos, espectadores, duplas e políticas de RLS. |
 | `backend/tests/` (pytest) | Regras no servidor, reconstrução da partida a cada jogada, tokens inválidos, salas, partidas completas com várias pessoas, concorrência, tempo de turno, desconexão, abandono e revanche; limite de requisições e cabeçalhos de segurança; formato das chamadas ao Supabase (PostgREST) com servidor simulado. |
 
 ## Estrutura
@@ -154,6 +166,8 @@ npm run test:api       # motor Python, API, autenticação, limite de requisiç�
 ├── database/
 │   ├── migrations/           # SQL: tabelas, índices, funções, triggers, RLS, Realtime
 │   └── tests/                # Testes das migrations
+├── manifest.webmanifest, sw.js, assets/icons/   # App instalável (PWA)
+├── tools/i18n-table.py       # Tabela de traduções (gera js/i18n/en.js e es.js)
 ├── docs/ARQUITETURA.md       # Como tudo se encaixa
 ├── docs/HOSPEDAGEM.md        # Hospedagem gratuita no Render
 ├── render.yaml               # Blueprint do Render
