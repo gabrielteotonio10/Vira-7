@@ -305,7 +305,7 @@
 }
 
 .seat__stamp--flip7 {
-  background: var(--ink);
+  background: var(--ink-fill);
   color: var(--yellow);
 }
 
@@ -347,7 +347,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--ink);
+  background: var(--ink-fill);
   animation: dots 1.2s infinite;
 }
 
@@ -444,5 +444,5 @@
 }
 
 .flip-counter i.is-on {
-  background: var(--ink);
+  background: var(--ink-fill);
 }

@@ -10,12 +10,21 @@
 }
 
 .setup {
+  position: relative;
   display: grid;
   gap: var(--space-5);
   width: min(600px, 100%);
 }
 
 /* ---- Apresentação: leque de cartas atrás do logo ---- */
+/* Seta de voltar: fica no topo da página (rola junto), sem cobrir o conteúdo */
+.setup__back {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  z-index: 3;
+}
+
 .setup__hero {
   position: relative;
   display: grid;

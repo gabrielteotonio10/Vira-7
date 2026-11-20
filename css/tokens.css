@@ -15,6 +15,10 @@
   --ink-2: #4b566b;
   --ink-3: #8a92a3;
   --line: #e2d4b8;
+  /* Preenchimentos escuros (botões de tinta, etiquetas) e as cartas não mudam com o tema escuro */
+  --ink-fill: #1b2333;
+  --card-ink: #1b2333;
+  --card-paper: #ffffff;
 
   /* ---- Cores da marca (cada uma com seu tom escuro, para o relevo) ---- */
   --red: #dc3a32;

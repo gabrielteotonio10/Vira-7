@@ -262,7 +262,7 @@
 .banner__sub {
   padding: 2px 12px;
   border-radius: var(--radius-pill);
-  background: var(--ink);
+  background: var(--ink-fill);
   color: #fff;
   font-size: clamp(0.85rem, 2.2vw, 1.05rem);
   font-weight: 800;

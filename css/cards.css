@@ -41,9 +41,9 @@
 .card__face {
   position: absolute;
   inset: 0;
-  border: var(--bw) solid var(--ink);
+  border: var(--bw) solid var(--card-ink);
   border-radius: calc(var(--w) * 0.15);
-  box-shadow: 0 max(2px, calc(var(--w) * 0.045)) 0 var(--ink);
+  box-shadow: 0 max(2px, calc(var(--w) * 0.045)) 0 var(--card-ink);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   overflow: hidden;
@@ -81,11 +81,11 @@
   line-height: 1;
   letter-spacing: -0.02em;
   text-shadow:
-    var(--o) var(--o) 0 var(--ink),
-    calc(var(--o) * -1) var(--o) 0 var(--ink),
-    var(--o) calc(var(--o) * -1) 0 var(--ink),
-    calc(var(--o) * -1) calc(var(--o) * -1) 0 var(--ink),
-    0 calc(var(--o) * 2.2) 0 var(--ink);
+    var(--o) var(--o) 0 var(--card-ink),
+    calc(var(--o) * -1) var(--o) 0 var(--card-ink),
+    var(--o) calc(var(--o) * -1) 0 var(--card-ink),
+    calc(var(--o) * -1) calc(var(--o) * -1) 0 var(--card-ink),
+    0 calc(var(--o) * 2.2) 0 var(--card-ink);
 }
 
 .card__corner {
@@ -94,7 +94,7 @@
   color: #fff;
   font-size: calc(var(--w) * 0.19);
   line-height: 1;
-  text-shadow: 0 max(1px, calc(var(--w) * 0.02)) 0 var(--ink);
+  text-shadow: 0 max(1px, calc(var(--w) * 0.02)) 0 var(--card-ink);
 }
 
 .card__corner--tl {
@@ -174,7 +174,7 @@
 /* O 7 é a carta-símbolo: amarela, com o número em tinta */
 .card--number[data-value='7'] .card__value,
 .card--number[data-value='7'] .card__corner {
-  color: var(--ink);
+  color: var(--card-ink);
   text-shadow: none;
 }
 
@@ -191,7 +191,7 @@
 
 /* ---- Bônus (+2 … +10): carta branca com número verde ---- */
 .card--add .card__front {
-  background: var(--surface);
+  background: var(--card-paper);
 }
 
 .card--add .card__front::after {
@@ -211,7 +211,7 @@
 
 /* ---- Penalidade (-2, -4, -6): carta branca com número vermelho ---- */
 .card--minus .card__front {
-  background: var(--surface);
+  background: var(--card-paper);
 }
 
 .card--minus .card__front::after {
@@ -231,7 +231,7 @@
 
 /* ---- Dobro (×2): carta de tinta com número amarelo ---- */
 .card--multiply .card__front {
-  background: var(--ink);
+  background: var(--card-ink);
 }
 
 .card--multiply .card__front::after {
@@ -259,7 +259,7 @@
 
 .card--freeze .card__front {
   background: var(--ice);
-  color: var(--ink);
+  color: var(--card-ink);
 }
 
 .card--flipThree .card__front {
@@ -314,10 +314,10 @@
   place-items: center;
   width: calc(var(--w) * 0.6);
   height: calc(var(--w) * 0.6);
-  border: var(--bw) solid var(--ink);
+  border: var(--bw) solid var(--card-ink);
   border-radius: 50%;
   background: var(--yellow);
-  color: var(--ink);
+  color: var(--card-ink);
   font-size: calc(var(--w) * 0.26);
   letter-spacing: -0.03em;
 }
