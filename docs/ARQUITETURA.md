@@ -81,7 +81,18 @@ O lobby usa o mesmo canal: mudanças em `rooms` e `room_players` avisam a tela p
 - Um **árbitro** (`services/referee.py`) roda em segundo plano na API: se o prazo venceu ou o jogador da vez está sem sinal há mais de 40 s, o servidor joga por ele (para, ou escolhe o alvo). Qualquer cliente também pode pedir essa conferência (`/tick`); o servidor só age se for verdade.
 - Quem volta reencontra a sala e a partida pelo `GET /api/me` e retoma do ponto atual.
 - O **anfitrião que sai do lobby** fecha a sala para todos. E a cada ~30 s o árbitro fecha as salas em que ninguém dá sinal há `STALE_ROOM_SECONDS` (partidas assim terminam como `abandoned`, sem vencedor e sem estatísticas).
+- **Duplas**: `rooms.team_mode`. A dupla é decidida pela posição na mesa (`scoring.team_of`: assentos opostos). A vitória e os resultados usam a soma da dupla; as duas pessoas são marcadas como vencedoras.
+- **Espectadores**: quem entra numa sala cheia ou em andamento vira espectador (`room_spectators`). Ele lê a sala, a partida e o chat, mas qualquer jogada é recusada (`NOT_IN_GAME`). Quando a sala volta ao lobby, o servidor promove os espectadores aos assentos livres (do mais antigo ao mais novo).
+- **Chat rápido** (`services/chat.py`): só chaves de uma lista fixa (frases e emojis), guardadas na memória do processo (últimas 60 por sala). O cliente consulta a cada 2,5 s. Com mais de uma instância da API, o chat só enxerga a própria instância.
+- **Amigos** (`services/friends.py`): pedido cruzado vira amizade; a lista mostra a sala de cada amigo para entrar ou assistir. O ranking de amigos filtra o ranking geral.
 - Quem **sai** da sala durante a partida a abandona: fica fora das próximas rodadas. Se sobrar uma pessoa só, ela vence; se não sobrar ninguém, a partida é encerrada.
+
+## Frontend: preferências, idiomas e app instalável
+
+- `js/app/theme.js` marca `<html>` com `data-theme`, `data-table`, `data-back` e `data-cb` (veja `css/themes.css`). A escolha também fica no `localStorage` para valer antes do login.
+- `js/fx/haptics.js` liga cada som do jogo a um padrão de vibração. `js/app/voice.js` narra a mesa e escuta "virar"/"parar" (Web Speech API, quando existe).
+- `js/app/i18n.js` traduz o que aparece na página (texto e atributos) a partir de dicionários em `js/i18n/`. O texto-fonte é o português; o que não estiver no dicionário continua em português. Para traduzir algo novo, edite `tools/i18n-table.py` e rode `python tools/i18n-table.py`.
+- `sw.js` + `manifest.webmanifest` (servidos na raiz pela API) fazem o app instalável. O service worker nunca guarda respostas de `/api`.
 
 ## Banco de dados
 
@@ -97,6 +108,8 @@ O lobby usa o mesmo canal: mudanças em `rooms` e `room_players` avisam a tela p
 | `game_secrets` | Semente e decisões (ordem do monte) | **Ninguém** (só o servidor) |
 | `game_events` | Eventos em ordem | Membros da sala |
 | `game_results` | Placar final por jogador | Qualquer pessoa logada |
+| `friendships` | Pedidos de amizade e amigos | Só as duas pessoas |
+| `room_spectators` | Quem assiste a uma sala | **Ninguém** (só o servidor; a RLS das salas e partidas os reconhece) |
 
 Funções e triggers:
 

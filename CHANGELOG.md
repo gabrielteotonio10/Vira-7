@@ -5,8 +5,21 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+> Versão 2.1.0 em preparação. Aplique a migration `0009` antes de publicar.
+
 ### Adicionado
 
+- **Duplas 2x2** (4, 6 ou 8 jogadores): parceiros em assentos opostos, pontos somados, vitória por dupla.
+- **Amigos**: pedidos por nome de usuário, lista com a sala de cada amigo (entrar ou assistir), convite por WhatsApp e **ranking só entre amigos**.
+- **Espectadores**: sala cheia ou em andamento vira "assistir"; na próxima partida a pessoa assume a vaga livre.
+- **Conversa rápida** (frases prontas e emojis que sobem pela mesa) e **revanche com um toque**.
+- **App instalável (PWA)**: manifesto, service worker, ícones e botão de instalar nos Ajustes.
+- **Vibração**, **modo mãos livres** (voz) e **modo para daltônicos**.
+- **Tema escuro** (o claro continua o padrão), 4 mesas e 4 versos de carta.
+- **Inglês e espanhol** (`tools/i18n-table.py` gera os dicionários).
+- **Tutorial interativo** opcional (Ajustes, Como jogar e início).
+- Confirmação antes de **sair da conta**.
+- Migration `0009` (amigos, espectadores, duplas).
 - **Cartas de penalidade**: uma −6, duas −4 e duas −2. O baralho passa de 94 para 99 cartas. O ×2 não dobra penalidades e a pontuação da rodada nunca fica abaixo de 0. Partidas já em andamento continuam com o baralho antigo (`deckVersion`).
 - **Seta de voltar** na barra de navegação (e na mesa, no lugar do ícone de casa). Na sala ela pede confirmação antes de sair.
 - Limpeza automática de salas abandonadas (`STALE_ROOM_SECONDS`, padrão 180 s): sem sinal de ninguém, a sala é fechada e a partida em andamento termina sem vencedor e sem pontuar.
