@@ -60,6 +60,7 @@
         }
       }
       this.cleanup = null;
+      this.backHandler = null;
 
       const match = this.routes
         .map((route) => ({ route, found: path.match(route.regex) }))
@@ -122,6 +123,13 @@
       return view;
     },
 
+    /** Voltar: a tela pode definir `App.backHandler` (ex.: a sala pede confirmação); senão, a página anterior. */
+    goBack() {
+      if (this.backHandler) return this.backHandler();
+      if (window.history.length > 1) return window.history.back();
+      return this.navigate('/');
+    },
+
     navBar() {
       const { profile } = this.state.me;
       const link = (path, label, iconName) =>
@@ -134,6 +142,12 @@
       return h(
         'header',
         { class: 'nav' },
+        this.path === '/'
+          ? null
+          : h('button', {
+              type: 'button', class: 'icon-btn nav__back', html: icon('arrowLeft'),
+              'aria-label': 'Voltar', title: 'Voltar', onClick: () => this.goBack(),
+            }),
         h(
           'a',
           { class: 'logo nav__logo', href: '#/', 'aria-label': 'Vira-7: início' },
