@@ -37,19 +37,16 @@ async def friend_ids(store, user_id: str) -> list[str]:
     return [p["id"] for p in (await _relations(store, user_id))["friends"]]
 
 
-async def _friend_room(store, friend: dict) -> dict | None:
+def _friend_room(room: dict | None) -> dict | None:
     """A sala em que o amigo está, se dá para entrar nela (jogando ou assistindo)."""
-    membership = await store.active_membership(friend["id"])
-    if not membership:
+    if not room:
         return None
-    room = membership["room"]
-    players = await store.list_players(room["id"])
-    full = len(players) >= room["max_players"]
+    full = room["player_count"] >= room["max_players"]
     return {
         "code": room["code"],
         "name": room["name"],
         "status": room["status"],
-        "playerCount": len(players),
+        "playerCount": room["player_count"],
         "maxPlayers": room["max_players"],
         # Sala cheia ou em andamento: a pessoa entra como espectadora.
         "mode": "watch" if full or room["status"] != "lobby" else "play",
@@ -58,10 +55,12 @@ async def _friend_room(store, friend: dict) -> dict | None:
 
 async def overview(store, user_id: str) -> dict:
     relations = await _relations(store, user_id)
+    # Uma consulta para as salas de todos os amigos (em vez de duas por amigo).
+    rooms_by_user = await store.rooms_of_users([p["id"] for p in relations["friends"]])
     friends = []
     for profile in sorted(relations["friends"], key=lambda p: p["username"].lower()):
         entry = _public(profile)
-        entry["room"] = await _friend_room(store, profile)
+        entry["room"] = _friend_room(rooms_by_user.get(profile["id"]))
         friends.append(entry)
     return {
         "friends": friends,

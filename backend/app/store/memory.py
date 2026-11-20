@@ -311,6 +311,17 @@ class MemoryStore:
                 return {"room": copy.deepcopy(self.rooms[player["room_id"]]), "player": copy.deepcopy(player)}
         return None
 
+    async def rooms_of_users(self, user_ids: list[str]) -> dict[str, dict]:
+        out = {}
+        for player in self.players.values():
+            if player["user_id"] in user_ids and player["status"] == "joined":
+                room = self.rooms[player["room_id"]]
+                if room["status"] in ("lobby", "playing"):
+                    row = copy.deepcopy(room)
+                    row["player_count"] = len(self._joined(room["id"]))
+                    out[player["user_id"]] = row
+        return out
+
     async def join_room(self, room_id: str, user_id: str) -> dict:
         async with self._lock:
             room = self.rooms.get(room_id)

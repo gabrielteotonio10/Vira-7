@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import random
 import re
 from datetime import timedelta
 
@@ -366,7 +367,16 @@ async def read_chat(store, user_id: str, code: str, after: int) -> dict:
     return chat.since(room["id"], after)
 
 
+#: Quantas salas públicas a lista mostra (sorteadas entre as abertas).
+PUBLIC_ROOMS_SHOWN = 10
+
+
 async def public_rooms(store) -> list[dict]:
+    """Até 10 salas públicas abertas, sorteadas: ninguém vê "todas" e as salas
+    se espalham melhor entre quem procura. Salas com vaga vêm antes das cheias."""
+    candidates = await store.list_public_rooms(limit=60)
+    random.shuffle(candidates)
+    candidates.sort(key=lambda room: room["player_count"] >= room["max_players"])
     return [
         {
             **serialize_room(room),
@@ -374,5 +384,5 @@ async def public_rooms(store) -> list[dict]:
             "hostName": room["host_name"],
             "hostAvatar": room.get("host_avatar") or "raposa",
         }
-        for room in await store.list_public_rooms()
+        for room in candidates[:PUBLIC_ROOMS_SHOWN]
     ]
