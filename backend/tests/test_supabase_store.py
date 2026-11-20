@@ -202,3 +202,38 @@ def test_historico_junta_partida_e_placar(run):
     matches = run(store.list_matches("u1", 10, 0))
     assert len(matches) == 1
     assert matches[0]["game"]["id"] == "g1" and len(matches[0]["players"]) == 2
+
+
+def test_fechar_sala_marca_sala_e_jogadores_e_apaga_a_presenca(run):
+    store, calls = make_store(lambda request: httpx.Response(204))
+    run(store.close_room("r1"))
+    assert [(c.method, c.url.path.rsplit("/", 1)[-1]) for c in calls] == [
+        ("PATCH", "rooms"), ("PATCH", "room_players"), ("DELETE", "player_presence"),
+    ]
+    assert json.loads(calls[0].content)["status"] == "closed"
+    assert calls[0].url.params["id"] == "eq.r1"
+    assert json.loads(calls[1].content) == {"status": "left", "is_ready": False}
+    assert calls[2].url.params["room_id"] == "eq.r1"
+
+
+def test_salas_abertas_trazem_o_ultimo_sinal_so_de_pessoas(run):
+    def handler(request):
+        if request.url.path.endswith("/rooms"):
+            return httpx.Response(200, json=[{
+                "id": "r1", "status": "lobby", "updated_at": "2026-01-01T00:00:00+00:00",
+                "room_players": [
+                    {"user_id": "u1", "is_bot": False, "status": "joined"},
+                    {"user_id": None, "is_bot": True, "status": "joined"},
+                    {"user_id": "u2", "is_bot": False, "status": "left"},
+                ],
+            }])
+        return httpx.Response(200, json=[
+            {"room_id": "r1", "user_id": "u1", "last_seen_at": "2026-01-01T00:01:00+00:00"},
+            {"room_id": "r1", "user_id": "u2", "last_seen_at": "2026-01-01T00:09:00+00:00"},
+        ])
+
+    store, calls = make_store(handler)
+    rooms = run(store.list_open_rooms())
+    assert rooms[0]["humans_seen"] == ["2026-01-01T00:01:00+00:00"]
+    assert calls[0].url.params["status"] == "in.(lobby,playing)"
+    assert calls[1].url.params["room_id"] == "in.(r1)"

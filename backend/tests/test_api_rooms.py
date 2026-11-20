@@ -93,18 +93,34 @@ def test_partida_so_comeca_com_todos_prontos(signup):
     assert error_code(signup("Caio").post(f"/rooms/{code}/join")) == "ROOM_NOT_OPEN"
 
 
-def test_anfitriao_expulsa_e_sair_transfere_a_sala(table, signup):
+def test_anfitriao_expulsa_e_convidado_pode_sair_sem_fechar_a_sala(table):
     (ana, beto, caio), code = table("Ana", "Beto", "Caio")
     beto_row = next(p for p in ana.get(f"/rooms/{code}").json()["players"] if p["name"] == "Beto")
     assert len(ana.delete(f"/rooms/{code}/players/{beto_row['id']}").json()["players"]) == 2
     assert beto.get(f"/rooms/{code}").status_code == 403
     assert beto.get("/me").json()["activeRoom"] is None
 
-    assert ana.post(f"/rooms/{code}/leave").json() == {"left": True, "closed": False}
-    detail = caio.get(f"/rooms/{code}").json()
-    assert detail["me"]["isHost"] and detail["room"]["hostId"] == caio.id
+    assert caio.post(f"/rooms/{code}/leave").json() == {"left": True, "closed": False}
+    assert ana.get(f"/rooms/{code}").json()["room"]["status"] == "lobby"
 
-    assert caio.post(f"/rooms/{code}/leave").json()["closed"] is True
+
+def test_anfitriao_que_sai_do_lobby_fecha_a_sala_para_todos(table, signup):
+    (ana, beto, caio), code = table("Ana", "Beto", "Caio", visibility="public")
+    assert any(room["code"] == code for room in ana.get("/rooms/public").json()["rooms"])
+
+    assert ana.post(f"/rooms/{code}/leave").json() == {"left": True, "closed": True}
+    assert beto.get("/me").json()["activeRoom"] is None
+    assert caio.get("/me").json()["activeRoom"] is None
+    assert not any(room["code"] == code for room in beto.get("/rooms/public").json()["rooms"])
+    assert error_code(signup("Duda").post(f"/rooms/{code}/join")) == "ROOM_NOT_OPEN"
+    # Todos estão livres para criar ou entrar em outra sala.
+    assert beto.post("/rooms", {"turnSeconds": 0}).status_code == 201
+
+
+def test_ultima_pessoa_que_sai_fecha_a_sala(table, signup):
+    (ana, beto), code = table("Ana", "Beto")
+    assert beto.post(f"/rooms/{code}/leave").json()["closed"] is False
+    assert ana.post(f"/rooms/{code}/leave").json()["closed"] is True
     assert error_code(signup("Duda").post(f"/rooms/{code}/join")) == "ROOM_NOT_OPEN"
 
 
