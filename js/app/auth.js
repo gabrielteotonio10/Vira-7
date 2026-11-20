@@ -8,7 +8,8 @@
 ((F7) => {
   'use strict';
 
-  const SUPABASE_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+  // supabase-js 2.45.4, copiado para o próprio projeto (assets/vendor): sem CDN, sem risco de a biblioteca mudar.
+  const SUPABASE_LIB = 'assets/vendor/supabase.js';
   const DEV_KEY = 'vira7:dev-session';
 
   /** Mensagens do Supabase Auth em português. */
@@ -54,7 +55,7 @@
 
   const supabaseProvider = {
     async init(config) {
-      if (!window.supabase) await loadScript(SUPABASE_CDN);
+      if (!window.supabase) await loadScript(SUPABASE_LIB);
       state.client = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
       });
@@ -101,6 +102,28 @@
 
     async signIn({ email, password }) {
       const { error } = await state.client.auth.signInWithPassword({ email, password });
+      if (error) throw translate(error);
+    },
+
+    /** Convidado: login anônimo do Supabase (precisa estar ligado no painel). A conta pode virar normal depois. */
+    async signInGuest() {
+      const avatar = F7.Avatars.KEYS[Math.floor(Math.random() * F7.Avatars.KEYS.length)];
+      const { error } = await state.client.auth.signInAnonymously({ options: { data: { avatar } } });
+      if (error) throw translate(error);
+    },
+
+    /** Google: abre a página de login do Google e volta para o jogo (precisa estar ligado no painel). */
+    async signInGoogle() {
+      const { error } = await state.client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + window.location.pathname },
+      });
+      if (error) throw translate(error);
+    },
+
+    /** Convidado vira conta de verdade: define e-mail e senha sem perder as partidas. */
+    async upgradeGuest({ email, password }) {
+      const { error } = await state.client.auth.updateUser({ email, password });
       if (error) throw translate(error);
     },
 
@@ -165,6 +188,18 @@
       this.save(await F7.Api.request('POST', '/dev/login', form, { auth: false }));
     },
 
+    async signInGuest() {
+      this.save(await F7.Api.request('POST', '/dev/guest', {}, { auth: false }));
+    },
+
+    async signInGoogle() {
+      throw new Error('O login com Google só funciona com o Supabase configurado.');
+    },
+
+    async upgradeGuest() {
+      throw new Error('Contas de convidado do modo local já têm e-mail e senha internos.');
+    },
+
     async signOut() {
       state.devSession = null;
       state.user = null;
@@ -212,6 +247,9 @@
 
     signUp: (form) => provider.signUp(form),
     signIn: (form) => provider.signIn(form),
+    signInGuest: () => provider.signInGuest(),
+    signInGoogle: () => provider.signInGoogle(),
+    upgradeGuest: (form) => provider.upgradeGuest(form),
     signOut: () => provider.signOut(),
     sendRecovery: (email) => provider.sendRecovery(email),
     updatePassword: (password) => provider.updatePassword(password),

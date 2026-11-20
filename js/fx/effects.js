@@ -65,37 +65,125 @@
     host.appendChild(el);
 
     const scaleFrom = from.width / to.width;
-    const midX = (from.left + to.left) / 2;
-    const midY = Math.min(from.top, to.top) - 40;
-    const tilt = spin || (to.left > from.left ? 8 : -8);
+    const dx = to.left - from.left;
+    const dy = to.top - from.top;
+    // O arco sobe mais quanto mais longe a carta vai; para a esquerda ou direita, vira para o lado certo.
+    const arc = Math.min(120, 40 + Math.hypot(dx, dy) * 0.18);
+    const midX = from.left + dx * 0.5;
+    const midY = Math.min(from.top, to.top) - arc;
+    const tilt = spin || (dx > 0 ? 10 : dx < 0 ? -10 : 6);
+    const at = (x, y, scale, rotate) => `translate(${x}px, ${y}px) scale(${scale}) rotate(${rotate}deg)`;
     const time = dur(duration);
 
+    el.classList.add('is-flying');
     const move = el.animate(
       [
-        { transform: `translate(${from.left}px, ${from.top}px) scale(${scaleFrom}) rotate(0deg)` },
-        {
-          transform: `translate(${midX}px, ${midY}px) scale(${lift}) rotate(${tilt}deg)`,
-          offset: 0.45,
-        },
-        { transform: `translate(${to.left}px, ${to.top}px) scale(1) rotate(0deg)` },
+        // 1) sai do monte: dá um pulinho para cima, como quem puxa a carta do topo
+        { transform: at(from.left, from.top, scaleFrom, 0), offset: 0, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)' },
+        { transform: at(from.left + dx * 0.06, from.top - 22, scaleFrom * 1.14, -tilt * 0.6), offset: 0.16, easing: 'cubic-bezier(0.4, 0, 0.3, 1)' },
+        // 2) cruza a mesa em arco, crescendo e inclinando
+        { transform: at(midX, midY, lift, tilt), offset: 0.52, easing: 'cubic-bezier(0.3, 0, 0.5, 1)' },
+        // 3) desce até o lugar passando um pouquinho do ponto e assenta
+        { transform: at(to.left + dx * -0.02, to.top - 12, 1.1, -tilt * 0.3), offset: 0.86, easing: 'cubic-bezier(0.3, 0, 0.5, 1)' },
+        { transform: at(to.left, to.top, 1, 0), offset: 1 },
       ],
-      { duration: time, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)', fill: 'forwards' },
+      { duration: time, fill: 'forwards' },
+    );
+
+    // A sombra cresce enquanto a carta sobe e encolhe ao pousar.
+    el.animate(
+      [
+        { filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.25))' },
+        { filter: 'drop-shadow(0 22px 14px rgba(0,0,0,0.32))', offset: 0.5 },
+        { filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.25))' },
+      ],
+      { duration: time, fill: 'forwards' },
     );
 
     if (flip) {
       const inner = el.querySelector('.card__inner');
       inner.style.transition = 'none';
+      // Vira no ar: fica de costas na saída, gira durante o arco e chega de frente.
       inner.animate(
         [
           { transform: 'rotateY(180deg)' },
-          { transform: 'rotateY(180deg)', offset: 0.15 },
+          { transform: 'rotateY(180deg)', offset: 0.14 },
+          { transform: 'rotateY(90deg) scaleX(1.06)', offset: 0.4 },
+          { transform: 'rotateY(0deg)', offset: 0.68 },
           { transform: 'rotateY(0deg)' },
         ],
-        { duration: time * 0.85, easing: 'ease-in-out', fill: 'forwards' },
+        { duration: time, easing: 'ease-in-out', fill: 'forwards' },
       );
     }
 
-    return settle(move, time).then(() => el.remove());
+    // Rastro: pequenas faíscas ficam para trás enquanto a carta voa.
+    let trail = null;
+    if (!state.reduced && time > 200) {
+      trail = setInterval(() => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width) burst(rect.left + rect.width / 2, rect.top + rect.height / 2, { colors: ['#ffffff', '#ffe45e'], count: 2, speed: 45, size: 2.6, life: 0.35, gravity: 40 });
+      }, 55);
+    }
+
+    return settle(move, time).then(() => {
+      clearInterval(trail);
+      // Pouso: pequena poeira e um anel que se abre sob a carta.
+      if (!state.reduced) {
+        const { x, y } = center(to);
+        burst(x, to.top + to.height - 4, { colors: ['#ffffff', '#fff3bf'], count: 7, speed: 85, size: 3, life: 0.4, gravity: 120 });
+        landRing(x, to.top + to.height * 0.6, to.width);
+      }
+      el.remove();
+    });
+  }
+
+  /** Anel que se abre onde a carta pousou. */
+  function landRing(x, y, size) {
+    const ring = document.createElement('i');
+    ring.className = 'land-ring';
+    ring.style.cssText = `left:${x}px;top:${y}px;width:${size}px;height:${size}px`;
+    layer('fly-layer').appendChild(ring);
+    setTimeout(() => ring.remove(), 520);
+  }
+
+  /**
+   * Um valor (ex.: "+18") que sai de um elemento e voa em arco até outro, deixando faíscas.
+   * Usado ao parar: os pontos "viajam" das cartas até o placar da rodada.
+   */
+  function flyValue({ text, from, to, color = '#3ee08f', duration = 700 }) {
+    if (!from || !to) return Promise.resolve();
+    const a = center(from.getBoundingClientRect());
+    const b = center(to.getBoundingClientRect());
+    const el = document.createElement('span');
+    el.className = 'fly-value';
+    el.textContent = text;
+    el.style.setProperty('--fly-color', color);
+    layer('fly-layer').appendChild(el);
+    const time = dur(duration);
+    const mid = { x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - 70 };
+    const at = (p, scale) => `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) scale(${scale})`;
+    const anim = el.animate(
+      [
+        { transform: at(a, 0.4), opacity: 0 },
+        { transform: at(a, 1.25), opacity: 1, offset: 0.18 },
+        { transform: at(mid, 1.35), opacity: 1, offset: 0.55 },
+        { transform: at(b, 0.9), opacity: 1, offset: 0.92 },
+        { transform: at(b, 0.5), opacity: 0 },
+      ],
+      { duration: time, easing: 'cubic-bezier(0.3, 0.1, 0.3, 1)', fill: 'forwards' },
+    );
+    let trail = null;
+    if (!state.reduced) {
+      trail = setInterval(() => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width) burst(rect.left + rect.width / 2, rect.top + rect.height / 2, { colors: [color, '#ffffff'], count: 2, speed: 50, size: 3, life: 0.4, gravity: 30 });
+      }, 50);
+    }
+    return settle(anim, time).then(() => {
+      clearInterval(trail);
+      el.remove();
+      burst(b.x, b.y, { colors: [color, '#ffffff'], count: 12, speed: 170, size: 3.5, life: 0.5, gravity: 200 });
+    });
   }
 
   /**
@@ -443,6 +531,8 @@
     wait,
     setSpeed,
     flyCard,
+    flyValue,
+    landRing,
     vanish,
     burst,
     burstAt,

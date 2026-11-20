@@ -17,6 +17,9 @@
     [S.BUSTED]: 'Estourou',
   };
 
+  /** Texto que o CSS mostra via attr(): passa pelo tradutor, porque conteúdo de CSS ninguém traduz sozinho. */
+  const tr = (text) => (F7.i18n ? F7.i18n.t(text) : text);
+
   class TableView {
     constructor({ seatsEl, deckEl }) {
       this.seatsEl = seatsEl;
@@ -85,6 +88,7 @@
         tags: h('span', { class: 'seat__tags' }),
         status: h('span', { class: 'badge seat__status' }),
         round: h('span', { class: 'seat__round' }),
+        formula: h('small', { class: 'seat__formula' }),
         total: h('b', {}, String(player.total)),
         pips: h('div', { class: 'pips', 'aria-hidden': 'true' }),
         meterFill: h('div', { class: 'seat__meter-fill' }),
@@ -122,6 +126,7 @@
             { class: 'seat__score' },
             h('span', { class: 'seat__total', title: 'Pontuação total' }, parts.total, h('small', {}, 'pts')),
             parts.round,
+            parts.formula,
           ),
         ),
         h(
@@ -175,7 +180,9 @@
     /** Marca um jogador como conectado ou não (partidas online). */
     setOnline(player, online) {
       const el = this.seatEl(player);
-      if (el) el.classList.toggle('is-offline', !online);
+      if (!el) return;
+      el.classList.toggle('is-offline', !online);
+      el.dataset.offline = tr('sem conexão');
     }
 
     /* ------------------------------------------------------------------ */
@@ -190,6 +197,37 @@
      * @param {object} player
      * @param {{ hidden?: string[], keepTotal?: boolean }} [options]
      */
+    /** 'nervous' | 'shocked' | 'happy' | '' conforme a situação do jogador na rodada. */
+    moodOf(player, score) {
+      if (player.absent) return '';
+      if (player.status === S.BUSTED || player.status === S.FROZEN) return 'shocked';
+      if (player.flip7 || (player.status === S.STAYED && score.total >= 18)) return 'happy';
+      if (player.status === S.ACTIVE && player.numbers.length) {
+        const chance = this.game.bustChance ? this.game.bustChance(player) : 0;
+        if (chance >= 0.35 || player.numbers.length >= 5) return 'nervous';
+      }
+      return '';
+    }
+
+    /** Texto da conta de pontos: números, ×2, bônus, penalidades e Vira 7. */
+    formulaOf(player, score) {
+      if (player.status === S.BUSTED) return '';
+      const numbers = player.numbers.map((card) => card.value);
+      if (!numbers.length && !player.modifiers.length) return '';
+      let text = '';
+      if (numbers.length) {
+        text = numbers.length > 1 ? `(${numbers.join('+')})` : String(numbers[0]);
+        if (score.multiplier > 1) text += `×${score.multiplier}`;
+      }
+      player.modifiers
+        .filter((card) => card.op !== 'multiply')
+        .forEach((card) => {
+          text += `${text ? ' ' : ''}${card.value < 0 ? '−' : '+'}${Math.abs(card.value)}`;
+        });
+      if (player.flip7) text += ' +15';
+      return text;
+    }
+
     renderSeat(player, { hidden = [], keepTotal = false } = {}) {
       const seat = this.seats.get(player.id);
       if (!seat) return;
@@ -202,12 +240,29 @@
       el.dataset.flip7 = String(player.flip7);
       el.classList.toggle('is-absent', !!player.absent);
 
+      // Expressão do bichinho: nervoso (perto de estourar), chocado (estourou/congelou) ou feliz.
+      const mood = this.moodOf(player, score);
+      if (parts.avatar.dataset.mood !== mood) {
+        if (mood) parts.avatar.dataset.mood = mood;
+        else delete parts.avatar.dataset.mood;
+      }
+
+      // "Quase Vira 7": seis números diferentes e ainda na rodada.
+      const almost = player.isActive() && player.numbers.length === F7.RULES.FLIP7_UNIQUE_COUNT - 1;
+      el.classList.toggle('is-almost7', almost);
+      if (almost) el.dataset.almost = tr('A 1 CARTA DO VIRA 7!');
+      if (almost && !seat.almost && F7.Sound.tension) F7.Sound.tension();
+      seat.almost = almost;
+
       // Nome, CPU e carteador
       clear(parts.tags);
       if (player.isMe) parts.tags.appendChild(h('span', { class: 'badge badge--me' }, 'Você'));
       if (player.isBot) parts.tags.appendChild(h('span', { class: 'badge badge--bot' }, 'CPU'));
       if (game.dealer === player && game.round > 0) {
-        parts.tags.appendChild(h('span', { class: 'dealer-chip', title: 'Carteador da rodada' }, 'D'));
+        // O "D" cai sobre quem passou a ser o carteador (some a animação nas redesenhadas seguintes).
+        const moved = this.dealerId !== player.id;
+        this.dealerId = player.id;
+        parts.tags.appendChild(h('span', { class: `dealer-chip${moved ? ' is-moving' : ''}`, title: 'Carteador da rodada' }, 'D'));
       }
       if (seat.thinking) {
         parts.tags.appendChild(h('span', { class: 'seat__thinking', 'aria-label': 'pensando' }, h('i'), h('i'), h('i')));
@@ -232,6 +287,12 @@
         F7.FX.retrigger(parts.round, 'is-bumped', 380);
       }
       parts.round.hidden = game.round === 0;
+
+      // A conta da rodada, para quem está aprendendo: (8+6+3)×2 +4 −2
+      const formula = this.formulaOf(player, score);
+      parts.formula.textContent = formula;
+      parts.formula.hidden = !formula;
+      parts.round.title = formula ? `${formula} = ${score.total}` : '';
 
       const target = game.targetScore;
       parts.meterFill.style.width = `${Math.min(100, (player.total / target) * 100)}%`;
@@ -327,7 +388,9 @@
 
     setTurn(player, renderOptions = {}) {
       this.seats.forEach((seat) => {
-        seat.el.classList.toggle('is-turn', !!player && seat.player === player);
+        const turn = !!player && seat.player === player;
+        seat.el.classList.toggle('is-turn', turn);
+        if (turn) seat.el.dataset.turnLabel = tr('SUA VEZ');
       });
       if (player) this.reveal(player);
       this.renderAll(renderOptions);
@@ -370,12 +433,13 @@
         const cleanups = [];
         this.seatsEl.classList.add('is-targeting');
 
-        const finish = (player) => {
+        const finish = (player, silent = false) => {
           cleanups.forEach((fn) => fn());
           this.seatsEl.classList.remove('is-targeting');
           this.targeting = null;
           const el = this.seatEl(player);
-          if (el) F7.FX.retrigger(el, 'is-chosen', 420);
+          // Cancelado pelo jogo (partida interrompida): sem animação de "escolhido".
+          if (el && !silent) F7.FX.retrigger(el, 'is-chosen', 420);
           resolve(player);
         };
 
@@ -409,9 +473,14 @@
           });
         });
 
-        this.targeting = { cancel: () => finish(candidates[0]) };
+        this.targeting = { cancel: () => finish(candidates[0], true), pick: (player) => finish(player) };
         this.seatEl(candidates[0])?.focus({ preventScroll: true });
       });
+    }
+
+    /** Escolhe um dos candidatos por código (usado pelo modo mãos livres). */
+    pickTarget(player) {
+      if (this.targeting) this.targeting.pick(player);
     }
 
     /** Usado quando a partida é interrompida no meio de uma escolha. */

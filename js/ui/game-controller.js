@@ -130,6 +130,8 @@
     /** Compra: a carta sai do monte, gira no ar e pousa no lugar do jogador. */
     async flyFromDeck(card, player) {
       const from = this.table.deckTopEl().getBoundingClientRect();
+      // O monte "dá" a carta: a pilha cede um pouco e volta.
+      F7.FX.retrigger(this.table.deckEl, 'is-dealing', 520);
       this.table.renderPiles();
       this.hud.setDeckCount(this.game.deck.size);
       this.table.reveal(player);
@@ -143,7 +145,8 @@
         from,
         to: slot.getBoundingClientRect(),
         flip: true,
-        duration: 640,
+        lift: 1.5,
+        duration: 780,
       });
       return this.landCard(card.id);
     }
@@ -191,9 +194,40 @@
     /* Eventos do motor                                                    */
     /* ================================================================== */
 
+    /** Zera os contadores que alimentam os prêmios do fim de jogo. */
+    resetAwards() {
+      this.awards = { targeted: new Map(), bravest: null };
+    }
+
+    /**
+     * Prêmios divertidos do fim da partida, calculados com o que a mesa mostrou:
+     * Maior Mão, Coração de Ferro (parou com mais risco sem estourar), Alvo Favorito e Colecionador de 7.
+     */
+    computeAwards(game) {
+      const awards = [];
+      const players = game.players.filter((p) => !p.absent);
+      const best = players.map((p) => ({ player: p, value: Math.max(0, ...p.history) })).sort((a, b) => b.value - a.value)[0];
+      if (best && best.value >= 15) awards.push({ key: 'bestHand', icon: 'trophy', title: 'Maior Mão', player: best.player, detail: `${best.value} pontos em uma rodada` });
+
+      const brave = this.awards && this.awards.bravest;
+      if (brave) awards.push({ key: 'ironHeart', icon: 'heart', title: 'Coração de Ferro', player: brave.player, detail: `parou com ${Math.round(brave.chance * 100)}% de risco` });
+
+      const targeted = [...((this.awards && this.awards.targeted) || new Map()).entries()]
+        .map(([id, count]) => ({ player: game.players.find((p) => p.id === id), count }))
+        .filter((entry) => entry.player && entry.count >= 2)
+        .sort((a, b) => b.count - a.count)[0];
+      if (targeted) awards.push({ key: 'favoriteTarget', icon: 'target', title: 'Alvo Favorito', player: targeted.player, detail: `alvo de ${targeted.count} cartas de ação` });
+
+      const collector = players.map((p) => ({ player: p, count: (p.flip7Rounds || []).length })).sort((a, b) => b.count - a.count)[0];
+      if (collector && collector.count >= 1) awards.push({ key: 'sevenCollector', icon: 'sparkles', title: 'Colecionador de 7', player: collector.player, detail: `${collector.count} Vira 7` });
+      return awards;
+    }
+
     async onGameStart(payload, game) {
-      this.perspectiveId = this.perspective(game);
-      this.table.setup(game, { perspective: this.perspectiveId });
+      this.resetAwards();
+      this.table.setup(game, { perspective: this.perspective(game) });
+      // Várias pessoas no mesmo aparelho: a mesa não gira, mas o lugar de quem joga ganha destaque.
+      this.table.seatsEl.classList.toggle('is-spotlight', !!this.options.spotlight);
       this.hud.setTarget(game.targetScore);
       this.hud.setDeckCount(game.deck.size);
       this.hud.clearLog();
@@ -235,11 +269,6 @@
     }
 
     async onTurnStart({ player }, game) {
-      // Mesma tela com várias pessoas: quem vai jogar passa a ser o lugar grande, embaixo.
-      if (this.options.hotSeat && !player.isBot && this.perspectiveId !== player.id) {
-        this.perspectiveId = player.id;
-        await this.rotateTo(player, game);
-      }
       this.turnPlayer = player;
       this.table.setTurn(player);
       const mine = this.isMe(player);
@@ -249,18 +278,6 @@
       // A doca muda de altura ao mostrar risco e relógio: confere de novo se o lugar cabe.
       this.table.reveal(player);
       if (mine) F7.Sound.turn();
-    }
-
-    /** Gira a mesa para `player` ficar embaixo, com um aviso de "passe o aparelho". */
-    async rotateTo(player, game) {
-      const seats = this.table.seatsEl;
-      seats.classList.add('is-rotating');
-      await F7.FX.wait(180);
-      this.table.setup(game, { perspective: player.id });
-      this.hud.setDeckCount(game.deck.size);
-      seats.classList.remove('is-rotating');
-      F7.FX.retrigger(seats, 'is-rotated', 500);
-      await F7.FX.banner(`Vez de ${player.name}`, { sub: 'Passe o aparelho', variant: 'round', hold: 650 });
     }
 
     /** O servidor jogou por alguém (tempo esgotado ou sem conexão). */
@@ -387,6 +404,7 @@
     }
 
     async onActionPlayed({ from, to, card }) {
+      if (from !== to && this.awards) this.awards.targeted.set(to.id, (this.awards.targeted.get(to.id) || 0) + 1);
       await this.moveBetweenSeats(card, from, to);
       const target = from === to ? 'em si mesmo' : `em ${who(to)}`;
       this.hud.log(`${who(from)} jogou ${cardLabel(card)} ${target}`, TARGET_INFO[card.action].color);
@@ -433,13 +451,36 @@
     }
 
     async onStay({ player, score, forced }) {
+      // Parar com a rodada boa e o risco alto é coragem: guarda o maior para o prêmio.
+      const chance = this.game && player.numbers.length ? this.game.bustChance(player) : 0;
+      if (this.awards && !forced && score.total >= 15 && chance >= 0.25 && (!this.awards.bravest || chance > this.awards.bravest.chance)) {
+        this.awards.bravest = { player, chance };
+      }
       const seat = this.table.seatEl(player);
       this.table.renderSeat(player);
       F7.Sound.stay();
       const roundEl = seat && qs('.seat__round', seat);
+      this.hud.setActionsEnabled(false);
+      if (seat) {
+        // As cartas "fecham a mão": cada uma dá um pulinho em sequência e a plaqueta ganha um anel verde.
+        seat.querySelectorAll('.seat__cards .card').forEach((card, index) => card.style.setProperty('--i', index));
+        F7.FX.retrigger(seat, 'is-settling', 1100);
+        // Um escudo (mão aberta) aparece sobre o lugar e some.
+        const shield = document.createElement('span');
+        shield.className = 'seat__shield';
+        shield.innerHTML = F7.icons.icon('hand');
+        seat.appendChild(shield);
+        setTimeout(() => shield.remove(), 900);
+      }
+      // Os pontos viajam das cartas até o placar da rodada.
+      const cardsEl = seat && (qs('.seat__cards', seat) || seat);
+      await Promise.all([
+        F7.FX.flyValue({ text: `+${score.total}`, from: cardsEl, to: roundEl || seat, color: '#3ee08f', duration: 760 }),
+        F7.FX.wait(200),
+      ]);
+      if (roundEl) F7.FX.retrigger(roundEl, 'is-bumped', 420);
       F7.FX.floatText(roundEl || seat, `${score.total} garantidos`, '#3ee08f');
       F7.FX.burstAt(roundEl || seat, { colors: ['#3ee08f', '#ffffff'], count: 14, speed: 200, size: 4 });
-      this.hud.setActionsEnabled(false);
       const why = forced ? ' (acabaram as cartas)' : '';
       this.hud.log(`${who(player)} parou com <b>${score.total}</b> pontos${why}`, 'var(--success)');
       await F7.FX.wait(350);
@@ -462,9 +503,12 @@
       this.table.renderAll();
       await F7.FX.wait(350);
 
-      const victory = game.teams
-        ? F7.Scoring.checkVictory(game.teams, game.targetScore)
-        : F7.Scoring.checkVictory(game.players, game.targetScore);
+      // Quem abandonou não conta: o servidor também o ignora ao decidir se a partida acabou.
+      const present = game.players.filter((p) => !p.absent);
+      const teamsLeft = game.teams ? game.teams.filter((t) => t.seats.some((seat) => !game.players[seat].absent)) : null;
+      const victory = teamsLeft
+        ? F7.Scoring.checkVictory(teamsLeft, game.targetScore)
+        : F7.Scoring.checkVictory(present.length ? present : game.players, game.targetScore);
       const allBots = game.players.every((p) => p.isBot);
       await F7.Modals.roundSummary(payload, game, {
         autoNextMs: this.options.autoNextMs ?? (allBots ? 6000 : 0),
@@ -521,13 +565,23 @@
         F7.Sound.win();
         F7.FX.confetti({ count: 220 });
         setTimeout(() => F7.FX.confetti({ count: 120 }), F7.FX.dur(1200));
-        const how = reason === 'forfeit' ? 'por abandono dos adversários' : `com <b>${winner.total}</b> pontos`;
-        const label = payload.winnerTeam !== null && payload.winnerTeam !== undefined && game.teams ? F7.teamName(payload.winnerTeam) : who(winner);
+        const winningTeam =
+          payload.winnerTeam !== null && payload.winnerTeam !== undefined && game.teams
+            ? game.teams.find((t) => t.id === payload.winnerTeam)
+            : null;
+        // Em duplas, o placar que vale é o da dupla, não o da pessoa que fechou o jogo.
+        const points = winningTeam ? winningTeam.total : winner.total;
+        const how = reason === 'forfeit' ? 'por abandono dos adversários' : `com <b>${points}</b> pontos`;
+        const label = winningTeam ? F7.teamName(winningTeam.id) : who(winner);
         this.hud.log(`🏆 ${label} venceu ${how}!`, 'var(--gold)');
       } else {
         this.hud.log('A partida foi encerrada.', 'var(--text-dim)');
       }
-      this.lastChoice = await F7.Modals.gameOver(payload, game, { actions: this.options.gameOverActions });
+      this.lastChoice = await F7.Modals.gameOver(payload, game, {
+        actions: this.options.gameOverActions,
+        awards: this.computeAwards(game),
+        note: this.options.gameOverNote,
+      });
     }
   }
 

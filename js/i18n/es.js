@@ -513,6 +513,92 @@
   "Mensagem desconhecida.": "Mensaje desconocido.",
   "Calma! Espere um instante para enviar outra.": "¡Calma! Espera un momento para enviar otra.",
   "Não foi possível concluir a operação.": "No se pudo completar la operación.",
+  "sem conexão": "sin conexión",
+  "Conquistas": "Logros",
+  "Termine uma partida online.": "Termina una partida en línea.",
+  "Primeira vitória": "Primera victoria",
+  "Vença uma partida online.": "Gana una partida en línea.",
+  "Junte 7 números diferentes em uma rodada.": "Junta 7 números distintos en una ronda.",
+  "Sequência de 3": "Racha de 3",
+  "Vença 3 partidas seguidas.": "Gana 3 partidas seguidas.",
+  "Cai e levanta": "Cae y se levanta",
+  "Estoure 10 vezes e continue jogando.": "Pásate 10 veces y sigue jugando.",
+  "Mão de ouro": "Mano de oro",
+  "Faça 40 pontos ou mais em uma única rodada.": "Haz 40 puntos o más en una sola ronda.",
+  "Dez vitórias": "Diez victorias",
+  "Vença 10 partidas.": "Gana 10 partidas.",
+  "Veterano": "Veterano",
+  "Jogue 25 partidas.": "Juega 25 partidas.",
+  "Imparável": "Imparable",
+  "Vença 5 partidas seguidas.": "Gana 5 partidas seguidas.",
+  "Mestre do Vira 7": "Maestro del Vira 7",
+  "Faça 10 Vira 7.": "Haz 10 Vira 7.",
+  "Placar histórico": "Marcador histórico",
+  "Termine uma partida com 250 pontos ou mais.": "Termina una partida con 250 puntos o más.",
+  "Centenário": "Centenario",
+  "Jogue 100 partidas.": "Juega 100 partidas.",
+  "Prêmios da partida": "Premios de la partida",
+  "Maior Mão": "Mejor Mano",
+  "Coração de Ferro": "Corazón de Hierro",
+  "Alvo Favorito": "Objetivo Favorito",
+  "Colecionador de 7": "Coleccionista de 7",
+  "Entrar com Google": "Entrar con Google",
+  "Entrar como convidado": "Entrar como invitado",
+  "ou": "o",
+  "Convidados jogam na hora e podem criar a conta depois, sem perder as partidas.": "Los invitados juegan al instante y pueden crear la cuenta después sin perder sus partidas.",
+  "Criar minha conta": "Crear mi cuenta",
+  "Guarde seu progresso": "Guarda tu progreso",
+  "Agora não": "Ahora no",
+  "Você está jogando como convidado": "Estás jugando como invitado",
+  "Se limpar os dados do navegador, a conta some. Crie e-mail e senha para guardar vitórias e amigos.": "Si borras los datos del navegador, la cuenta desaparece. Crea correo y contraseña para guardar victorias y amigos.",
+  "Quase lá! Confirme o e-mail para terminar.": "¡Casi! Confirma el correo para terminar.",
+  "Em uma sala privada": "En una sala privada",
+  "Convidar para minha sala": "Invitar a mi sala",
+  "Compartilhar…": "Compartir…",
+  "Duplas só aceitam 4, 6 ou 8 jogadores. Quem senta na frente de você é seu parceiro e os pontos são somados.": "Las parejas solo admiten 4, 6 u 8 jugadores. Quien se sienta frente a ti es tu compañero y los puntos se suman.",
+  "Duplas precisam de 4, 6 ou 8 jogadores.": "Las parejas necesitan 4, 6 u 8 jugadores.",
+  "Cautelosa": "Cautelosa",
+  "Equilibrada": "Equilibrada",
+  "Ousada": "Audaz",
+  "Nível da CPU": "Nivel de la CPU",
+  "Subir um lugar": "Subir un lugar",
+  "Descer um lugar": "Bajar un lugar",
+  "Baralho": "Baraja",
+  "Com penalidades (99)": "Con penalizaciones (99)",
+  "Clássico (94)": "Clásico (94)",
+  "Amigos entram direto": "Los amigos entran directo",
+  "Entram direto": "Entran directo",
+  "Penalidades: uma −6, duas −4 e duas −2. O clássico tem só as 94 cartas oficiais do Flip 7.": "Penalizaciones: una −6, dos −4 y dos −2. La clásica tiene solo las 94 cartas oficiales de Flip 7.",
+  "Em sala privada, \"Amigos entram direto\" mostra o código na lista de amigos. Em sala pública não muda nada.": "En una sala privada, \"Los amigos entran directo\" muestra el código en la lista de amigos. En una sala pública no cambia nada.",
+  "O anfitrião está sem conexão": "El anfitrión está sin conexión",
+  "Se ele não voltar em instantes, a sala passa para outra pessoa.": "Si no vuelve pronto, la sala pasa a otra persona.",
+  "Você agora é o anfitrião da sala.": "Ahora eres el anfitrión de la sala.",
+  "As regras da partida rápida não podem ser alteradas.": "Las reglas de la partida rápida no se pueden cambiar.",
+  "Nível de CPU desconhecido.": "Nivel de CPU desconocido.",
+  "O serviço de contas está indisponível no momento. Tente de novo em instantes.": "El servicio de cuentas no está disponible ahora. Inténtalo de nuevo en un momento.",
+  "A 1 CARTA DO VIRA 7!": "¡A 1 CARTA DEL VIRA 7!",
+  "SUA VEZ": "TU TURNO",
+  "Código copiado!": "¡Código copiado!",
+  "Link copiado!": "¡Enlace copiado!",
+  "Abandonou": "Abandonó",
+  "por abandono": "por abandono",
+  "· saiu": "· salió",
+  "(CPU)": "(CPU)",
+  "Vira-7 · Partida": "Vira-7 · Partida",
+  "Vira-7 · Mesma tela": "Vira-7 · Misma pantalla",
+  "Vira-7 · Tutorial": "Vira-7 · Tutorial",
+  "● Sua vez!": "● ¡Tu turno!",
+  "Saiu da partida": "Salió de la partida",
+  "Acordando o servidor… no plano gratuito isso pode levar até 1 minuto. Já já você joga!": "Despertando el servidor… en el plan gratuito puede tardar hasta un minuto. ¡Ya casi juegas!",
+  "Não foi possível carregar o ranking": "No se pudo cargar la clasificación",
+  "Não foi possível carregar o perfil": "No se pudo cargar el perfil",
+  "Quem aparece": "Quién aparece",
+  "Ordenar por": "Ordenar por",
+  "Aproveitamento": "Rendimiento",
+  "Média de pontos": "Promedio de puntos",
+  "Média": "Prom.",
+  "Só entra quem jogou pelo menos 5 partidas.": "Solo entran quienes jugaron al menos 5 partidas.",
+  "Duplas só aceitam 4, 6 ou 8 jogadores (as CPUs completam a mesa). Quem senta na frente de você é seu parceiro.": "Las parejas solo admiten 4, 6 u 8 jugadores (las CPU completan la mesa). Quien se sienta frente a ti es tu compañero.",
   "Salvo neste aparelho (sem conexão com o servidor)": "Guardado en este dispositivo (sin conexión con el servidor)",
   "Aprender a jogar (tutorial)": "Aprender a jugar (tutorial)",
   "Passe o aparelho": "Pasa el dispositivo",
@@ -562,6 +648,70 @@
   [
    "^no jogo desde (.+)$",
    "jugando desde $1"
+  ],
+  [
+   "^Vira-7 · Sala (.+)$",
+   "Vira-7 · Sala $1"
+  ],
+  [
+   "^● (.+)$",
+   "● $1"
+  ],
+  [
+   "^(.+), escolha quem vai congelar$",
+   "$1, elige a quién congelar"
+  ],
+  [
+   "^(.+), escolha quem vai virar três cartas$",
+   "$1, elige quién debe voltear tres cartas"
+  ],
+  [
+   "^(.+), escolha quem vai receber a Segunda Chance$",
+   "$1, elige quién recibe la Segunda Oportunidad"
+  ],
+  [
+   "^Completar as duplas com (\\d+) CPUs?$",
+   "Completar las parejas con $1 CPU"
+  ],
+  [
+   "^Subir (.+)$",
+   "Subir a $1"
+  ],
+  [
+   "^Descer (.+)$",
+   "Bajar a $1"
+  ],
+  [
+   "^(.+) agora é o anfitrião\\.$",
+   "$1 ahora es el anfitrión."
+  ],
+  [
+   "^Duplas precisam de 4, 6 ou 8 jogadores: falta(?:m)? (\\d+)\\. Convide alguém ou complete com CPUs\\.$",
+   "Las parejas necesitan 4, 6 u 8 jugadores: faltan $1. Invita a alguien o completa con CPU."
+  ],
+  [
+   "^(\\d+) pontos em uma rodada$",
+   "$1 puntos en una ronda"
+  ],
+  [
+   "^parou com (\\d+)% de risco$",
+   "se plantó con $1% de riesgo"
+  ],
+  [
+   "^alvo de (\\d+) cartas de ação$",
+   "objetivo de $1 cartas de acción"
+  ],
+  [
+   "^(\\d+) Vira 7$",
+   "$1 Vira 7"
+  ],
+  [
+   "^(\\d+)/(\\d+) prontos para a revanche$",
+   "$1/$2 listos para la revancha"
+  ],
+  [
+   "^Duplas precisam de 4, 6 ou 8 jogadores: a mesa agora tem (\\d+)\\.$",
+   "Las parejas necesitan 4, 6 u 8 jugadores: la mesa ahora tiene $1."
   ],
   [
    "^Passo (\\d+) de (\\d+)$",

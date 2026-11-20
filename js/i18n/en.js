@@ -513,6 +513,92 @@
   "Mensagem desconhecida.": "Unknown message.",
   "Calma! Espere um instante para enviar outra.": "Easy! Wait a moment before sending another.",
   "Não foi possível concluir a operação.": "Couldn't complete the operation.",
+  "sem conexão": "offline",
+  "Conquistas": "Achievements",
+  "Termine uma partida online.": "Finish an online game.",
+  "Primeira vitória": "First win",
+  "Vença uma partida online.": "Win an online game.",
+  "Junte 7 números diferentes em uma rodada.": "Collect 7 different numbers in one round.",
+  "Sequência de 3": "3-win streak",
+  "Vença 3 partidas seguidas.": "Win 3 games in a row.",
+  "Cai e levanta": "Bounce back",
+  "Estoure 10 vezes e continue jogando.": "Bust 10 times and keep playing.",
+  "Mão de ouro": "Golden hand",
+  "Faça 40 pontos ou mais em uma única rodada.": "Score 40 points or more in a single round.",
+  "Dez vitórias": "Ten wins",
+  "Vença 10 partidas.": "Win 10 games.",
+  "Veterano": "Veteran",
+  "Jogue 25 partidas.": "Play 25 games.",
+  "Imparável": "Unstoppable",
+  "Vença 5 partidas seguidas.": "Win 5 games in a row.",
+  "Mestre do Vira 7": "Flip 7 master",
+  "Faça 10 Vira 7.": "Make 10 Flip 7s.",
+  "Placar histórico": "Record score",
+  "Termine uma partida com 250 pontos ou mais.": "Finish a game with 250 points or more.",
+  "Centenário": "Centurion",
+  "Jogue 100 partidas.": "Play 100 games.",
+  "Prêmios da partida": "Game awards",
+  "Maior Mão": "Best Hand",
+  "Coração de Ferro": "Iron Heart",
+  "Alvo Favorito": "Favorite Target",
+  "Colecionador de 7": "Seven Collector",
+  "Entrar com Google": "Sign in with Google",
+  "Entrar como convidado": "Continue as guest",
+  "ou": "or",
+  "Convidados jogam na hora e podem criar a conta depois, sem perder as partidas.": "Guests play right away and can create an account later without losing their games.",
+  "Criar minha conta": "Create my account",
+  "Guarde seu progresso": "Save your progress",
+  "Agora não": "Not now",
+  "Você está jogando como convidado": "You're playing as a guest",
+  "Se limpar os dados do navegador, a conta some. Crie e-mail e senha para guardar vitórias e amigos.": "If you clear your browser data, the account disappears. Add an email and password to keep wins and friends.",
+  "Quase lá! Confirme o e-mail para terminar.": "Almost there! Confirm your email to finish.",
+  "Em uma sala privada": "In a private room",
+  "Convidar para minha sala": "Invite to my room",
+  "Compartilhar…": "Share…",
+  "Duplas só aceitam 4, 6 ou 8 jogadores. Quem senta na frente de você é seu parceiro e os pontos são somados.": "Teams only allow 4, 6 or 8 players. Whoever sits across from you is your partner and points are added together.",
+  "Duplas precisam de 4, 6 ou 8 jogadores.": "Teams need 4, 6 or 8 players.",
+  "Cautelosa": "Cautious",
+  "Equilibrada": "Balanced",
+  "Ousada": "Bold",
+  "Nível da CPU": "CPU level",
+  "Subir um lugar": "Move up",
+  "Descer um lugar": "Move down",
+  "Baralho": "Deck",
+  "Com penalidades (99)": "With penalties (99)",
+  "Clássico (94)": "Classic (94)",
+  "Amigos entram direto": "Friends join directly",
+  "Entram direto": "Join directly",
+  "Penalidades: uma −6, duas −4 e duas −2. O clássico tem só as 94 cartas oficiais do Flip 7.": "Penalties: one −6, two −4s and two −2s. Classic has only the 94 official Flip 7 cards.",
+  "Em sala privada, \"Amigos entram direto\" mostra o código na lista de amigos. Em sala pública não muda nada.": "In a private room, \"Friends join directly\" shows the code in your friends' list. It changes nothing in a public room.",
+  "O anfitrião está sem conexão": "The host is offline",
+  "Se ele não voltar em instantes, a sala passa para outra pessoa.": "If they don't come back soon, the room passes to someone else.",
+  "Você agora é o anfitrião da sala.": "You're now the host of the room.",
+  "As regras da partida rápida não podem ser alteradas.": "Quick match rules can't be changed.",
+  "Nível de CPU desconhecido.": "Unknown CPU level.",
+  "O serviço de contas está indisponível no momento. Tente de novo em instantes.": "The accounts service is unavailable right now. Try again in a moment.",
+  "A 1 CARTA DO VIRA 7!": "1 CARD AWAY FROM FLIP 7!",
+  "SUA VEZ": "YOUR TURN",
+  "Código copiado!": "Code copied!",
+  "Link copiado!": "Link copied!",
+  "Abandonou": "Left the game",
+  "por abandono": "by forfeit",
+  "· saiu": "· left",
+  "(CPU)": "(CPU)",
+  "Vira-7 · Partida": "Vira-7 · Game",
+  "Vira-7 · Mesma tela": "Vira-7 · Same screen",
+  "Vira-7 · Tutorial": "Vira-7 · Tutorial",
+  "● Sua vez!": "● Your turn!",
+  "Saiu da partida": "Left the game",
+  "Acordando o servidor… no plano gratuito isso pode levar até 1 minuto. Já já você joga!": "Waking up the server… on the free plan this can take up to a minute. You'll be playing soon!",
+  "Não foi possível carregar o ranking": "Couldn't load the leaderboard",
+  "Não foi possível carregar o perfil": "Couldn't load the profile",
+  "Quem aparece": "Who shows up",
+  "Ordenar por": "Sort by",
+  "Aproveitamento": "Win rate",
+  "Média de pontos": "Average points",
+  "Média": "Avg",
+  "Só entra quem jogou pelo menos 5 partidas.": "Only players with at least 5 games are listed.",
+  "Duplas só aceitam 4, 6 ou 8 jogadores (as CPUs completam a mesa). Quem senta na frente de você é seu parceiro.": "Teams only allow 4, 6 or 8 players (CPUs fill the table). Whoever sits across from you is your partner.",
   "Salvo neste aparelho (sem conexão com o servidor)": "Saved on this device (no connection to the server)",
   "Aprender a jogar (tutorial)": "Learn to play (tutorial)",
   "Passe o aparelho": "Pass the device",
@@ -562,6 +648,70 @@
   [
    "^no jogo desde (.+)$",
    "playing since $1"
+  ],
+  [
+   "^Vira-7 · Sala (.+)$",
+   "Vira-7 · Room $1"
+  ],
+  [
+   "^● (.+)$",
+   "● $1"
+  ],
+  [
+   "^(.+), escolha quem vai congelar$",
+   "$1, choose who to freeze"
+  ],
+  [
+   "^(.+), escolha quem vai virar três cartas$",
+   "$1, choose who must flip three cards"
+  ],
+  [
+   "^(.+), escolha quem vai receber a Segunda Chance$",
+   "$1, choose who gets the Second Chance"
+  ],
+  [
+   "^Completar as duplas com (\\d+) CPUs?$",
+   "Fill the teams with $1 CPU(s)"
+  ],
+  [
+   "^Subir (.+)$",
+   "Move $1 up"
+  ],
+  [
+   "^Descer (.+)$",
+   "Move $1 down"
+  ],
+  [
+   "^(.+) agora é o anfitrião\\.$",
+   "$1 is now the host."
+  ],
+  [
+   "^Duplas precisam de 4, 6 ou 8 jogadores: falta(?:m)? (\\d+)\\. Convide alguém ou complete com CPUs\\.$",
+   "Teams need 4, 6 or 8 players: $1 missing. Invite someone or fill with CPUs."
+  ],
+  [
+   "^(\\d+) pontos em uma rodada$",
+   "$1 points in one round"
+  ],
+  [
+   "^parou com (\\d+)% de risco$",
+   "stayed at $1% risk"
+  ],
+  [
+   "^alvo de (\\d+) cartas de ação$",
+   "targeted by $1 action cards"
+  ],
+  [
+   "^(\\d+) Vira 7$",
+   "$1 Flip 7s"
+  ],
+  [
+   "^(\\d+)/(\\d+) prontos para a revanche$",
+   "$1/$2 ready for the rematch"
+  ],
+  [
+   "^Duplas precisam de 4, 6 ou 8 jogadores: a mesa agora tem (\\d+)\\.$",
+   "Teams need 4, 6 or 8 players: the table now has $1."
   ],
   [
    "^Passo (\\d+) de (\\d+)$",

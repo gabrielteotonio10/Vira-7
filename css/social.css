@@ -484,21 +484,6 @@
   padding: var(--space-2) var(--space-3);
 }
 
-/* ---- Mesma tela: a mesa gira para quem está jogando ---- */
-.is-rotating {
-  opacity: 0;
-  transform: scale(0.97);
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-
-.is-rotated {
-  animation: seats-in 420ms var(--ease-out) both;
-}
-
-@keyframes seats-in {
-  from { opacity: 0; transform: translateY(14px) scale(0.98); }
-  to { opacity: 1; transform: none; }
-}
 
 .section-hint {
   display: block;
@@ -510,4 +495,300 @@
 .chip--ok {
   border-color: var(--green-d);
   color: var(--green-d);
+}
+
+/* Opções bloqueadas (ex.: números ímpares de jogadores no modo Duplas) */
+.segmented button:disabled {
+  opacity: 0.32;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+/* ---- Mesma tela: o lugar de quem joga cresce no lugar (a mesa não muda de posição) ---- */
+.is-spotlight .seat {
+  transition: transform 320ms var(--ease-spring), opacity 260ms, filter 260ms, box-shadow 260ms, background 260ms;
+}
+
+.is-spotlight .seat:not(.is-turn) {
+  opacity: 0.8;
+  filter: saturate(0.85);
+}
+
+.is-spotlight .seat--compact.is-turn {
+  z-index: calc(var(--z-seat-active) + 2);
+  transform: translateY(-6px) scale(1.24);
+  transform-origin: 50% 12%;
+}
+
+.is-spotlight .seat--me.is-turn {
+  transform: translateY(-5px) scale(1.03);
+}
+
+/* O nome de quem joga ganha uma faixa para ninguém duvidar de quem é a vez */
+.is-spotlight .seat.is-turn .seat__name {
+  color: var(--ink);
+}
+
+.is-spotlight .seat.is-turn::before {
+  content: attr(data-turn-label);
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  padding: 1px 10px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--red);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.ranking-controls {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.ranking-controls .ranking-tabs {
+  margin-bottom: 0;
+}
+
+.rank-card__stats {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.ranking td:nth-child(4),
+.ranking td:nth-child(5) {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ---- Lobby: CPUs com nível, trocar lugares, aviso de anfitrião ausente ---- */
+.cpu-add {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.cpu-add .segmented {
+  justify-self: stretch;
+}
+
+.cpu-add .segmented button {
+  flex: 1;
+}
+
+.lobby-player__move {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.icon-btn--sm {
+  width: 26px;
+  height: 20px;
+  border-radius: 6px;
+}
+
+.icon-btn--sm .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.host-away {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--warning);
+  color: var(--card-ink);
+}
+
+.host-away .icon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+
+.host-away p {
+  font-size: var(--fs-sm);
+}
+
+.option__hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+/* ---- Conquistas e prêmios ---- */
+.badge--title {
+  background: var(--yellow);
+  color: var(--card-ink);
+}
+
+.achievements {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.achievement {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  padding: var(--space-2) var(--space-3);
+  border: 2px dashed var(--ink-3);
+  border-radius: var(--radius-md);
+  opacity: 0.55;
+}
+
+.achievement.is-unlocked {
+  border-style: solid;
+  border-color: var(--ink);
+  background: var(--surface);
+  opacity: 1;
+  box-shadow: var(--lift-sm);
+}
+
+.achievement__icon .icon {
+  width: 22px;
+  height: 22px;
+  color: var(--ink-3);
+}
+
+.achievement.is-unlocked .achievement__icon .icon {
+  color: var(--yellow-d);
+}
+
+.achievement small {
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+  line-height: 1.25;
+}
+
+.awards {
+  margin: var(--space-4) 0;
+}
+
+.awards h3 {
+  margin-bottom: var(--space-2);
+  font-size: 1.1rem;
+}
+
+.awards__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.award {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: inset 0 4px 0 var(--player-color, var(--yellow));
+  animation: rise-in 420ms var(--ease-spring) both;
+  animation-delay: calc(var(--i, 0) * 110ms + 600ms);
+}
+
+.award > div {
+  display: grid;
+  min-width: 0;
+}
+
+.award strong {
+  font-size: var(--fs-sm);
+}
+
+.award span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.award small {
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+}
+
+.award__icon .icon {
+  width: 26px;
+  height: 26px;
+  color: var(--yellow-d);
+}
+
+.award .avatar {
+  width: 36px;
+  height: 36px;
+}
+
+.rematch-note {
+  align-self: center;
+  margin-right: auto;
+  color: var(--ink-2);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+
+/* ---- Entrar: atalhos sem senha ---- */
+.auth__shortcuts {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.auth__or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--ink-3);
+  font-size: var(--fs-xs);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.auth__or::before,
+.auth__or::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+}
+
+.btn--google {
+  background: #fff;
+  color: #1b2333;
+}
+
+.guest-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  background: var(--paper-2);
+}
+
+.guest-note p {
+  color: var(--ink-2);
+  font-size: var(--fs-sm);
 }

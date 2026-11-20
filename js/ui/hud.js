@@ -21,7 +21,7 @@
       this.el = {
         round: qs('#hud-round', root),
         target: qs('#hud-target', root),
-        deckChip: qs('#hud-deck', root),
+        deckCount: qs('.pile__count', root),
         dock: qs('#dock', root),
         turnAvatar: qs('#turn-avatar', root),
         turnLabel: qs('#turn-label', root),
@@ -62,10 +62,10 @@
     }
 
     setDeckCount(count) {
-      if (!this.el.deckChip) return;
+      if (!this.el.deckCount) return;
       const text = String(count);
-      if (this.el.deckChip.textContent !== text) F7.FX.retrigger(this.el.deckChip, 'is-bumped', 380);
-      this.el.deckChip.textContent = text;
+      if (this.el.deckCount.textContent !== text) F7.FX.retrigger(this.el.deckCount, 'is-bumped', 380);
+      this.el.deckCount.textContent = text;
     }
 
     /* ------------------------------------------------------------------ */
@@ -132,7 +132,13 @@
         const left = Math.min(total, Math.max(0, deadline - Date.now()));
         timer.style.setProperty('--left', Math.min(1, left / total).toFixed(3));
         timer.classList.toggle('is-urgent', left <= 5000);
-        value.textContent = `${Math.ceil(left / 1000)}s`;
+        const seconds = Math.ceil(left / 1000);
+        value.textContent = `${seconds}s`;
+        // Nos últimos 5 segundos, um tique por segundo (só para quem está jogando).
+        if (left > 0 && left <= 5000 && seconds !== this.lastTick && this.pendingMove) {
+          this.lastTick = seconds;
+          F7.Sound.tick(seconds === 1);
+        }
       };
       timer.hidden = false;
       tick();
@@ -181,12 +187,13 @@
       this.cancelWait();
       this.setActionsEnabled(true);
       return new Promise((resolve) => {
-        const finish = (move) => {
+        // `silent`: a espera foi cancelada pelo jogo (não foi um toque), então não faz barulho.
+        const finish = (move, silent = false) => {
           this.el.hit.removeEventListener('click', onHit);
           this.el.stay.removeEventListener('click', onStay);
           this.pendingMove = null;
           this.setActionsEnabled(false);
-          F7.Sound.click();
+          if (!silent) F7.Sound.click();
           resolve(move);
         };
         const onHit = () => finish('hit');
@@ -199,7 +206,7 @@
     }
 
     cancelWait() {
-      if (this.pendingMove) this.pendingMove('stay');
+      if (this.pendingMove) this.pendingMove('stay', true);
     }
 
     bindKeyboard() {

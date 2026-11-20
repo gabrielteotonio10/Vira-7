@@ -321,7 +321,7 @@
   border: 2px solid var(--ink);
   border-radius: 8px;
   background: var(--toast-color);
-  color: var(--ink);
+  color: var(--card-ink);
 }
 
 .toast.is-leaving {

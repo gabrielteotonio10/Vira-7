@@ -19,7 +19,7 @@
       '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
       '<path d="M4.5 9A8 8 0 0 1 18 5.5L20 7.5M19.5 15A8 8 0 0 1 6 18.5L4 16.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
       '<path d="M20 3.5v4h-4M4 20.5v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
-      '<text x="12" y="16.3" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="700" font-size="11" fill="currentColor">3</text>' +
+      '<text x="12" y="16.3" text-anchor="middle" font-family="Lilita One, sans-serif" font-weight="700" font-size="11" fill="currentColor">3</text>' +
       '</svg>',
     heart:
       '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
@@ -59,6 +59,8 @@
     share: svg('<path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12"/>'),
     chat: svg('<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z"/>'),
     eye: svg('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
+    arrowUp: svg('<path d="M12 19V5"/><path d="m5.5 11.5 6.5-6.5 6.5 6.5"/>'),
+    arrowDown: svg('<path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/>'),
     arrowLeft: svg('<path d="M19 12H5"/><path d="m11.5 5.5-6.5 6.5 6.5 6.5"/>'),
     home: svg('<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/>'),
   };

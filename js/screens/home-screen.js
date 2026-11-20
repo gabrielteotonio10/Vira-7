@@ -12,9 +12,10 @@
   const TIMERS = [[0, 'Sem tempo'], [15, '15s'], [30, '30s'], [45, '45s'], [60, '60s'], [90, '90s']];
 
   /** Controle segmentado ligado a um valor. */
-  function segmented(options, value, label) {
+  function segmented(options, value, label, onChange) {
     let current = value;
     const root = h('div', { class: 'segmented segmented--wrap', role: 'radiogroup', 'aria-label': label });
+    const paint = () => buttons.forEach((b, i) => b.setAttribute('aria-checked', String(options[i][0] === current)));
     const buttons = options.map(([optionValue, text]) => {
       const button = h(
         'button',
@@ -23,9 +24,11 @@
           role: 'radio',
           'aria-checked': String(optionValue === current),
           onClick: () => {
+            if (button.disabled) return;
             current = optionValue;
-            buttons.forEach((b, i) => b.setAttribute('aria-checked', String(options[i][0] === current)));
+            paint();
             F7.Sound.click();
+            if (onChange) onChange(current);
           },
         },
         text,
@@ -33,7 +36,21 @@
       root.appendChild(button);
       return button;
     });
-    return { el: root, get value() { return current; } };
+    return {
+      el: root,
+      get value() { return current; },
+      /** Escolhe um valor por código (sem som nem aviso de mudança). */
+      set(next) {
+        current = next;
+        paint();
+      },
+      /** Habilita só as opções em que `allowed(valor)` é verdadeiro. */
+      setEnabled(allowed) {
+        buttons.forEach((b, i) => {
+          b.disabled = !allowed(options[i][0]);
+        });
+      },
+    };
   }
 
   function option(label, control, hint) {
@@ -53,10 +70,27 @@
       placeholder: `Sala de ${App.state.me.profile.username}`, 'aria-label': 'Nome da sala',
     });
     const visibility = segmented([['private', 'Privada'], ['public', 'Pública']], initial.visibility || 'private', 'Quem pode entrar');
+    // Duplas só funcionam com 4, 6 ou 8 pessoas: ao escolher Duplas, os números ímpares (e o 2) ficam bloqueados.
+    const validForTeams = (n) => n >= 4 && n % 2 === 0;
+    const syncTeams = () => {
+      if (teams.value) {
+        players.setEnabled(validForTeams);
+        if (!validForTeams(players.value)) players.set(Math.min(8, Math.max(4, players.value + (players.value % 2 ? 1 : 0))));
+        teamsHint.textContent = 'Duplas só aceitam 4, 6 ou 8 jogadores (as CPUs completam a mesa). Quem senta na frente de você é seu parceiro.';
+      } else {
+        players.setEnabled(() => true);
+        teamsHint.textContent = 'Duplas: quem senta na frente de você é seu parceiro e os pontos são somados. Precisa de 4, 6 ou 8 jogadores (CPUs completam a mesa).';
+      }
+    };
     const players = segmented([2, 3, 4, 5, 6, 7, 8].map((n) => [n, String(n)]), initial.maxPlayers || 4, 'Número de jogadores');
     const target = segmented(TARGETS.map((n) => [n, String(n)]), initial.targetScore || 200, 'Pontos para vencer');
     const timer = segmented(TIMERS, initial.turnSeconds ?? 30, 'Tempo por jogada');
-    const teams = segmented([[false, 'Cada um por si'], [true, 'Duplas (2x2)']], !!initial.teamMode, 'Modo de jogo');
+    const teams = segmented([[false, 'Cada um por si'], [true, 'Duplas (2x2)']], !!initial.teamMode, 'Modo de jogo', syncTeams);
+    const teamsHint = h('small', { class: 'form__hint' });
+    // Baralho: com penalidades (99 cartas, o padrão) ou o clássico do Flip 7 (94 cartas).
+    const deck = segmented([[2, 'Com penalidades (99)'], [1, 'Clássico (94)']], initial.deckVersion || 2, 'Baralho');
+    // Sala privada: os amigos podem ver o código e entrar sem pedir?
+    const friendsJoin = segmented([[false, 'Só com o código'], [true, 'Amigos entram direto']], !!initial.friendsJoin, 'Amigos');
 
     const el = h(
       'div',
@@ -66,12 +100,11 @@
       option('Jogadores (máximo)', players.el),
       option('Pontos para vencer', target.el, 'A regra original do Flip 7 é 200 pontos.'),
       option('Tempo por jogada', timer.el, 'Quando o tempo acaba, o jogador para automaticamente.'),
-      option(
-        'Modo de jogo',
-        teams.el,
-        'Duplas: quem senta na frente de você é seu parceiro e os pontos são somados. Precisa de 4, 6 ou 8 jogadores (CPUs completam a mesa).',
-      ),
+      h('div', { class: 'form__field' }, h('span', { class: 'form__label' }, 'Modo de jogo'), teams.el, teamsHint),
+      option('Baralho', deck.el, 'Penalidades: uma −6, duas −4 e duas −2. O clássico tem só as 94 cartas oficiais do Flip 7.'),
+      option('Amigos', friendsJoin.el, 'Em sala privada, "Amigos entram direto" mostra o código na lista de amigos. Em sala pública não muda nada.'),
     );
+    syncTeams();
     return {
       el,
       values: () => ({
@@ -81,6 +114,8 @@
         targetScore: target.value,
         turnSeconds: timer.value,
         teamMode: teams.value,
+        deckVersion: deck.value,
+        friendsJoin: friendsJoin.value,
       }),
     };
   }

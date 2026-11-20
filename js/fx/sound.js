@@ -94,18 +94,41 @@
 
     /* ---------------- Sons do jogo ---------------- */
 
+    /** Variação de ±5% na frequência: o mesmo som nunca soa idêntico duas vezes seguidas. */
+    jitter(value) {
+      return value * (0.95 + Math.random() * 0.1);
+    }
+
     flip() {
-      this.noise({ duration: 0.12, volume: 0.35, freq: 1200, to: 5000, q: 0.8 });
-      this.tone({ freq: 1400, type: 'triangle', duration: 0.04, volume: 0.06, delay: 0.09 });
+      this.noise({ duration: 0.12, volume: 0.35, freq: this.jitter(1200), to: this.jitter(5000), q: 0.8 });
+      this.tone({ freq: this.jitter(1400), type: 'triangle', duration: 0.04, volume: 0.06, delay: 0.09 });
     }
 
     deal() {
-      this.noise({ duration: 0.08, volume: 0.2, freq: 2500, to: 4500, q: 0.7 });
+      this.noise({ duration: 0.08, volume: 0.2, freq: this.jitter(2500), to: this.jitter(4500), q: 0.7 });
+    }
+
+    /** "Tique" discreto dos últimos segundos do relógio (mais agudo no último). */
+    tick(last = false) {
+      this.tone({ freq: last ? 1500 : 1100, type: 'square', duration: 0.05, volume: 0.045 });
+    }
+
+    /** Aviso suave de novidade (alguém entrou na sala, mensagem nova). */
+    pop() {
+      this.tone({ freq: this.jitter(760), to: 1180, type: 'sine', duration: 0.12, volume: 0.1 });
+    }
+
+    /** Tensão: faltou uma carta para o Vira 7. */
+    tension() {
+      [392, 415.3, 440].forEach((freq, i) => {
+        this.tone({ freq, type: 'triangle', duration: 0.5, volume: 0.07, delay: i * 0.12 });
+      });
+      this.tone({ freq: 110, to: 130, type: 'sawtooth', duration: 0.9, volume: 0.05 });
     }
 
     /** Nota sobe conforme a quantidade de números diferentes na mão. */
     number(step = 0) {
-      const freq = PENTATONIC[Math.min(step, PENTATONIC.length - 1)];
+      const freq = this.jitter(PENTATONIC[Math.min(step, PENTATONIC.length - 1)]);
       this.tone({ freq, type: 'triangle', duration: 0.22, volume: 0.22 });
       this.tone({ freq: freq * 2, type: 'sine', duration: 0.12, volume: 0.06, delay: 0.01 });
     }
@@ -190,7 +213,7 @@
     }
 
     click() {
-      this.tone({ freq: 1800, type: 'triangle', duration: 0.04, volume: 0.06 });
+      this.tone({ freq: this.jitter(1800), type: 'triangle', duration: 0.04, volume: 0.06 });
     }
 
     roundEnd() {
