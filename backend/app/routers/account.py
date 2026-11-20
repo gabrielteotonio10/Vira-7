@@ -56,7 +56,8 @@ async def public_profile(username: str, _: AuthUser = Depends(current_user), sto
 @router.get("/leaderboard")
 async def leaderboard(
     limit: int = Query(default=20, ge=1, le=100),
-    _: AuthUser = Depends(current_user),
+    scope: str = Query(default="all", pattern="^(all|friends)$"),
+    user: AuthUser = Depends(current_user),
     store=Depends(get_store),
 ) -> dict:
-    return await profiles.leaderboard(store, limit)
+    return await profiles.leaderboard(store, limit, user.id, scope)

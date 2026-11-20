@@ -87,7 +87,7 @@ def public_events(events: list[dict], game_id: str) -> list[dict]:
 
 
 async def require_member(store, game: dict, user_id: str) -> None:
-    membership = await store.active_membership(user_id)
+    membership = await store.active_membership(user_id) or await store.spectator_membership(user_id)
     if not membership or membership["room"]["id"] != game["room_id"]:
         raise ApiError(403, "NOT_IN_GAME", "Você não participa desta partida.")
 

@@ -24,7 +24,7 @@ from . import __version__, errors
 from .auth import TokenVerifier
 from .config import PROJECT_DIR, Settings
 from .ratelimit import RateLimiter, client_ip, too_many
-from .routers import account, dev, games, meta, rooms
+from .routers import account, dev, friends, games, meta, rooms
 from .services import referee
 from .store import MemoryStore, SupabaseStore
 
@@ -141,6 +141,7 @@ def create_app(settings: Settings | None = None, store=None) -> FastAPI:
     api.include_router(meta.router)
     api.include_router(account.router)
     api.include_router(rooms.router)
+    api.include_router(friends.router)
     api.include_router(games.router)
     if settings.dev_mode:
         api.include_router(dev.router)
@@ -153,6 +154,21 @@ def create_app(settings: Settings | None = None, store=None) -> FastAPI:
                 app.mount(f"/{name}", StaticFiles(directory=PROJECT_DIR / name), name=name)
 
         page_headers = {"Cache-Control": "no-cache", "Content-Security-Policy": content_security_policy(settings)}
+
+        # App instalável: o service worker precisa estar na raiz para controlar o site todo.
+        @app.api_route("/sw.js", methods=["GET", "HEAD"], include_in_schema=False)
+        async def service_worker() -> FileResponse:
+            return FileResponse(
+                PROJECT_DIR / "sw.js", media_type="text/javascript",
+                headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"},
+            )
+
+        @app.api_route("/manifest.webmanifest", methods=["GET", "HEAD"], include_in_schema=False)
+        async def manifest() -> FileResponse:
+            return FileResponse(
+                PROJECT_DIR / "manifest.webmanifest", media_type="application/manifest+json",
+                headers={"Cache-Control": "no-cache"},
+            )
 
         @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
         async def index() -> FileResponse:

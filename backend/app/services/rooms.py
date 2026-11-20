@@ -10,7 +10,7 @@ from ..config import AVATARS, BOT_NAMES, SEAT_COLORS
 from ..errors import ApiError, StoreError
 from ..game import GameSession
 from ..game import constants as C
-from . import games
+from . import chat, games
 
 log = logging.getLogger("vira7.rooms")
 
@@ -38,6 +38,7 @@ def serialize_room(room: dict) -> dict:
         "maxPlayers": room["max_players"],
         "targetScore": room["target_score"],
         "turnSeconds": room["turn_seconds"],
+        "teamMode": bool(room.get("team_mode")),
         "gameId": room.get("current_game_id"),
         "createdAt": room.get("created_at"),
     }
@@ -61,13 +62,16 @@ def serialize_player(player: dict, room: dict) -> dict:
 
 async def detail(store, room: dict, user_id: str) -> dict:
     players = await store.list_players(room["id"])
+    spectators = await store.list_spectators(room["id"])
     return {
         "room": serialize_room(room),
         "players": [serialize_player(p, room) for p in players],
+        "spectators": [{"userId": s["user_id"], "name": s["username"], "avatar": s["avatar"] or "raposa"} for s in spectators],
         "me": {
             "userId": user_id,
             "isHost": room["host_id"] == user_id,
             "isMember": any(p["user_id"] == user_id for p in players),
+            "isSpectator": any(s["user_id"] == user_id for s in spectators),
         },
         "serverTime": games.utcnow().isoformat(),
     }
@@ -83,6 +87,41 @@ async def _room_for_member(store, code: str, user_id: str) -> dict:
     return room
 
 
+async def _room_for_viewer(store, code: str, user_id: str) -> dict:
+    """Sala que a pessoa pode ver: como jogadora ou como espectadora."""
+    room = await store.get_room_by_code(normalize_code(code))
+    if not room:
+        raise ApiError(404, "ROOM_NOT_FOUND", "Sala não encontrada. Confira o código.")
+    membership = await store.active_membership(user_id) or await store.spectator_membership(user_id)
+    if not membership or membership["room"]["id"] != room["id"]:
+        raise ApiError(403, "NOT_IN_ROOM", "Você não está nesta sala.")
+    return room
+
+
+async def _promote_spectators(store, room: dict) -> dict:
+    """Com a sala de volta ao lobby, quem assistia ocupa os assentos livres (o mais antigo primeiro)."""
+    if room["status"] != "lobby":
+        return room
+    spectators = await store.list_spectators(room["id"])
+    if not spectators:
+        return room
+    free = room["max_players"] - len(await store.list_players(room["id"]))
+    promoted = False
+    for spectator in spectators[: max(free, 0)]:
+        try:
+            await store.join_room(room["id"], spectator["user_id"])
+        except StoreError:
+            continue
+        await store.remove_spectator(spectator["user_id"])
+        promoted = True
+    return await store.get_room(room["id"]) if promoted else room
+
+
+def _check_team_size(team_mode: bool, max_players: int) -> None:
+    if team_mode and (max_players < 4 or max_players % 2):
+        raise ApiError(422, "TEAM_SIZE", "Partida em duplas precisa de uma sala para 4, 6 ou 8 jogadores.")
+
+
 def _require_host(room: dict, user_id: str) -> None:
     if room["host_id"] != user_id:
         raise ApiError(403, "NOT_HOST", "Só o anfitrião da sala pode fazer isso.")
@@ -94,12 +133,16 @@ def _require_lobby(room: dict) -> None:
 
 
 async def create(store, user_id: str, data: dict) -> dict:
+    _check_team_size(bool(data.get("team_mode")), data["max_players"])
+    await store.remove_spectator(user_id)
     profile = await store.get_profile(user_id)
     name = (data.get("name") or "").strip() or f"Sala de {profile['username']}"
     room = await store.create_room(
         user_id, name[:40], data["visibility"], data.get("mode", "custom"),
         data["max_players"], data["target_score"], data["turn_seconds"],
     )
+    if data.get("team_mode"):
+        room = await store.update_room(room["id"], {"team_mode": True})
     return await detail(store, room, user_id)
 
 
@@ -108,6 +151,7 @@ async def quick_match(store, user_id: str) -> dict:
     current = await store.active_membership(user_id)
     if current:
         return await detail(store, current["room"], user_id)
+    await store.remove_spectator(user_id)
     for _ in range(3):
         room = await store.find_quick_room()
         if not room:
@@ -128,12 +172,26 @@ async def join(store, user_id: str, code: str) -> dict:
     room = await store.get_room_by_code(normalize_code(code))
     if not room:
         raise ApiError(404, "ROOM_NOT_FOUND", "Sala não encontrada. Confira o código.")
-    await store.join_room(room["id"], user_id)
+    spectating = await store.spectator_membership(user_id)
+    if spectating and spectating["room"]["id"] == room["id"]:
+        return await detail(store, room, user_id)
+    await store.remove_spectator(user_id)
+    try:
+        await store.join_room(room["id"], user_id)
+    except StoreError as error:
+        # Sala cheia ou partida em andamento: a pessoa entra para assistir.
+        if error.code in ("ROOM_FULL", "ROOM_NOT_OPEN") and room["status"] in ("lobby", "playing"):
+            if await store.active_membership(user_id):
+                raise StoreError("ALREADY_IN_ROOM") from error
+            await store.add_spectator(room["id"], user_id)
+        else:
+            raise
     return await detail(store, await store.get_room(room["id"]), user_id)
 
 
 async def get(store, user_id: str, code: str) -> dict:
-    room = await _room_for_member(store, code, user_id)
+    room = await _room_for_viewer(store, code, user_id)
+    room = await _promote_spectators(store, room)
     return await detail(store, room, user_id)
 
 
@@ -141,18 +199,26 @@ async def leave(store, user_id: str, code: str) -> dict:
     room = await store.get_room_by_code(normalize_code(code))
     if not room:
         return {"left": False}
+    spectating = await store.spectator_membership(user_id)
+    if spectating and spectating["room"]["id"] == room["id"]:
+        await store.remove_spectator(user_id)
+        return {"left": True, "closed": False}
     # O anfitrião que sai do lobby fecha a sala para todos (não fica sala "fantasma" esperando).
     if room["status"] == "lobby" and room["host_id"] == user_id:
         membership = await store.active_membership(user_id)
         if membership and membership["room"]["id"] == room["id"]:
             await store.close_room(room["id"])
+            chat.clear(room["id"])
             return {"left": True, "closed": True}
     # Sair no meio da partida = abandonar: o jogo segue sem a pessoa.
     if room["status"] == "playing" and room.get("current_game_id"):
         await games.forfeit(store, room["current_game_id"], user_id)
     result = await store.leave_room(room["id"], user_id)
-    if result["closed"] and room.get("current_game_id"):
-        await games.abandon(store, room["current_game_id"])
+    if result["closed"]:
+        chat.clear(room["id"])
+        if room.get("current_game_id"):
+            await games.abandon(store, room["current_game_id"])
+        await store.close_room(room["id"])  # solta também quem só assistia
     return {"left": result["left"], "closed": result["closed"]}
 
 
@@ -170,6 +236,7 @@ async def close_stale(store, stale_seconds: int) -> int:
             if room["status"] == "playing" and room.get("current_game_id"):
                 await games.abandon(store, room["current_game_id"])
             await store.close_room(room["id"])
+            chat.clear(room["id"])
             closed += 1
         except Exception:  # uma sala com problema não impede a limpeza das outras
             log.exception("Falha ao fechar a sala %s", room["id"])
@@ -194,6 +261,7 @@ async def update_settings(store, user_id: str, code: str, fields: dict) -> dict:
     _require_host(room, user_id)
     _require_lobby(room)
     changes = {key: value for key, value in fields.items() if value is not None}
+    _check_team_size(changes.get("team_mode", room.get("team_mode", False)), changes.get("max_players", room["max_players"]))
     if "max_players" in changes:
         count = len(await store.list_players(room["id"]))
         if changes["max_players"] < count:
@@ -243,6 +311,8 @@ async def start(store, user_id: str, code: str) -> dict:
     players = await store.list_players(room["id"])
     if len(players) < C.MIN_PLAYERS:
         raise ApiError(409, "NOT_ENOUGH_PLAYERS", "São necessários pelo menos 2 jogadores.")
+    if room.get("team_mode") and (len(players) < 4 or len(players) % 2):
+        raise ApiError(409, "TEAM_SIZE", "Partida em duplas precisa de 4, 6 ou 8 jogadores (as CPUs completam a mesa).")
     if not all(p["is_ready"] or p["user_id"] == user_id for p in players):
         raise ApiError(409, "PLAYERS_NOT_READY", "Nem todos os jogadores estão prontos.")
     await _start(store, room, players)
@@ -262,7 +332,9 @@ async def _start(store, room: dict, players: list[dict]) -> str:
         }
         for index, p in enumerate(players)
     ]
-    session = GameSession.create(roster, target_score=room["target_score"], turn_seconds=room["turn_seconds"])
+    session = GameSession.create(
+        roster, target_score=room["target_score"], turn_seconds=room["turn_seconds"], teams=bool(room.get("team_mode"))
+    )
     events = session.drain_events()
     args = games.finalize(session, events)
     game_id = await store.start_game(
@@ -275,9 +347,23 @@ async def _start(store, room: dict, players: list[dict]) -> str:
 
 
 async def heartbeat(store, user_id: str, code: str) -> dict:
-    room = await _room_for_member(store, code, user_id)
-    await store.touch_presence(room["id"], user_id)
+    room = await _room_for_viewer(store, code, user_id)
+    membership = await store.active_membership(user_id)
+    if membership:
+        await store.touch_presence(room["id"], user_id)
+    room = await _promote_spectators(store, room)
     return {"ok": True, "status": room["status"], "gameId": room.get("current_game_id")}
+
+
+async def send_chat(store, user_id: str, code: str, kind: str, key: str) -> dict:
+    room = await _room_for_viewer(store, code, user_id)
+    profile = await store.get_profile(user_id)
+    return {"message": chat.post(room["id"], user_id, profile["username"], profile["avatar"] or "raposa", kind, key)}
+
+
+async def read_chat(store, user_id: str, code: str, after: int) -> dict:
+    room = await _room_for_viewer(store, code, user_id)
+    return chat.since(room["id"], after)
 
 
 async def public_rooms(store) -> list[dict]:

@@ -34,6 +34,7 @@ class RoomCreate(BaseModel):
     max_players: int = Field(default=4, ge=C.MIN_PLAYERS, le=C.MAX_PLAYERS, alias="maxPlayers")
     target_score: int = Field(default=C.DEFAULT_TARGET_SCORE, alias="targetScore")
     turn_seconds: int = Field(default=30, alias="turnSeconds")
+    team_mode: bool = Field(default=False, alias="teamMode")
 
     model_config = {"populate_by_name": True}
 
@@ -47,11 +48,17 @@ class RoomUpdate(BaseModel):
     max_players: int | None = Field(default=None, ge=C.MIN_PLAYERS, le=C.MAX_PLAYERS, alias="maxPlayers")
     target_score: int | None = Field(default=None, alias="targetScore")
     turn_seconds: int | None = Field(default=None, alias="turnSeconds")
+    team_mode: bool | None = Field(default=None, alias="teamMode")
 
     model_config = {"populate_by_name": True}
 
     _target = field_validator("target_score")(_check_target)
     _turn = field_validator("turn_seconds")(_check_turn)
+
+
+class ChatMessage(BaseModel):
+    kind: Literal["say", "emoji"]
+    key: str = Field(max_length=8)
 
 
 class ReadyUpdate(BaseModel):
@@ -117,6 +124,20 @@ async def remove_player(
 @router.post("/{code}/start")
 async def start_game(code: str, user: AuthUser = Depends(current_user), store=Depends(get_store)) -> dict:
     return await rooms.start(store, user.id, code)
+
+
+@router.post("/{code}/chat", status_code=201)
+async def send_chat(
+    code: str, body: ChatMessage, user: AuthUser = Depends(current_user), store=Depends(get_store)
+) -> dict:
+    return await rooms.send_chat(store, user.id, code, body.kind, body.key)
+
+
+@router.get("/{code}/chat")
+async def read_chat(
+    code: str, after: int = 0, user: AuthUser = Depends(current_user), store=Depends(get_store)
+) -> dict:
+    return await rooms.read_chat(store, user.id, code, max(after, 0))
 
 
 @router.post("/{code}/heartbeat")
