@@ -63,6 +63,7 @@
           ? h('p', { class: 'auth__dev' }, 'Modo de desenvolvimento local: as contas existem só enquanto o servidor estiver ligado.')
           : null,
         h('a', { class: 'auth__local', href: '#/local' }, 'Jogar sem conta, na mesma tela'),
+        h('a', { class: 'auth__local', href: '#/tutorial' }, 'Aprender a jogar (tutorial)'),
       ),
     );
   }
