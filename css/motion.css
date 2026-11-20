@@ -1,0 +1,252 @@
+/* ==========================================================================
+   Vira-7 — Movimento: entradas das telas, listas em cascata, botões vivos,
+   avatares que piscam e destaques na mesa.
+   Tudo some com "Reduzir movimento" (ajustes) ou com a preferência do sistema.
+   ========================================================================== */
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(-1.5deg); }
+}
+
+@keyframes bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(255, 197, 48, 0.75), var(--lift); }
+  70% { box-shadow: 0 0 0 12px rgba(255, 197, 48, 0), var(--lift); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 197, 48, 0), var(--lift); }
+}
+
+@keyframes shine {
+  from { transform: translateX(-120%) skewX(-18deg); }
+  to { transform: translateX(260%) skewX(-18deg); }
+}
+
+@keyframes tilt-hello {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(6deg); }
+  60% { transform: rotate(-3deg); }
+}
+
+@keyframes nav-pop {
+  0% { transform: scale(0.85); }
+  60% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Entradas valem só logo depois de abrir a tela: listas que se atualizam sozinhas
+     (amigos, sala) não ficam piscando. */
+  /* ---- Telas: blocos entram em cascata ---- */
+  :root:not(.motion-settled) .page > * > .panel,
+  :root:not(.motion-settled) .page > * > section,
+  :root:not(.motion-settled) .page > .home > *,
+  :root:not(.motion-settled) .page > .lobby > *,
+  :root:not(.motion-settled) .page > .profile > * {
+    animation: rise-in 420ms var(--ease-out) both;
+  }
+
+  .page > * > :nth-child(2) { animation-delay: 60ms; }
+  .page > * > :nth-child(3) { animation-delay: 120ms; }
+  .page > * > :nth-child(4) { animation-delay: 180ms; }
+  .page > * > :nth-child(5) { animation-delay: 240ms; }
+  .page > * > :nth-child(n + 6) { animation-delay: 300ms; }
+
+  /* ---- Listas: cada item chega um pouco depois do anterior ---- */
+  :root:not(.motion-settled) :is(.room-list, .friend-list, .match-list, .rank-list, .lobby-players, .spectator-list, .chat-feed) > li,
+  :root:not(.motion-settled) .action-grid > *,
+  :root:not(.motion-settled) .stat-pills > *,
+  :root:not(.motion-settled) .stat-grid > *,
+  :root:not(.motion-settled) .swatches > *,
+  :root:not(.motion-settled) .avatar-picker > * {
+    animation: rise-in 380ms var(--ease-out) both;
+  }
+
+  :is(.room-list, .friend-list, .match-list, .rank-list, .lobby-players, .action-grid, .stat-pills, .stat-grid, .swatches, .avatar-picker) > :nth-child(1) { animation-delay: 40ms; }
+  :is(.room-list, .friend-list, .match-list, .rank-list, .lobby-players, .action-grid, .stat-pills, .stat-grid, .swatches, .avatar-picker) > :nth-child(2) { animation-delay: 90ms; }
+  :is(.room-list, .friend-list, .match-list, .rank-list, .lobby-players, .action-grid, .stat-pills, .stat-grid, .swatches, .avatar-picker) > :nth-child(3) { animation-delay: 140ms; }
+  :is(.room-list, .friend-list, .match-list, .rank-list, .lobby-players, .action-grid, .stat-pills, .stat-grid, .swatches, .avatar-picker) > :nth-child(4) { animation-delay: 190ms; }
+  :is(.room-list, .friend-list, .match-list, .rank-list, .lobby-players, .action-grid, .stat-pills, .stat-grid, .swatches, .avatar-picker) > :nth-child(5) { animation-delay: 240ms; }
+  :is(.room-list, .friend-list, .match-list, .rank-list, .lobby-players, .action-grid, .stat-pills, .stat-grid, .swatches, .avatar-picker) > :nth-child(6) { animation-delay: 290ms; }
+  :is(.room-list, .friend-list, .match-list, .rank-list, .lobby-players, .action-grid, .stat-pills, .stat-grid, .swatches, .avatar-picker) > :nth-child(n + 7) { animation-delay: 340ms; }
+
+  /* ---- Avatares: piscam, o do início flutua e todos respondem ao passar o mouse ---- */
+  .avatar--animal .av-eyes {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: blink 5.5s infinite;
+    animation-delay: var(--blink-delay, 0s);
+  }
+
+  .avatar--hero {
+    animation: float-soft 4.5s ease-in-out infinite;
+  }
+
+  .avatar--animal {
+    transition: transform var(--dur-med) var(--ease-spring);
+  }
+
+  :is(a, button, .friend, .lobby-player, .rank-card, .room-row):hover > .avatar--animal,
+  .nav__user:hover .avatar {
+    transform: rotate(-6deg) scale(1.08);
+  }
+
+  .home__hello:hover .avatar--hero {
+    animation: tilt-hello 900ms var(--ease-in-out);
+  }
+
+  /* ---- Botões: sobem no hover, afundam no toque e o principal tem um brilho ---- */
+  .btn {
+    transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast), background var(--dur-fast);
+  }
+
+  .btn:not(:disabled):hover {
+    transform: translateY(-2px);
+  }
+
+  .btn:not(:disabled):active {
+    transform: translateY(2px) scale(0.98);
+  }
+
+  .btn--primary,
+  .btn--success {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn--primary::after,
+  .btn--success::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 35%;
+    background: rgba(255, 255, 255, 0.45);
+    transform: translateX(-120%) skewX(-18deg);
+    pointer-events: none;
+  }
+
+  .btn--primary:not(:disabled):hover::after,
+  .btn--success:not(:disabled):hover::after {
+    animation: shine 650ms ease-out;
+  }
+
+  .icon-btn {
+    transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast);
+  }
+
+  .icon-btn:not(:disabled):hover {
+    transform: translateY(-2px) rotate(-4deg);
+  }
+
+  .icon-btn:not(:disabled):active {
+    transform: scale(0.92);
+  }
+
+  /* Cartões de ação do início levantam e inclinam um pouco */
+  .action-card {
+    transition: transform var(--dur-med) var(--ease-spring), box-shadow var(--dur-med);
+  }
+
+  .action-card:hover {
+    transform: translateY(-4px) rotate(-0.6deg);
+  }
+
+  .action-card:hover .action-card__icon {
+    animation: tilt-hello 700ms var(--ease-in-out);
+  }
+
+  /* ---- Navegação: a aba ativa "estala" ao chegar ---- */
+  .nav__link.is-active {
+    animation: nav-pop 320ms var(--ease-spring);
+  }
+
+  .nav__logo .logo__seven,
+  .topbar .logo__seven {
+    transition: transform var(--dur-med) var(--ease-spring);
+  }
+
+  .nav__logo:hover .logo__seven {
+    transform: rotate(-14deg) scale(1.12);
+  }
+
+  /* ---- Interruptores e opções ---- */
+  .switch__track,
+  .switch__track::after {
+    transition: background var(--dur-med), transform var(--dur-med) var(--ease-spring);
+  }
+
+  .segmented button {
+    transition: background var(--dur-fast), color var(--dur-fast), transform var(--dur-fast) var(--ease-spring);
+  }
+
+  .segmented button[aria-checked='true'] {
+    animation: nav-pop 280ms var(--ease-spring);
+  }
+
+  .swatch {
+    transition: transform var(--dur-fast) var(--ease-spring);
+  }
+
+  .swatch:hover {
+    transform: translateY(-3px);
+  }
+
+  /* ---- Números que mudam dão um pulinho (rodada, monte, contadores) ---- */
+  .is-bumped {
+    display: inline-block;
+    animation: bump 360ms var(--ease-spring);
+  }
+
+  /* ---- Mesa: botão Virar chama atenção quando é a sua vez ---- */
+  .actions:not(.is-waiting) #btn-hit:not(:disabled) {
+    animation: pulse-ring 1.6s ease-out infinite;
+  }
+
+  /* Suas cartas levantam ao passar o mouse */
+  .seat--me .seat__cards .card {
+    transition: transform var(--dur-fast) var(--ease-spring);
+  }
+
+  .seat--me .seat__cards .card:hover {
+    transform: translateY(-6px) rotate(-2deg);
+  }
+
+  /* Placar e pódio do fim de jogo */
+  .team-board__team {
+    animation: rise-in 420ms var(--ease-spring) both;
+  }
+
+  .team-board__team:nth-child(2) { animation-delay: 90ms; }
+  .team-board__team:nth-child(3) { animation-delay: 180ms; }
+  .team-board__team:nth-child(4) { animation-delay: 270ms; }
+
+  .winner__crown {
+    animation: float-soft 2.4s ease-in-out infinite;
+  }
+
+  /* Toasts e balões de conversa já entram com mola; o balão do tutorial também */
+  .coach {
+    animation: rise-in 300ms var(--ease-spring);
+  }
+
+  .home__resume {
+    animation: rise-in 420ms var(--ease-out) both, pulse-ring 2.4s ease-out 600ms 2;
+  }
+}
