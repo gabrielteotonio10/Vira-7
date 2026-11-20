@@ -50,7 +50,7 @@
       return iso ? new Date(iso).getTime() - this.clockOffset : null;
     },
 
-    async request(method, path, body, { auth = true } = {}) {
+    async request(method, path, body, { auth = true, keepalive = false } = {}) {
       const headers = {};
       if (body !== undefined) headers['Content-Type'] = 'application/json';
       if (auth) {
@@ -67,6 +67,8 @@
           headers,
           body: body === undefined ? undefined : JSON.stringify(body),
           signal: controller.signal,
+          // keepalive: a requisição termina mesmo se a página for fechada (preferências).
+          keepalive,
         });
       } catch (error) {
         throw new ApiError(0, 'NETWORK_ERROR', 'Sem conexão com o servidor. Verifique sua internet.');
@@ -93,7 +95,7 @@
     get(path) { return this.request('GET', path); },
     post(path, body = {}) { return this.request('POST', path, body); },
     patch(path, body = {}) { return this.request('PATCH', path, body); },
-    put(path, body = {}) { return this.request('PUT', path, body); },
+    put(path, body = {}, options = {}) { return this.request('PUT', path, body, options); },
     del(path) { return this.request('DELETE', path); },
   };
 

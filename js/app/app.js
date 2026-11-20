@@ -245,8 +245,45 @@
     async refreshMe() {
       const me = await F7.Api.get('/me');
       this.state.me = me;
-      this.applySettings(me.settings);
+      // A cópia deste aparelho vence se for mais nova (ex.: a gravação anterior não chegou ao servidor).
+      const local = F7.storage.load('settings', null);
+      const localNewer = local && (local.updatedAt || 0) > (me.settings.updatedAt || 0);
+      this.applySettings(localNewer ? local : me.settings);
+      if (localNewer) this.saveSettings(local, { immediate: true });
       return me;
+    },
+
+    /**
+     * Grava as preferências: na hora neste aparelho e, logo depois, na conta.
+     * Mudanças em sequência viram uma gravação só; sair da tela ou fechar a página
+     * envia o que estiver pendente (fetch com keepalive), então nada se perde.
+     * @returns {Promise<boolean>} true se o servidor confirmou
+     */
+    saveSettings(settings, { immediate = false } = {}) {
+      const next = { ...settings, updatedAt: Date.now() };
+      this.applySettings(next);
+      F7.storage.save('settings', next);
+      this.pendingSettings = next;
+      clearTimeout(this.settingsTimer);
+      if (immediate) return this.flushSettings();
+      return new Promise((resolve) => {
+        this.settingsTimer = setTimeout(() => resolve(this.flushSettings()), 350);
+      });
+    },
+
+    async flushSettings({ keepalive = false } = {}) {
+      clearTimeout(this.settingsTimer);
+      const pending = this.pendingSettings;
+      if (!pending || !this.state.me) return false;
+      this.pendingSettings = null;
+      try {
+        const result = await F7.Api.put('/me/settings', { settings: pending }, { keepalive });
+        if (this.state.me) this.state.me.settings = result.settings;
+        return true;
+      } catch (error) {
+        // Fica guardado neste aparelho; a próxima abertura tenta de novo.
+        return false;
+      }
     },
 
     applySettings(settings) {
@@ -266,6 +303,7 @@
 
     /** Sair da conta, sempre pedindo confirmação (a sessão expirada usa Auth.signOut direto). */
     async signOut() {
+      await this.flushSettings();
       const ok = await F7.Modals.confirm({
         title: 'Sair da conta?',
         text: 'Você precisará entrar de novo com seu e-mail e senha para jogar online.',
