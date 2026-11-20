@@ -408,13 +408,14 @@
 
 .swatch--back .card {
   position: absolute;
-  top: 5px;
+  top: 7px;
   left: 50%;
   transform: translateX(-50%);
   pointer-events: none;
 }
 
 .swatch--back {
+  height: 92px;
   background: var(--paper-2);
 }
 
